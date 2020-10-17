@@ -24,6 +24,8 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 import android.support.annotation.Nullable;
+import android.support.v4.app.Fragment;
+import android.support.v7.widget.RecyclerView;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.ActionMode;
@@ -56,6 +58,7 @@ import java.text.SimpleDateFormat;
 import java.util.LinkedList;
 import java.util.List;
 
+import apijson.demo.InputUtil;
 import apijson.demo.R;
 import apijson.demo.ui.UIAutoActivity;
 import apijson.demo.ui.UIAutoListActivity;
@@ -100,17 +103,27 @@ public class DemoApplication extends Application {
                 tvControllerCount.setText(step + "/" + allStep);
 
                 //根据递归链表来实现，能精准地实现两个事件之间的间隔，不受处理时间不一致，甚至卡顿等影响。还能及时终止
-                Node<InputEvent> eventNode = (Node<InputEvent>) msg.obj;
-                currentEventNode = eventNode;
+                Node<InputEvent> curNode = (Node<InputEvent>) msg.obj;
+                currentEventNode = curNode;
 
-                InputEvent prevItem = eventNode.prev == null ? null : eventNode.prev.item;
-                InputEvent curItem = eventNode.item;
-                InputEvent nextItem = eventNode.next == null ? null : eventNode.next.item;
+                //暂停，等待时机
+                if (curNode.type == InputUtil.EVENT_TYPE_UI || curNode.type == InputUtil.EVENT_TYPE_HTTP) {
+                    return;
+                }
 
-                duration += (prevItem == null ? 0 : (curItem.getEventTime() - prevItem.getEventTime()));
-                tvControllerTime.setText(TIME_FORMAT.format(duration));
+                Node<InputEvent> prevNode = curNode.prev;
+                Node<InputEvent> nextNode = curNode.next;
 
-                dispatchEventToCurrentActivity(eventNode.item, false);
+                InputEvent prevItem = prevNode == null ? null : prevNode.item;
+                InputEvent curItem = curNode.item;
+                InputEvent nextItem = nextNode == null ? null : nextNode.item;
+
+                if (curItem != null && prevItem != null) {
+                    duration += (prevItem == null ? 0 : (curItem.getEventTime() - prevItem.getEventTime()));
+                    tvControllerTime.setText(TIME_FORMAT.format(duration));
+                }
+
+                dispatchEventToCurrentActivity(curItem, false);
 
                 if (nextItem == null) {
                     tvControllerPlay.setText("recover");
@@ -119,8 +132,8 @@ public class DemoApplication extends Application {
                     return;
                 }
 
-                splitX = eventNode.splitX;
-                splitY = eventNode.splitY;
+                splitX = curNode.splitX;
+                splitY = curNode.splitY;
                 if (floatBall != null && isSplitShowing) {
                     //居然怎么都不更新 vSplitX 和 vSplitY
                     // floatBall.hide();
@@ -129,8 +142,8 @@ public class DemoApplication extends Application {
                     // floatBall.show();
 
                     //太卡
-                    if (floatBall.getX() != (eventNode.splitX - splitSize/2)
-                            || floatBall.getY() != (eventNode.splitY - splitSize/2)) {
+                    if (floatBall.getX() != (curNode.splitX - splitSize / 2)
+                            || floatBall.getY() != (curNode.splitY - splitSize / 2)) {
                         // FloatWindow.destroy("floatBall");
                         // floatBall = null;
                         floatBall = showSplit(isSplitShowing, splitX, splitY, "floatBall", vFloatBall, vSplitX, vSplitY);
@@ -138,8 +151,15 @@ public class DemoApplication extends Application {
                 }
 
                 msg = Message.obtain();
-                msg.obj = eventNode.next;
-                sendMessageDelayed(msg, nextItem.getEventTime() - curItem.getEventTime());
+                msg.obj = nextNode;
+
+                //暂停，等待时机
+                if (curItem == null || nextItem == null || nextNode.type == InputUtil.EVENT_TYPE_UI || nextNode.type == InputUtil.EVENT_TYPE_HTTP) {
+                    sendMessage(msg);
+                }
+                else {
+                    sendMessageDelayed(msg, nextItem.getEventTime() - curItem.getEventTime());
+                }
             }
         }
     };
@@ -169,12 +189,18 @@ public class DemoApplication extends Application {
     TextView tvControllerForward;
     TextView tvControllerSetting;
 
+    RecyclerView rvControllerTag;
+
     private int splitX;
     private int splitY;
     private int splitSize;
-    private boolean moved = false;
 
-    private JSONArray touchList;
+    @NotNull
+    private JSONArray eventList = new JSONArray();
+    @NotNull
+    private JSONArray tagList = new JSONArray();
+
+    private RecyclerView.Adapter tagAdapter;
 
     SharedPreferences cache;
     private long flowId = 0;
@@ -387,11 +413,13 @@ public class DemoApplication extends Application {
             @Override
             public void onActivityStarted(Activity activity) {
                 Log.v(TAG, "onActivityStarted  activity = " + activity.getClass().getName());
+                onUIEvent(InputUtil.UI_ACTION_START, activity);
             }
 
             @Override
             public void onActivityStopped(Activity activity) {
                 Log.v(TAG, "onActivityStopped  activity = " + activity.getClass().getName());
+                onUIEvent(InputUtil.UI_ACTION_STOP, activity);
             }
 
             @Override
@@ -404,12 +432,14 @@ public class DemoApplication extends Application {
                 Log.v(TAG, "onActivityResumed  activity = " + activity.getClass().getName());
                 setCurrentActivity(activity);
                 onUIAutoActivityCreate(activity);
+                onUIEvent(InputUtil.UI_ACTION_RESUME, activity);
             }
 
             @Override
             public void onActivityPaused(Activity activity) {
                 Log.v(TAG, "onActivityPaused  activity = " + activity.getClass().getName());
                 setCurrentActivity(activityList.isEmpty() ? null : activityList.get(activityList.size() - 1));
+                onUIEvent(InputUtil.UI_ACTION_PAUSE, activity);
             }
 
             @Override
@@ -417,12 +447,14 @@ public class DemoApplication extends Application {
                 Log.v(TAG, "onActivityCreated  activity = " + activity.getClass().getName());
                 activityList.add(activity);
                 //TODO 按键、键盘监听拦截和转发
+                onUIEvent(InputUtil.UI_ACTION_CREATE, activity);
             }
 
             @Override
             public void onActivityDestroyed(Activity activity) {
                 Log.v(TAG, "onActivityDestroyed  activity = " + activity.getClass().getName());
                 activityList.remove(activity);
+                onUIEvent(InputUtil.UI_ACTION_DESTROY, activity);
             }
 
         });
@@ -449,6 +481,47 @@ public class DemoApplication extends Application {
         tvControllerForward = vFloatController.findViewById(R.id.tvControllerForward);
         tvControllerSetting = vFloatController.findViewById(R.id.tvControllerSetting);
 
+        rvControllerTag = vFloatController.findViewById(R.id.rvControllerTag);
+        tagAdapter = new RecyclerView.Adapter() {
+            @Override
+            public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+                return new RecyclerView.ViewHolder(getLayoutInflater().inflate(R.layout.ui_auto_tag_layout, null, false)) {};
+            }
+
+            @Override
+            public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
+                JSONObject item = getItem(position);
+                int index = eventList == null ? -1 : eventList.indexOf(item);
+                boolean isAdded = index >= 0;
+
+                ((TextView) holder.itemView).setText((index < 0 ? "" : index + " ") + InputUtil.getUIActionName(item.getIntValue("action")) + "\n" + item.getString("simpleName"));
+                ((TextView) holder.itemView).setTextColor(getResources().getColor(isAdded ? android.R.color.white : android.R.color.black));
+
+                holder.itemView.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        if (isAdded) {
+                            removeEvent(item, getCurrentActivity());
+                        }
+                        else {
+                            addEvent(item, getCurrentActivity());
+                        }
+
+                        onBindViewHolder(holder, position);
+                    }
+                });
+            }
+
+            @Override
+            public int getItemCount() {
+                return tagList == null ? 0 : tagList.size();
+            }
+            @NotNull
+            JSONObject getItem(int position) {
+                return tagList == null || tagList.isEmpty() ? new JSONObject() : tagList.getJSONObject(position);
+            }
+        };
+        rvControllerTag.setAdapter(tagAdapter);
 
         vFloatCover.addView(vSplitX);
         vFloatCover.addView(vSplitY);
@@ -488,14 +561,14 @@ public class DemoApplication extends Application {
                     @Override
                     public void run() {
                         String cacheKey = UIAutoListActivity.CACHE_TOUCH;
-                        if (touchList != null && touchList.isEmpty() == false) {
+                        if (eventList != null && eventList.isEmpty() == false) {
                             SharedPreferences cache = getSharedPreferences();
                             JSONArray allList = null; // JSON.parseArray(cache.getString(cacheKey, null));
 
                             if (allList == null || allList.isEmpty()) {
-                                allList = touchList;
+                                allList = eventList;
                             } else {
-                                allList.addAll(touchList);
+                                allList.addAll(eventList);
                             }
                             cache.edit().remove(cacheKey).putString(cacheKey, JSON.toJSONString(allList)).commit();
                         }
@@ -503,8 +576,8 @@ public class DemoApplication extends Application {
                         new Handler(Looper.getMainLooper()).post(new Runnable() {
                             @Override
                             public void run() {
-                                //                startActivity(UIAutoListActivity.createIntent(DemoApplication.getInstance(), flowId));  // touchList == null ? null : touchList.toJSONString()));
-//                startActivityForResult(UIAutoListActivity.createIntent(DemoApplication.getInstance(), touchList == null ? null : touchList.toJSONString()), REQUEST_UI_AUTO_LIST);
+                                //                startActivity(UIAutoListActivity.createIntent(DemoApplication.getInstance(), flowId));  // eventList == null ? null : eventList.toJSONString()));
+//                startActivityForResult(UIAutoListActivity.createIntent(DemoApplication.getInstance(), eventList == null ? null : eventList.toJSONString()), REQUEST_UI_AUTO_LIST);
                                 count = 0;
                                 startActivity(UIAutoListActivity.createIntent(getInstance(), cacheKey));
                             }
@@ -616,7 +689,7 @@ public class DemoApplication extends Application {
 
                 if (isSplitShowing) {
                     if (isRecover) {
-                        recover(touchList);
+                        recover(eventList);
                     }
                     else {
                         record();
@@ -657,6 +730,7 @@ public class DemoApplication extends Application {
 
     }
 
+
     private void dismiss() {
         count = 0;
 
@@ -683,13 +757,17 @@ public class DemoApplication extends Application {
                 .apply();
     }
 
-
+    private LayoutInflater inflater;
     public LayoutInflater getLayoutInflater() {
-        try {
-            return LayoutInflater.from(this);
-        } catch (Exception e) {
-            return LayoutInflater.from(activity);
+        if (inflater == null) {
+            try {
+                inflater = LayoutInflater.from(this);
+            }
+            catch (Exception e) {
+                inflater = LayoutInflater.from(activity);
+            }
         }
+        return inflater;
     }
 
     /**获取应用名
@@ -992,7 +1070,7 @@ public class DemoApplication extends Application {
                 }
                 try {
                     activity.dispatchTouchEvent(event);
-                } catch (Throwable e) {  // java.lang.IllegalArgumentException: pointerIndex out of range
+                } catch (Throwable e) {  // java.lang.IllegalArgumentException: tagerIndex out of range
                     e.printStackTrace();
                 }
             }
@@ -1037,7 +1115,7 @@ public class DemoApplication extends Application {
     private int step = 0;
 
     private long currentTime = 0;
-    public void recover(JSONArray touchList) {
+    public void recover(JSONArray eventList) {
         isRecover = true;
 //        List<InputEvent> list = new LinkedList<>();
 
@@ -1046,7 +1124,7 @@ public class DemoApplication extends Application {
             currentEventNode = firstEventNode;
         }
 
-        JSONObject first = allStep <= 0 ? null : touchList.getJSONObject(0);
+        JSONObject first = allStep <= 0 ? null : eventList.getJSONObject(0);
         long firstTime = first == null ? 0 : first.getLongValue("time");
 
         if (firstTime <= 0) {
@@ -1070,14 +1148,16 @@ public class DemoApplication extends Application {
     }
 
     private Node<InputEvent> eventNode = null;
-    private void prepareAndSendEvent(@NotNull JSONArray touchList) {
-        for (int i = 0; i < touchList.size(); i++) {
-            JSONObject obj = touchList.getJSONObject(i);
+    private void prepareAndSendEvent(@NotNull JSONArray eventList) {
+        for (int i = 0; i < eventList.size(); i++) {
+            JSONObject obj = eventList.getJSONObject(i);
+            int type = obj.getIntValue("type");
+            int action = obj.getIntValue("action");
 
             int windowWidth, windowHeight;
 
             InputEvent event;
-            if (obj.getIntValue("type") == 1) {
+            if (type == 1) {
                 /**
                  public KeyEvent(long downTime, long eventTime, int action,
                  int code, int repeat, int metaState,
@@ -1108,7 +1188,7 @@ public class DemoApplication extends Application {
                         obj.getIntValue("source")
                 );
             }
-            else {
+            else if (type == 0) {
                 /**
                  public static MotionEvent obtain(long downTime, long eventTime, int action,
                  float x, float y, float pressure, float size, int metaState,
@@ -1118,8 +1198,8 @@ public class DemoApplication extends Application {
 
                 //居然编译报错，和
                 // static public MotionEvent obtain(long downTime, long eventTime,
-                //    int action, int pointerCount, PointerProperties[] pointerProperties,
-                //    PointerCoords[] pointerCoords, int metaState, int buttonState,
+                //    int action, int tagerCount, PointerProperties[] tagerProperties,
+                //    PointerCoords[] tagerCoords, int metaState, int buttonState,
                 //    float xPrecision, float yPrecision, int deviceId,
                 //    int edgeFlags, int source, int displayId, int flags)
                 //冲突，实际上类型没传错
@@ -1184,7 +1264,7 @@ public class DemoApplication extends Application {
                         obj.getLongValue("downTime"),
                         obj.getLongValue("eventTime"),
                         obj.getIntValue("action"),
-//                            obj.getIntValue("pointerCount"),
+//                            obj.getIntValue("tagerCount"),
                         rx,
                         ry,
                         obj.getFloatValue("pressure"),
@@ -1201,6 +1281,9 @@ public class DemoApplication extends Application {
 //                    ((MotionEvent) event).setEdgeFlags(obj.getIntValue("edgeFlags"));
 
             }
+            else {
+                event = null;
+            }
 
 
 //                list.add(event);
@@ -1213,6 +1296,10 @@ public class DemoApplication extends Application {
             eventNode.id = obj.getLongValue("id");
             eventNode.flowId = obj.getLongValue("flowId");
             eventNode.time = obj.getLongValue("time");
+            eventNode.type = type;
+            eventNode.action = action;
+            eventNode.activity = obj.getString("activity");
+            eventNode.fragment = obj.getString("fragment");
             eventNode.splitX = obj.getIntValue("splitX");
             eventNode.splitY = obj.getIntValue("splitY");
             eventNode.splitSize = obj.getIntValue("splitSize");
@@ -1228,24 +1315,59 @@ public class DemoApplication extends Application {
     }
 
 
-    int count = 0;
+    /* 非触屏、非按键的 其它事件，例如 Activity.onResume, HTTP Response 等
+     */
+    public void addTag(JSONObject event, Activity activity) {
+        tagList.add(event);
+        tagAdapter.notifyDataSetChanged();
+        rvControllerTag.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                rvControllerTag.smoothScrollToPosition(tagAdapter.getItemCount() - 1);
+            }
+        }, 500);
+    }
+
+    public void onUIEvent(int action, Activity activity) {
+        onUIEvent(action, activity, null);
+    }
+    public void onUIEvent(int action, Activity activity, Fragment fragment) {
+        if (isSplitShowing == false) {
+            Log.e(TAG, "addInputEvent  isSplitShowing == false >> return null;");
+            return;
+        }
+
+        if (isRecover) {
+            if (currentEventNode.type == InputUtil.EVENT_TYPE_UI && currentEventNode.action == action
+                    && activity.getClass().getName().equals(currentEventNode.activity)) {
+                Message msg = handler.obtainMessage();
+                msg.obj = currentEventNode == null ? null : currentEventNode.next;
+                handler.sendMessage(msg);
+            }
+        }
+        else {
+            JSONObject obj = new JSONObject(true);
+            obj.put("type", InputUtil.EVENT_TYPE_UI);
+            obj.put("activity", activity == null ? null : activity.getClass().getName());
+            obj.put("fragment", fragment == null ? null : fragment.getClass().getName());
+            obj.put("simpleName", activity.getClass().getSimpleName());
+
+            obj.put("action", action);
+
+            addTag(obj, activity);
+
+            if (action == InputUtil.UI_ACTION_RESUME) {
+                addEvent(obj, activity);
+            }
+        }
+    }
+
+
     public JSONArray addInputEvent(InputEvent ie, Activity activity) {
         if (isSplitShowing == false || vSplitX == null || vSplitY == null) {
             Log.e(TAG, "addInputEvent  isSplitShowing == false || vSplitX == null || vSplitY == null >> return null;");
-            return null;
+            return eventList;
         }
-
-        count ++;
-
-        step ++;
-        allStep ++;
-        tvControllerCount.setText(step + "/" + allStep);
-
-        long curTime = System.currentTimeMillis();
-        duration += curTime - currentTime;
-        currentTime = curTime;
-
-        tvControllerTime.setText(TIME_FORMAT.format(duration));
 
         int splitX = (int) (vSplitX.getX() + vSplitX.getWidth()/2);
         int splitY = (int) (vSplitY.getY() + vSplitY.getHeight()/2);
@@ -1306,31 +1428,80 @@ public class DemoApplication extends Application {
             obj.put("pressure", event.getPressure());
             obj.put("xPrecision", event.getXPrecision());
             obj.put("yPrecision", event.getYPrecision());
-            obj.put("pointerCount", event.getPointerCount());
+            obj.put("tagerCount", event.getPointerCount());
             obj.put("edgeFlags", event.getEdgeFlags());
         }
 
-        if (touchList == null) {
-            touchList = new JSONArray();
+        return addEvent(obj, activity);
+    }
+
+    int count = 0;
+
+    public JSONArray addEvent(JSONObject event, Activity activity) {
+        if (event == null) {
+            Log.e(TAG, "addEvent  event == null >> return null;");
+            return eventList;
         }
+
+        count ++;
+
+        step ++;
+        allStep ++;
+        tvControllerCount.setText(step + "/" + allStep);
+
+        long curTime = System.currentTimeMillis();
+        duration += curTime - currentTime;
+        currentTime = curTime;
+
+        tvControllerTime.setText(TIME_FORMAT.format(duration));
+
+        // if (eventList == null) {
+        //     eventList = new JSONArray();
+        // }
         if (step > 0 && step < allStep) {
-            touchList.add(step - 1, obj);
+            eventList.add(step - 1, event);
         } else {
-            touchList.add(obj);
+            eventList.add(event);
         }
 
-        return touchList;
+        return eventList;
     }
 
-    public void setTouchList(JSONArray touchList) {
-        this.touchList = touchList;
+    public JSONArray removeEvent(JSONObject event, Activity activity) {
+        if (event == null) {
+            Log.e(TAG, "addEvent  event == null >> return null;");
+            return null;
+        }
+
+        count --;
+
+        step --;
+        allStep --;
+        tvControllerCount.setText(step + "/" + allStep);
+
+        long curTime = System.currentTimeMillis();
+        duration -= curTime - currentTime;
+        currentTime = curTime;
+
+        tvControllerTime.setText(TIME_FORMAT.format(duration));
+
+        // if (eventList == null) {
+        //     eventList = new JSONArray();
+        // }
+        eventList.remove(event);
+
+        return eventList;
     }
 
-    public void prepareRecover(JSONArray touchList, Activity activity) {
-        setTouchList(touchList);
+    public void setEventList(JSONArray eventList) {
+        this.eventList = eventList == null ? new JSONArray() : eventList;
+    }
+
+    public void prepareRecover(JSONArray eventList, Activity activity) {
+        setEventList(eventList);
         isRecover = true;
         step = 0;
-        allStep = touchList == null ? 0 : touchList.size();
+        allStep = eventList == null ? 0 : eventList.size();
         duration = 0;
         flowId = - System.currentTimeMillis();
 
@@ -1341,7 +1512,7 @@ public class DemoApplication extends Application {
         new Thread(new Runnable() {
             @Override
             public void run() {
-                prepareAndSendEvent(touchList);
+                prepareAndSendEvent(eventList);
 
                 new Handler(Looper.getMainLooper()).post(new Runnable() {
                     @Override
@@ -1354,7 +1525,7 @@ public class DemoApplication extends Application {
     }
 
     public void prepareRecord(Activity activity) {
-        setTouchList(null);
+        setEventList(null);
         isRecover = false;
         step = 0;
         allStep = 0;
@@ -1377,12 +1548,16 @@ public class DemoApplication extends Application {
         long id;
         long flowId;
         long time;
+        int type;
+        int action;
         int splitX;
         int splitY;
         int splitSize;
         int windowX;
         int windowY;
         int orientation;
+        String activity;
+        String fragment;
 
         Node(Node<E> prev, E element, Node<E> next) {
             this.item = element;

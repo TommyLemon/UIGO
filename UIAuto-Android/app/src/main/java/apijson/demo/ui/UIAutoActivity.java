@@ -42,7 +42,7 @@ public class UIAutoActivity extends Activity {
     private static final String SPLIT_COLOR = "SPLIT_COLOR";
 
     private static final String INTENT_FLOW_ID = "INTENT_FLOW_ID";
-    private static final String INTENT_TOUCH_LIST = "INTENT_TOUCH_LIST";
+    private static final String INTENT_EVENT_LIST = "INTENT_EVENT_LIST";
 
     /**
      * @param context
@@ -56,7 +56,7 @@ public class UIAutoActivity extends Activity {
      * @return
      */
     public static Intent createIntent(Context context, String list) {
-        return new Intent(context, UIAutoActivity.class).putExtra(INTENT_TOUCH_LIST, list);
+        return new Intent(context, UIAutoActivity.class).putExtra(INTENT_EVENT_LIST, list);
     }
 
 
@@ -113,7 +113,7 @@ public class UIAutoActivity extends Activity {
 //    private float splitHeight;
 //    private boolean moved = false;
 
-    private JSONArray touchList;
+    private JSONArray eventList;
 
     private long flowId = 0;
     @Override
@@ -128,7 +128,7 @@ public class UIAutoActivity extends Activity {
 
 
         flowId = getIntent().getLongExtra(INTENT_FLOW_ID, flowId);
-        //太卡        touchList = JSON.parseArray(getIntent().getStringExtra(INTENT_TOUCH_LIST));
+        //太卡        eventList = JSON.parseArray(getIntent().getStringExtra(INTENT_EVENT_LIST));
 
 //
 //        DisplayMetrics outMetrics = new DisplayMetrics();
@@ -151,9 +151,9 @@ public class UIAutoActivity extends Activity {
 //            splitY = windowHeight - splitHeight - dip2px(30);
 //        }
 
-        if (touchList != null && touchList.isEmpty() == false) { //TODO 回放操作
-//            recover(touchList);
-            startActivity(UIAutoListActivity.createIntent(DemoApplication.getInstance(), touchList == null ? null : touchList.toJSONString()));
+        if (eventList != null && eventList.isEmpty() == false) { //TODO 回放操作
+//            recover(eventList);
+            startActivity(UIAutoListActivity.createIntent(DemoApplication.getInstance(), eventList == null ? null : eventList.toJSONString()));
 //            return;
         }
 
@@ -207,16 +207,16 @@ public class UIAutoActivity extends Activity {
 //                JSONArray allList = JSON.parseArray(cache.getString(cacheKey, null));
 //
 //                if (allList == null || allList.isEmpty()) {
-//                    allList = touchList;
+//                    allList = eventList;
 //                }
 //                else {
-//                    allList.addAll(touchList);
+//                    allList.addAll(eventList);
 //                }
 //                cache.edit().remove(cacheKey).putString(cacheKey, JSON.toJSONString(allList)).commit();
 //
-////                startActivity(UIAutoListActivity.createIntent(DemoApplication.getInstance(), flowId));  // touchList == null ? null : touchList.toJSONString()));
-////                startActivityForResult(UIAutoListActivity.createIntent(DemoApplication.getInstance(), touchList == null ? null : touchList.toJSONString()), REQUEST_UI_AUTO_LIST);
-//                startActivity(UIAutoActivity.createIntent(DemoApplication.getInstance(), touchList == null ? null : touchList.toJSONString()));
+////                startActivity(UIAutoListActivity.createIntent(DemoApplication.getInstance(), flowId));  // eventList == null ? null : eventList.toJSONString()));
+////                startActivityForResult(UIAutoListActivity.createIntent(DemoApplication.getInstance(), eventList == null ? null : eventList.toJSONString()), REQUEST_UI_AUTO_LIST);
+//                startActivity(UIAutoActivity.createIntent(DemoApplication.getInstance(), eventList == null ? null : eventList.toJSONString()));
 //
 //                floatCover = null;
 //                floatSplitY = null;
@@ -596,14 +596,14 @@ public class UIAutoActivity extends Activity {
 //    private long lastTime = 0;
 //    private long firstCurTime = 0;
 //    private long lastCurTime = 0;
-//    public void recover(JSONArray touchList) {
+//    public void recover(JSONArray eventList) {
 //        isRecovering = true;
 //
 ////        List<InputEvent> list = new LinkedList<>();
 //
 //        showCover(true, DemoApplication.getInstance().getCurrentActivity());
 //
-//        JSONObject first = touchList == null || touchList.isEmpty() ? null : touchList.getJSONObject(0);
+//        JSONObject first = eventList == null || eventList.isEmpty() ? null : eventList.getJSONObject(0);
 //        firstTime = first == null ? 0 : first.getLongValue("time");
 //
 //        firstCurTime = 0;
@@ -611,8 +611,8 @@ public class UIAutoActivity extends Activity {
 //            firstCurTime = System.currentTimeMillis();
 //            pbUIAutoSplit.setVisibility(View.VISIBLE);
 //
-//            for (int i = 0; i < touchList.size(); i++) {
-//                JSONObject obj = touchList.getJSONObject(i);
+//            for (int i = 0; i < eventList.size(); i++) {
+//                JSONObject obj = eventList.getJSONObject(i);
 //
 //                InputEvent event;
 //                if (obj.getIntValue("type") == 1) {
@@ -697,7 +697,7 @@ public class UIAutoActivity extends Activity {
 //                    firstEventNode = new Node<>(null, event, null);
 //                    eventNode = firstEventNode;
 //                }
-//                else if (i >= touchList.size() - 1) {
+//                else if (i >= eventList.size() - 1) {
 //                    lastTime = time;
 //                    lastCurTime = firstCurTime + lastTime - firstTime;
 //                }
@@ -794,12 +794,12 @@ public class UIAutoActivity extends Activity {
 //            obj.put("edgeFlags", event.getEdgeFlags());
 //        }
 //
-//        if (touchList == null) {
-//            touchList = new JSONArray();
+//        if (eventList == null) {
+//            eventList = new JSONArray();
 //        }
-//        touchList.add(obj);
+//        eventList.add(obj);
 //
-//        return touchList;
+//        return eventList;
 //    }
 
     //

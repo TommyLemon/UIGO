@@ -26,6 +26,7 @@ android {
 
 dependencies {
     api fileTree(dir: 'libs', include: ['*.jar'])
+    api 'com.android.support:recyclerview-v7:26.1.0'
     api 'com.squareup.okhttp:okhttp:2.1.0'
     api 'com.alibaba:fastjson:1.2.61'
     api 'com.github.APIJSON:apijson-orm:3.9.0'

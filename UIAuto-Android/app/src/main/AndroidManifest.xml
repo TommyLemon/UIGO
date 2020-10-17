@@ -24,7 +24,11 @@
         android:theme="@style/AppTheme" >
 
         <!-- 更好的适配全面屏 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>-->
-        <meta-data android:name="android.max_aspect" android:value="2.1" />
+        <meta-data
+            android:name="android.max_aspect"
+            android:value="2.1"
+            tools:replace="android:value"
+            />
 
         <activity
             android:name="apijson.demo.ui.SelectActivity"

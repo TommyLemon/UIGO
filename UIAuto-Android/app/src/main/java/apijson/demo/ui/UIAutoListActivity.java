@@ -59,7 +59,7 @@ public class UIAutoListActivity extends Activity implements HttpManager.OnHttpRe
 
     public static final String INTENT_IS_LOCAL = "INTENT_IS_LOCAL";
     public static final String INTENT_FLOW_ID = "INTENT_FLOW_ID";
-    public static final String INTENT_TOUCH_LIST = "INTENT_TOUCH_LIST";
+    public static final String INTENT_EVENT_LIST = "INTENT_EVENT_LIST";
     public static final String INTENT_TEMP_KEY = "INTENT_TEMP_KEY";
 
     public static final String RESULT_LIST = "RESULT_LIST";
@@ -100,7 +100,7 @@ public class UIAutoListActivity extends Activity implements HttpManager.OnHttpRe
     private boolean isTouch = false;
     private boolean isLocal = false;
     private boolean hasTempTouchList = false;
-    private JSONArray touchList = null;
+    private JSONArray eventList = null;
 
     private EditText etUIAutoListName;
     private TextView tvUIAutoListCount;
@@ -127,10 +127,10 @@ public class UIAutoListActivity extends Activity implements HttpManager.OnHttpRe
         flowId = getIntent().getLongExtra(INTENT_FLOW_ID, flowId);
         tempKey = getIntent().getStringExtra(INTENT_TEMP_KEY);
         if (StringUtil.isNotEmpty(tempKey, true)) {
-            touchList = JSON.parseArray(cache.getString(tempKey, null));
+            eventList = JSON.parseArray(cache.getString(tempKey, null));
         }
 
-        hasTempTouchList = touchList != null && touchList.isEmpty() == false;
+        hasTempTouchList = eventList != null && eventList.isEmpty() == false;
         isTouch = flowId > 0 || hasTempTouchList;
 
         cacheKey = isTouch ? CACHE_TOUCH : CACHE_FLOW;
@@ -139,24 +139,24 @@ public class UIAutoListActivity extends Activity implements HttpManager.OnHttpRe
 
             if (hasTempTouchList) {
                 if (allList == null || allList.isEmpty()) {
-                    allList = touchList;
+                    allList = eventList;
                 }
                 else {
-                    allList.addAll(touchList);
+                    allList.addAll(eventList);
                 }
                 cache.edit().remove(cacheKey).putString(cacheKey, JSON.toJSONString(allList)).apply();
             }
             else {
                 hasTempTouchList = true;
                 if (flowId == 0) {
-                    touchList = allList;
+                    eventList = allList;
                 } else {
-                    touchList = new JSONArray();
+                    eventList = new JSONArray();
                     if (allList != null) {
                         for (int i = 0; i < allList.size(); i++) {
                             JSONObject obj = allList.getJSONObject(i);
                             if (obj != null && obj.getLongValue("flowId") == flowId) {
-                                touchList.add(obj);
+                                eventList.add(obj);
                             }
                         }
                     }
@@ -180,7 +180,7 @@ public class UIAutoListActivity extends Activity implements HttpManager.OnHttpRe
         etUIAutoListName.setEnabled(isLocal || hasTempTouchList);
 //        llUIAutoListBar.setVisibility(isLocal ? View.GONE : View.VISIBLE);
 
-        int count = touchList == null ? 0 : touchList.size();
+        int count = eventList == null ? 0 : eventList.size();
         tvUIAutoListCount.setText((isLocal ? "0" : count + "/") + count);
         btnUIAutoListGet.setText(isLocal ? "post" : "get");
 
@@ -194,7 +194,7 @@ public class UIAutoListActivity extends Activity implements HttpManager.OnHttpRe
 //                        finish();
                     }
                     else {
-                        startActivityForResult(UIAutoListActivity.createIntent(context, obj == null ? 0 : obj.getLongValue("id")), REQUEST_TOUCH_LIST);
+                        startActivityForResult(UIAutoListActivity.createIntent(context, obj == null ? 0 : obj.getLongValue("id")), REQUEST_EVENT_LIST);
                     }
                 }
             }
@@ -203,7 +203,7 @@ public class UIAutoListActivity extends Activity implements HttpManager.OnHttpRe
 
 
         if (hasTempTouchList) {
-            showList(touchList);
+            showList(eventList);
         } else {
             send(btnUIAutoListGet);
         }
@@ -254,17 +254,33 @@ public class UIAutoListActivity extends Activity implements HttpManager.OnHttpRe
                         }
 
                         if (isTouch) {
-                            if (obj.getIntValue("type") == 1) {
+                            int type = obj.getIntValue("type");
+                            if (type == 0) {
+                                list.add("[" + state + "]  " + new Date(obj.getLongValue("time")).toLocaleString() + "    " + InputUtil.getActionName(obj.getIntValue("action"))
+                                        + "\npointerCount: " + obj.getString("pointerCount") + ",        x: " + obj.getString("x") + ", y: " + obj.getString("y")
+                                        + "\nsplitX: " + obj.getString("splitX") + ", splitY: " + obj.getString("splitY") + "           " + InputUtil.getOrientationName(obj.getIntValue("orientation"))
+                                );
+                            }
+                            else if (type == 1) {
                                 list.add("[" + state + "]  " + new Date(obj.getLongValue("time")).toLocaleString() + "    " + InputUtil.getActionName(obj.getIntValue("action"))
                                         + "\nrepeatCount: " + obj.getString("repeatCount") + ", scanCode: " + InputUtil.getScanCodeName(obj.getIntValue("scanCode")) + "         " + InputUtil.getKeyCodeName(obj.getIntValue("keyCode"))
                                         + "\nsplitX: " + obj.getString("splitX") + ", splitY: " + obj.getString("splitY") + "           " + InputUtil.getOrientationName(obj.getIntValue("orientation"))
                                 );
                             }
-                            else {
-                                list.add("[" + state + "]  " + new Date(obj.getLongValue("time")).toLocaleString() + "    " + InputUtil.getActionName(obj.getIntValue("action"))
-                                        + "\npointerCount: " + obj.getString("pointerCount") + ",        x: " + obj.getString("x") + ", y: " + obj.getString("y")
-                                        + "\nsplitX: " + obj.getString("splitX") + ", splitY: " + obj.getString("splitY") + "           " + InputUtil.getOrientationName(obj.getIntValue("orientation"))
+                            else if (type == 2) {
+                                list.add("[" + state + "]  " + new Date(obj.getLongValue("time")).toLocaleString() + "    " + InputUtil.getUIActionName(obj.getIntValue("action"))
+                                        + "\nactivity: " + obj.getString("activity") + "\nfragment: " + obj.getString("fragment")
                                 );
+                            }
+                            else if (type == 3) {
+                                list.add("[" + state + "]  " + new Date(obj.getLongValue("time")).toLocaleString() + "    " + InputUtil.getUIActionName(obj.getIntValue("action"))
+                                        + "\nurl: " + obj.getString("url")
+                                        + "\nheader: " + obj.getString("header")
+                                        + "\ncontent: " + obj.getString("content")
+                                );
+                            }
+                            else {
+                                list.add("[" + state + "]" + " " + new Date(obj.getLongValue("time")).toLocaleString() + "UNKNOWN");
                             }
                         } else {
                             list.add("[" + state + "]" + " " + new Date(obj.getLongValue("time")).toLocaleString() + "\n" + obj.getString("name"));
@@ -289,7 +305,7 @@ public class UIAutoListActivity extends Activity implements HttpManager.OnHttpRe
 
         if (hasTempTouchList == false) {
             hasTempTouchList = true;
-            cache.edit().remove(cacheKey).putString(cacheKey, JSON.toJSONString(touchList)).apply();
+            cache.edit().remove(cacheKey).putString(cacheKey, JSON.toJSONString(eventList)).apply();
         }
 
         new Thread(new Runnable() {
@@ -387,7 +403,7 @@ public class UIAutoListActivity extends Activity implements HttpManager.OnHttpRe
                     }
 
 
-                    if (touchList == null || touchList.isEmpty()) {
+                    if (eventList == null || eventList.isEmpty()) {
                         runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
@@ -397,8 +413,8 @@ public class UIAutoListActivity extends Activity implements HttpManager.OnHttpRe
                         });
                     }
                     else {
-                        for (int i = 0; i < touchList.size(); i++) {
-                            JSONObject input = touchList.getJSONObject(i);
+                        for (int i = 0; i < eventList.size(); i++) {
+                            JSONObject input = eventList.getJSONObject(i);
                             if (input == null || input.getLongValue("id") > 0) {
                                 continue;
                             }
@@ -508,13 +524,13 @@ public class UIAutoListActivity extends Activity implements HttpManager.OnHttpRe
         }
     }
 
-    public void recover(JSONArray touchList) {
+    public void recover(JSONArray eventList) {
         finish();
 
         new Handler().postDelayed(new Runnable() {
             @Override
             public void run() {
-                DemoApplication.getInstance().prepareRecover(touchList, UIAutoListActivity.this);
+                DemoApplication.getInstance().prepareRecover(eventList, UIAutoListActivity.this);
             }
         }, 1000);
     }
@@ -545,9 +561,9 @@ public class UIAutoListActivity extends Activity implements HttpManager.OnHttpRe
 
     @Override
     public void onBackPressed() {
-        if (touchList != null) {
-            for (int i = 0; i < touchList.size(); i++) {
-                JSONObject obj = touchList.getJSONObject(i);
+        if (eventList != null) {
+            for (int i = 0; i < eventList.size(); i++) {
+                JSONObject obj = eventList.getJSONObject(i);
                 if ("Remote".equals(statueMap.get(obj)) == false) {
                     Toast.makeText(this, R.string.remains_step_needs_uploading, Toast.LENGTH_SHORT).show();
                     lvUIAutoList.smoothScrollToPosition(i);
@@ -558,7 +574,7 @@ public class UIAutoListActivity extends Activity implements HttpManager.OnHttpRe
         super.onBackPressed();
     }
 
-    private static final int REQUEST_TOUCH_LIST = 1;
+    private static final int REQUEST_EVENT_LIST = 1;
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -568,7 +584,7 @@ public class UIAutoListActivity extends Activity implements HttpManager.OnHttpRe
             return;
         }
 
-        if (requestCode == REQUEST_TOUCH_LIST) {
+        if (requestCode == REQUEST_EVENT_LIST) {
             recover(data == null ? null : JSON.parseArray(data.getStringExtra(UIAutoListActivity.RESULT_LIST)));
         }
     }
