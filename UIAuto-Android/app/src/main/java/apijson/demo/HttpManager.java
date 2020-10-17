@@ -173,7 +173,7 @@ public class HttpManager {
                             .addHeader(KEY_TOKEN, token).url(url)
                             .post(requestBody).build();
 
-                    httpRequestString = toHttpJSONString(httpRequest.headers().toString(), request);
+                    httpRequestString = toHttpJSONString(httpRequest == null ? null : httpRequest.headers().toString(), request);
 
                     handler.post(new Runnable() {
                         @Override
@@ -210,7 +210,7 @@ public class HttpManager {
                     public void run() {
                         DemoApplication.getInstance().onHTTPEvent(
                                 InputUtil.HTTP_ACTION_RESPONSE, e == null ? ("" + responseCode) : e.getClass().getSimpleName()
-                                , url_, httpRequestString, toHttpJSONString(responseHeaders.toString(), responseBody)
+                                , url_, httpRequestString, toHttpJSONString(responseHeaders == null ? null : responseHeaders.toString(), responseBody)
                                 , getActivity(listener), getFragment(listener)
                         );
                     }

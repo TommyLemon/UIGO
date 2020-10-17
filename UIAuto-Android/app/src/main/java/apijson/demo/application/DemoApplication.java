@@ -194,7 +194,7 @@ public class DemoApplication extends Application {
     int windowY;
 
     ViewGroup vFloatCover;
-    ViewGroup vFloatController;
+    View vFloatController;
     View vFloatBall, vFloatBall2;
     ViewGroup vSplitX, vSplitX2;
     ViewGroup vSplitY, vSplitY2;
@@ -481,7 +481,7 @@ public class DemoApplication extends Application {
         // vFloatCover.setLayoutParams(lp);
 
         vFloatCover = (ViewGroup) getLayoutInflater().inflate(R.layout.ui_auto_cover_layout, null);
-        vFloatController = (ViewGroup) getLayoutInflater().inflate(R.layout.ui_auto_controller_layout, null);
+        vFloatController = getLayoutInflater().inflate(R.layout.ui_auto_controller_layout, null);
         vFloatBall = getLayoutInflater().inflate(R.layout.ui_auto_split_ball_layout, null);
         vFloatBall2 = getLayoutInflater().inflate(R.layout.ui_auto_split_ball_layout, null);
         vSplitX = (ViewGroup) getLayoutInflater().inflate(R.layout.ui_auto_split_x_layout, null);
