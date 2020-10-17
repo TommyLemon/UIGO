@@ -60,6 +60,7 @@ import java.util.List;
 
 import apijson.demo.InputUtil;
 import apijson.demo.R;
+import apijson.demo.StringUtil;
 import apijson.demo.ui.UIAutoActivity;
 import apijson.demo.ui.UIAutoListActivity;
 import unitauto.NotNull;
@@ -101,10 +102,18 @@ public class DemoApplication extends Application {
                 // dispatchEventToCurrentActivity(event);
                 step ++;
                 tvControllerCount.setText(step + "/" + allStep);
-
                 //根据递归链表来实现，能精准地实现两个事件之间的间隔，不受处理时间不一致，甚至卡顿等影响。还能及时终止
                 Node<InputEvent> curNode = (Node<InputEvent>) msg.obj;
                 currentEventNode = curNode;
+                onEventChange(step - 1, curNode.type);
+
+                if (curNode.disable) {
+                    msg = Message.obtain();
+                    msg.obj = curNode.next;
+                    handleMessage(msg);
+                    return;
+                }
+
 
                 //暂停，等待时机
                 if (curNode.type == InputUtil.EVENT_TYPE_UI || curNode.type == InputUtil.EVENT_TYPE_HTTP) {
@@ -123,11 +132,12 @@ public class DemoApplication extends Application {
                     tvControllerTime.setText(TIME_FORMAT.format(duration));
                 }
 
-                dispatchEventToCurrentActivity(curItem, false);
+                // 分拆为下面两条，都放在 UI 操作后，减少延迟 dispatchEventToCurrentActivity(curItem, false);
 
-                if (nextItem == null) {
+                if (nextNode == null) {
+                    dispatchEventToCurrentActivity(curItem, false);
+
                     tvControllerPlay.setText("recover");
-                    Toast.makeText(getInstance(), R.string.recover_finished, Toast.LENGTH_SHORT).show();
                     showCoverAndSplit(true, false, getCurrentActivity());
                     return;
                 }
@@ -152,14 +162,22 @@ public class DemoApplication extends Application {
 
                 msg = Message.obtain();
                 msg.obj = nextNode;
-
                 //暂停，等待时机
-                if (curItem == null || nextItem == null || nextNode.type == InputUtil.EVENT_TYPE_UI || nextNode.type == InputUtil.EVENT_TYPE_HTTP) {
-                    sendMessage(msg);
+                if (nextNode.disable == false && (nextNode.type == InputUtil.EVENT_TYPE_UI || nextNode.type == InputUtil.EVENT_TYPE_HTTP)) {
+                    // handleMessage(msg);
+                    step ++;
+                    tvControllerCount.setText(step + "/" + allStep);
+                    //根据递归链表来实现，能精准地实现两个事件之间的间隔，不受处理时间不一致，甚至卡顿等影响。还能及时终止
+                    currentEventNode = nextNode;
+                    onEventChange(step - 1, nextNode.type);
+
+                    dispatchEventToCurrentActivity(curItem, false);
                 }
                 else {
-                    sendMessageDelayed(msg, nextItem.getEventTime() - curItem.getEventTime());
+                    dispatchEventToCurrentActivity(curItem, false);
+                    sendMessageDelayed(msg, curItem == null || nextItem == null ? 100 : nextItem.getEventTime() - curItem.getEventTime());
                 }
+
             }
         }
     };
@@ -197,8 +215,6 @@ public class DemoApplication extends Application {
 
     @NotNull
     private JSONArray eventList = new JSONArray();
-    @NotNull
-    private JSONArray tagList = new JSONArray();
 
     private RecyclerView.Adapter tagAdapter;
 
@@ -397,7 +413,7 @@ public class DemoApplication extends Application {
 
         splitX = cache.getInt(SPLIT_X, 0);
         splitY = cache.getInt(SPLIT_Y, 0);
-        splitSize = cache.getInt(SPLIT_HEIGHT, dip2px(24));
+        splitSize = cache.getInt(SPLIT_HEIGHT, dip2px(30));
 
         if (splitX <= splitSize || splitX >= windowWidth - splitSize) {
             splitX = windowWidth - splitSize - dip2px(30);
@@ -491,22 +507,54 @@ public class DemoApplication extends Application {
             @Override
             public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
                 JSONObject item = getItem(position);
-                int index = eventList == null ? -1 : eventList.indexOf(item);
-                boolean isAdded = index >= 0;
+                int type = item.getIntValue("type");
+                boolean disable = item.getBooleanValue("disable");
+                int index = position + 1; // eventList == null ? -1 : eventList.indexOf(item);
+                // boolean isAdded = index >= 0;
 
-                ((TextView) holder.itemView).setText((index < 0 ? "" : index + " ") + InputUtil.getUIActionName(item.getIntValue("action")) + "\n" + item.getString("simpleName"));
-                ((TextView) holder.itemView).setTextColor(getResources().getColor(isAdded ? android.R.color.white : android.R.color.black));
+                String action = InputUtil.getActionName(type, item.getIntValue("action"));
+
+                String name;
+                if (type == InputUtil.EVENT_TYPE_UI) {
+                    name = item.getString("name");
+                    if (StringUtil.isEmpty(name, true)) {
+                        name = item.getString("fragment");
+                        if (StringUtil.isEmpty(name, true)) {
+                            name = item.getString("activity");
+                        }
+
+                        int ind = name == null ? -1 : name.lastIndexOf(".");
+                        if (ind >= 0) {
+                            name = name.substring(ind + 1);
+                        }
+                    }
+                    name = "\n" + name;
+                }
+                else if (type == InputUtil.EVENT_TYPE_HTTP) {
+                    name = " " + item.getString("format") + "\n" + item.getString("url");
+                }
+                else if (type == InputUtil.EVENT_TYPE_KEY) {
+                    name = "\n" + InputUtil.getKeyCodeName( item.getIntValue("keyCode"));
+                }
+                else {
+                    name = "\n[" + item.getIntValue("x") + ", " + item.getIntValue("y") + "]";
+                }
+
+                ((TextView) holder.itemView).setText((disable ? "" : index + ".  ") + action + name);
+                //位置数字区分，避免暗色背景显示不明显
+                ((TextView) holder.itemView).setTextColor(getResources().getColor(index == step ? android.R.color.holo_red_dark : android.R.color.white));
 
                 holder.itemView.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        if (isAdded) {
-                            removeEvent(item, getCurrentActivity());
-                        }
-                        else {
-                            addEvent(item, getCurrentActivity());
-                        }
+                        // if (isAdded) {
+                        //     // removeEvent(item);
+                        // }
+                        // else {
+                        //     // addEvent(item, getCurrentActivity());
+                        // }
 
+                        item.put("disable", ! disable);
                         onBindViewHolder(holder, position);
                     }
                 });
@@ -514,11 +562,13 @@ public class DemoApplication extends Application {
 
             @Override
             public int getItemCount() {
-                return tagList == null ? 0 : tagList.size();
+                // return tagList == null ? 0 : tagList.size();
+                return eventList == null ? 0 : eventList.size();
             }
             @NotNull
             JSONObject getItem(int position) {
-                return tagList == null || tagList.isEmpty() ? new JSONObject() : tagList.getJSONObject(position);
+                // return tagList == null || tagList.isEmpty() ? new JSONObject() : tagList.getJSONObject(position);
+                return eventList == null || eventList.isEmpty() ? new JSONObject() : eventList.getJSONObject(position);
             }
         };
         rvControllerTag.setAdapter(tagAdapter);
@@ -563,13 +613,23 @@ public class DemoApplication extends Application {
                         String cacheKey = UIAutoListActivity.CACHE_TOUCH;
                         if (eventList != null && eventList.isEmpty() == false) {
                             SharedPreferences cache = getSharedPreferences();
-                            JSONArray allList = null; // JSON.parseArray(cache.getString(cacheKey, null));
-
-                            if (allList == null || allList.isEmpty()) {
-                                allList = eventList;
-                            } else {
-                                allList.addAll(eventList);
+                            // JSONArray allList = null; // JSON.parseArray(cache.getString(cacheKey, null));
+                            //
+                            // if (allList == null || allList.isEmpty()) {
+                            //     allList = eventList;
+                            // } else {
+                            //     allList.addAll(eventList);
+                            // }
+                            JSONArray allList = new JSONArray();  //  eventList; //
+                            if (eventList != null) {
+                                for (int i = 0; i < eventList.size(); i++) {
+                                    JSONObject obj = eventList.getJSONObject(i);
+                                    if (obj != null && obj.getBooleanValue("disable") == false) {
+                                        allList.add(obj);
+                                    }
+                                }
                             }
+
                             cache.edit().remove(cacheKey).putString(cacheKey, JSON.toJSONString(allList)).commit();
                         }
 
@@ -657,9 +717,10 @@ public class DemoApplication extends Application {
             @Override
             public void onClick(View v) {
                 handler.removeMessages(0);
-                if (step > 0) {
+                if (step > 1) {
                     step --;
                     tvControllerCount.setText(step + "/" + allStep);
+                    onEventChange(step - 1, 0L);
                 }
 
                 Message msg = handler.obtainMessage();
@@ -712,6 +773,7 @@ public class DemoApplication extends Application {
                 if (step < allStep) {
                     step ++;
                     tvControllerCount.setText(step + "/" + allStep);
+                    onEventChange(step - 1, 0L);
                 }
 
                 Message msg = handler.obtainMessage();
@@ -807,16 +869,22 @@ public class DemoApplication extends Application {
 
 
 
-    public boolean onTouchEvent(MotionEvent event, Activity activity) {
-        addInputEvent(event, activity);
+    public boolean onTouchEvent(@NotNull MotionEvent event, @NotNull Activity activity) {
+        return onTouchEvent(event, activity, null);
+    }
+    public boolean onTouchEvent(@NotNull MotionEvent event, @NotNull Fragment fragment) {
+        return onTouchEvent(event, fragment.getActivity(), fragment);
+    }
+    public boolean onTouchEvent(@NotNull MotionEvent event, @NotNull Activity activity, Fragment fragment) {
+        addInputEvent(event, activity, fragment);
         return true;
     }
-    public boolean onKeyDown(int keyCode, KeyEvent event, Activity activity) {
-        addInputEvent(event, activity);
+    public boolean onKeyDown(int keyCode, @NotNull KeyEvent event, @NotNull Activity activity, Fragment fragment) {
+        addInputEvent(event, activity, fragment);
         return true;
     }
-    public boolean onKeyUp(int keyCode, KeyEvent event, Activity activity) {
-        addInputEvent(event, activity);
+    public boolean onKeyUp(int keyCode, @NotNull KeyEvent event, @NotNull Activity activity, Fragment fragment) {
+        addInputEvent(event, activity, fragment);
         return true;
     }
 
@@ -1151,6 +1219,10 @@ public class DemoApplication extends Application {
     private void prepareAndSendEvent(@NotNull JSONArray eventList) {
         for (int i = 0; i < eventList.size(); i++) {
             JSONObject obj = eventList.getJSONObject(i);
+            if (obj == null) { // || obj.getBooleanValue("disable")) {
+                continue;
+            }
+
             int type = obj.getIntValue("type");
             int action = obj.getIntValue("action");
 
@@ -1295,11 +1367,13 @@ public class DemoApplication extends Application {
 
             eventNode.id = obj.getLongValue("id");
             eventNode.flowId = obj.getLongValue("flowId");
-            eventNode.time = obj.getLongValue("time");
+            eventNode.disable = obj.getBooleanValue("disable");
             eventNode.type = type;
             eventNode.action = action;
+            eventNode.time = obj.getLongValue("time");
             eventNode.activity = obj.getString("activity");
             eventNode.fragment = obj.getString("fragment");
+            eventNode.url = obj.getString("url");
             eventNode.splitX = obj.getIntValue("splitX");
             eventNode.splitY = obj.getIntValue("splitY");
             eventNode.splitSize = obj.getIntValue("splitSize");
@@ -1317,76 +1391,127 @@ public class DemoApplication extends Application {
 
     /* 非触屏、非按键的 其它事件，例如 Activity.onResume, HTTP Response 等
      */
-    public void addTag(JSONObject event, Activity activity) {
-        tagList.add(event);
+    public void onEventChange(int position, int type) {
+        onEventChange(position, type == InputUtil.EVENT_TYPE_TOUCH ? 0L : 500L);
+    }
+    public void onEventChange(int position, long delayMillis) {
+        // tagAdapter.notifyItemRangeChanged(position - 1, position + 1);
         tagAdapter.notifyDataSetChanged();
+
+        if (position < 0 || position >= tagAdapter.getItemCount()) {
+            Log.e(TAG, "onEventChange  position < 0 || position >= tagAdapter.getItemCount() >> return;");
+            return;
+        }
+
         rvControllerTag.postDelayed(new Runnable() {
             @Override
             public void run() {
-                rvControllerTag.smoothScrollToPosition(tagAdapter.getItemCount() - 1);
+                rvControllerTag.smoothScrollToPosition(position);
             }
-        }, 500);
+        }, delayMillis);
     }
 
     public void onUIEvent(int action, Activity activity) {
         onUIEvent(action, activity, null);
     }
+    public void onUIEvent(int action, Fragment fragment) {
+        onUIEvent(action, null, fragment);
+    }
     public void onUIEvent(int action, Activity activity, Fragment fragment) {
         if (isSplitShowing == false) {
-            Log.e(TAG, "addInputEvent  isSplitShowing == false >> return null;");
+            Log.e(TAG, "onUIEvent  isSplitShowing == false >> return null;");
             return;
+        }
+
+        if (activity == null && fragment != null) {
+            activity = fragment.getActivity();
         }
 
         if (isRecover) {
             if (currentEventNode.type == InputUtil.EVENT_TYPE_UI && currentEventNode.action == action
-                    && activity.getClass().getName().equals(currentEventNode.activity)) {
+                    && (currentEventNode.activity == null || currentEventNode.activity.equals(activity == null ? null : activity.getClass().getName()))
+                    && (currentEventNode.fragment == null || currentEventNode.fragment.equals(fragment == null ? null : fragment.getClass().getName()))
+                    ) {
                 Message msg = handler.obtainMessage();
                 msg.obj = currentEventNode == null ? null : currentEventNode.next;
                 handler.sendMessage(msg);
             }
         }
         else {
-            JSONObject obj = new JSONObject(true);
+            JSONObject obj = newEvent(activity, fragment);
             obj.put("type", InputUtil.EVENT_TYPE_UI);
-            obj.put("activity", activity == null ? null : activity.getClass().getName());
-            obj.put("fragment", fragment == null ? null : fragment.getClass().getName());
-            obj.put("simpleName", activity.getClass().getSimpleName());
-
             obj.put("action", action);
+            obj.put("disable", true);  // action != InputUtil.UI_ACTION_RESUME);
 
-            addTag(obj, activity);
+            addEvent(obj);
+        }
+    }
 
-            if (action == InputUtil.UI_ACTION_RESUME) {
-                addEvent(obj, activity);
+    public void onHTTPEvent(int action, String format, String url, String request, String response, Activity activity) {
+        onHTTPEvent(action, format, url, request, response, activity, null);
+    }
+    public void onHTTPEvent(int action, String format, String url, String request, String response, Fragment fragment) {
+        onHTTPEvent(action, format, url, request, response, null, fragment);
+    }
+    public void onHTTPEvent(int action, String format, String url, String request, String response, Activity activity, Fragment fragment) {
+        if (isSplitShowing == false) {
+            Log.e(TAG, "onHTTPEvent  isSplitShowing == false >> return null;");
+            return;
+        }
+
+        if (activity == null && fragment != null) {
+            activity = fragment.getActivity();
+        }
+
+        if (isRecover) {
+            if (currentEventNode.type == InputUtil.EVENT_TYPE_HTTP && currentEventNode.action == action
+                    && (url != null && url.equals(currentEventNode.url))
+                    && (currentEventNode.activity == null || currentEventNode.activity.equals(activity == null ? null : activity.getClass().getName()))
+                    && (currentEventNode.fragment == null || currentEventNode.fragment.equals(fragment == null ? null : fragment.getClass().getName()))
+                    ) {
+                Message msg = handler.obtainMessage();
+                msg.obj = currentEventNode == null ? null : currentEventNode.next;
+                handler.sendMessage(msg);
             }
+        }
+        else {
+            JSONObject obj = newEvent(activity, fragment);
+            obj.put("type", InputUtil.EVENT_TYPE_HTTP);
+            obj.put("action", action);
+            obj.put("disable", true) ;  //action != InputUtil.HTTP_ACTION_RESPONSE);
+            obj.put("format", format);
+            obj.put("url", url);
+            obj.put("request", request);
+            obj.put("response", response);
+            obj.put("name", "");
+
+            addEvent(obj);
         }
     }
 
 
-    public JSONArray addInputEvent(InputEvent ie, Activity activity) {
-        if (isSplitShowing == false || vSplitX == null || vSplitY == null) {
+    public JSONObject addInputEvent(@NotNull InputEvent ie, @NotNull Activity activity) {
+        return addInputEvent(ie, activity, null);
+    }
+    public JSONObject addInputEvent(@NotNull InputEvent ie, @NotNull Fragment fragment) {
+        return addInputEvent(ie, null, fragment);
+    }
+
+    public JSONObject addInputEvent(@NotNull InputEvent ie, Activity activity, Fragment fragment) {
+        if (isSplitShowing == false || vSplitX == null || vSplitY == null || isRecover) {
             Log.e(TAG, "addInputEvent  isSplitShowing == false || vSplitX == null || vSplitY == null >> return null;");
-            return eventList;
+            return null;
         }
 
-        int splitX = (int) (vSplitX.getX() + vSplitX.getWidth()/2);
-        int splitY = (int) (vSplitY.getY() + vSplitY.getHeight()/2);
-        int orientation = activity == null ? Configuration.ORIENTATION_PORTRAIT : activity.getResources().getConfiguration().orientation;
+        if (activity == null && fragment != null) {
+            activity = fragment.getActivity();
+        }
 
-        JSONObject obj = new JSONObject(true);
-        obj.put("id", - System.currentTimeMillis());
-        obj.put("flowId", flowId);
-        obj.put("step", count);
-        obj.put("time", System.currentTimeMillis());
-        obj.put("orientation", orientation);
-        obj.put("splitX", splitX);
-        obj.put("splitY", splitY);
-        obj.put("windowWidth", windowWidth);
-        obj.put("windowHeight", windowHeight);
+        JSONObject obj = newEvent(activity, fragment);
 
         if (ie instanceof KeyEvent) {
             KeyEvent event = (KeyEvent) ie;
-            obj.put("type", 1);
+            obj.put("type", InputUtil.EVENT_TYPE_KEY);
 
             //虽然 KeyEvent 和 MotionEvent 都有，但都不在父类 InputEvent 中 <<<<<<<<<<<<<<<<<<
             obj.put("action", event.getAction());
@@ -1408,7 +1533,7 @@ public class DemoApplication extends Application {
         }
         else if (ie instanceof MotionEvent) {
             MotionEvent event = (MotionEvent) ie;
-            obj.put("type", 0);
+            obj.put("type", InputUtil.EVENT_TYPE_TOUCH);
 
             //虽然 KeyEvent 和 MotionEvent 都有，但都不在父类 InputEvent 中 <<<<<<<<<<<<<<<<<<
             obj.put("action", event.getAction());
@@ -1428,19 +1553,20 @@ public class DemoApplication extends Application {
             obj.put("pressure", event.getPressure());
             obj.put("xPrecision", event.getXPrecision());
             obj.put("yPrecision", event.getYPrecision());
-            obj.put("tagerCount", event.getPointerCount());
+            obj.put("pointerCount", event.getPointerCount());
             obj.put("edgeFlags", event.getEdgeFlags());
+
         }
 
-        return addEvent(obj, activity);
+        return addEvent(obj);
     }
 
     int count = 0;
 
-    public JSONArray addEvent(JSONObject event, Activity activity) {
-        if (event == null) {
+    public JSONObject addEvent(JSONObject event) {
+        if (event == null || isRecover) {
             Log.e(TAG, "addEvent  event == null >> return null;");
-            return eventList;
+            return event;
         }
 
         count ++;
@@ -1464,10 +1590,12 @@ public class DemoApplication extends Application {
             eventList.add(event);
         }
 
-        return eventList;
+        onEventChange(tagAdapter.getItemCount() - 1, event.getIntValue("type"));
+
+        return event;
     }
 
-    public JSONArray removeEvent(JSONObject event, Activity activity) {
+    public JSONArray removeEvent(JSONObject event) {
         if (event == null) {
             Log.e(TAG, "addEvent  event == null >> return null;");
             return null;
@@ -1493,8 +1621,51 @@ public class DemoApplication extends Application {
         return eventList;
     }
 
+    public JSONObject newEvent(@NotNull Activity activity) {
+        return newEvent(activity, null);
+    }
+    public JSONObject newEvent(@NotNull Fragment fragment) {
+        return newEvent(null, fragment);
+    }
+    public JSONObject newEvent(Activity activity, Fragment fragment) {
+        if (activity == null && fragment != null) {
+            activity = fragment.getActivity();
+        }
+        return newEvent(
+                activity == null ? Configuration.ORIENTATION_PORTRAIT : activity.getResources().getConfiguration().orientation,
+                activity == null ? null : activity.getClass().getName()
+                , fragment == null ? null : fragment.getClass().getName()
+        );
+    }
+    public JSONObject newEvent(int orientation, String activity, String fragment) {
+        int splitX = (int) (vSplitX.getX() + vSplitX.getWidth()/2);
+        int splitY = (int) (vSplitY.getY() + vSplitY.getHeight()/2);
+
+        JSONObject event = new JSONObject(true);
+        event.put("id", - System.currentTimeMillis());
+        event.put("flowId", flowId);
+        event.put("step", count);
+        event.put("time", System.currentTimeMillis());
+        event.put("orientation", orientation);
+        event.put("splitX", splitX);
+        event.put("splitY", splitY);
+        event.put("windowWidth", windowWidth);
+        event.put("windowHeight", windowHeight);
+        event.put("activity", activity);
+        event.put("fragment", fragment);
+
+        if (event.get("name") == null) {
+            String name = unitauto.StringUtil.isEmpty(fragment, true) ? activity : fragment;
+            int ind = name == null ? -1 : name.lastIndexOf(".");
+            event.put("name", ind < 0 ? name : name.substring(ind + 1));
+        }
+
+        return event;
+    }
+
     public void setEventList(JSONArray eventList) {
         this.eventList = eventList == null ? new JSONArray() : eventList;
+        onEventChange(0, 0L);
     }
 
     public void prepareRecover(JSONArray eventList, Activity activity) {
@@ -1547,9 +1718,10 @@ public class DemoApplication extends Application {
 
         long id;
         long flowId;
-        long time;
+        boolean disable;
         int type;
         int action;
+        long time;
         int splitX;
         int splitY;
         int splitSize;
@@ -1558,6 +1730,7 @@ public class DemoApplication extends Application {
         int orientation;
         String activity;
         String fragment;
+        String url;
 
         Node(Node<E> prev, E element, Node<E> next) {
             this.item = element;

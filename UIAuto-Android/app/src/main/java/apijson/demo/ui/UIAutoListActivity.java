@@ -255,32 +255,36 @@ public class UIAutoListActivity extends Activity implements HttpManager.OnHttpRe
 
                         if (isTouch) {
                             int type = obj.getIntValue("type");
-                            if (type == 0) {
-                                list.add("[" + state + "]  " + new Date(obj.getLongValue("time")).toLocaleString() + "    " + InputUtil.getActionName(obj.getIntValue("action"))
+                            int action = obj.getIntValue("action");
+
+                            if (type == InputUtil.EVENT_TYPE_TOUCH) {
+                                list.add("[" + state + "]  " + new Date(obj.getLongValue("time")).toLocaleString() + "    " + InputUtil.getTouchActionName(action)
                                         + "\npointerCount: " + obj.getString("pointerCount") + ",        x: " + obj.getString("x") + ", y: " + obj.getString("y")
                                         + "\nsplitX: " + obj.getString("splitX") + ", splitY: " + obj.getString("splitY") + "           " + InputUtil.getOrientationName(obj.getIntValue("orientation"))
                                 );
                             }
-                            else if (type == 1) {
-                                list.add("[" + state + "]  " + new Date(obj.getLongValue("time")).toLocaleString() + "    " + InputUtil.getActionName(obj.getIntValue("action"))
+                            else if (type == InputUtil.EVENT_TYPE_KEY) {
+                                list.add("[" + state + "]  " + new Date(obj.getLongValue("time")).toLocaleString() + "    " + InputUtil.getKeyActionName(action)
                                         + "\nrepeatCount: " + obj.getString("repeatCount") + ", scanCode: " + InputUtil.getScanCodeName(obj.getIntValue("scanCode")) + "         " + InputUtil.getKeyCodeName(obj.getIntValue("keyCode"))
-                                        + "\nsplitX: " + obj.getString("splitX") + ", splitY: " + obj.getString("splitY") + "           " + InputUtil.getOrientationName(obj.getIntValue("orientation"))
                                 );
                             }
-                            else if (type == 2) {
-                                list.add("[" + state + "]  " + new Date(obj.getLongValue("time")).toLocaleString() + "    " + InputUtil.getUIActionName(obj.getIntValue("action"))
-                                        + "\nactivity: " + obj.getString("activity") + "\nfragment: " + obj.getString("fragment")
+                            else if (type == InputUtil.EVENT_TYPE_UI) {
+                                String fragment = obj.getString("fragment");
+
+                                list.add("[" + state + "]  " + new Date(obj.getLongValue("time")).toLocaleString() + "    " + InputUtil.getUIActionName(action)
+                                        + "\nactivity: " + obj.getString("activity") + (StringUtil.isEmpty(fragment, true) ? "" : "\nfragment: " + fragment)
                                 );
                             }
-                            else if (type == 3) {
-                                list.add("[" + state + "]  " + new Date(obj.getLongValue("time")).toLocaleString() + "    " + InputUtil.getUIActionName(obj.getIntValue("action"))
-                                        + "\nurl: " + obj.getString("url")
-                                        + "\nheader: " + obj.getString("header")
-                                        + "\ncontent: " + obj.getString("content")
+                            else if (type == InputUtil.EVENT_TYPE_HTTP) {
+                                list.add("[" + state + "]  " + new Date(obj.getLongValue("time")).toLocaleString() + "    " + InputUtil.getHTTPActionName(action)
+                                        + "\nURL: " + obj.getString("url")
+                                        + "\n\nREQUEST: \n" + obj.getString("request")
+                                        + (action != InputUtil.HTTP_ACTION_RESPONSE ? "" : "\n\n\nRESPONSE: \n" + obj.getString("response"))
+                                        + "\n"
                                 );
                             }
                             else {
-                                list.add("[" + state + "]" + " " + new Date(obj.getLongValue("time")).toLocaleString() + "UNKNOWN");
+                                list.add("[" + state + "]" + " " + new Date(obj.getLongValue("time")).toLocaleString() + "UNKNOWN !!!");
                             }
                         } else {
                             list.add("[" + state + "]" + " " + new Date(obj.getLongValue("time")).toLocaleString() + "\n" + obj.getString("name"));
@@ -299,6 +303,8 @@ public class UIAutoListActivity extends Activity implements HttpManager.OnHttpRe
     private Map<JSONObject, String> statueMap = new HashMap<JSONObject, String>();
 
     public void send(View v) {
+        needLoading = true;
+
         final String fullUrl = StringUtil.getTrimedString(etUIAutoListUrl) + StringUtil.getString((TextView) v).toLowerCase();
 
         pbUIAutoList.setVisibility(View.VISIBLE);
@@ -364,19 +370,22 @@ public class UIAutoListActivity extends Activity implements HttpManager.OnHttpRe
                                 if (response.isSuccess()) {
 
                                     if (deviceId <= 0) {
-                                        deviceId = response.getJSONResponse("Device").getId();
+                                        JSONResponse resp = response.getJSONResponse("Device");
+                                        deviceId = resp == null ? 0 : resp.getId();
                                         if (deviceId > 0) {
                                             send(v);
                                         }
                                     }
                                     else if (systemId <= 0) {
-                                        systemId = response.getJSONResponse("System").getId();
+                                        JSONResponse resp = response.getJSONResponse("System");
+                                        systemId = resp == null ? 0 : resp.getId();
                                         if (systemId > 0) {
                                             send(v);
                                         }
                                     }
                                     else {
-                                        flowId = response.getJSONResponse("Flow").getId();
+                                        JSONResponse resp = response.getJSONResponse("Flow");
+                                        flowId = resp == null ? 0 : resp.getId();
                                         if (flowId > 0) {
                                             runOnUiThread(new Runnable() {
                                                 @Override
@@ -460,17 +469,27 @@ public class UIAutoListActivity extends Activity implements HttpManager.OnHttpRe
                                     if (response.isSuccess()) {
                                         remoteCount ++;
 
-                                        input.put("id", response.getJSONResponse("Input").getId());
+                                        JSONResponse resp = response.getJSONResponse("Input");
+                                        input.put("id", resp == null ? 0 : resp.getId());
                                         statueMap.put(input, "Remote");
                                     }
                                     else {
                                         statueMap.put(input, "Local");
-//                                        runOnUiThread(new Runnable() {
-//                                            @Override
-//                                            public void run() {
-//                                                Toast.makeText(context, "Upload Input failed! " + response.getMsg(), Toast.LENGTH_LONG).show();
-//                                            }
-//                                        });
+                                        runOnUiThread(new Runnable() {
+                                            @Override
+                                            public void run() {
+                                                try {
+                                                    Toast.makeText(context, "Upload Input failed! "
+                                                            + (StringUtil.isEmpty(response.getMsg(), true)
+                                                            ? (e == null ? "" : e.getMessage())
+                                                            : response.getMsg()
+                                                    ), Toast.LENGTH_LONG).show();
+                                                }
+                                                catch (Throwable e) {
+                                                    e.printStackTrace();
+                                                }
+                                            }
+                                        });
                                     }
                                     showList(array);
                                 }
@@ -559,18 +578,27 @@ public class UIAutoListActivity extends Activity implements HttpManager.OnHttpRe
     }
 
 
+    private boolean needLoading = false;
     @Override
     public void onBackPressed() {
-        if (eventList != null) {
-            for (int i = 0; i < eventList.size(); i++) {
+        int size = eventList == null ? 0 : eventList.size();
+        if (needLoading && size > 0) {
+
+            for (int i = 0; i < size; i++) {
                 JSONObject obj = eventList.getJSONObject(i);
                 if ("Remote".equals(statueMap.get(obj)) == false) {
                     Toast.makeText(this, R.string.remains_step_needs_uploading, Toast.LENGTH_SHORT).show();
-                    lvUIAutoList.smoothScrollToPosition(i);
+
+                    if (size >= 50 && i < size / 2) {
+                        lvUIAutoList.smoothScrollToPositionFromTop(i, 0);
+                    } else {
+                        lvUIAutoList.smoothScrollToPosition(i);
+                    }
                     return;
                 }
             }
         }
+
         super.onBackPressed();
     }
 

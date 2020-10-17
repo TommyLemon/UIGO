@@ -14,7 +14,8 @@ public class InputUtil {
     public static final int EVENT_TYPE_UI = 2;
     public static final int EVENT_TYPE_HTTP = 3;
 
-    public static String getActionName(int action) {
+
+    public static String getTouchActionName(int action) {
         String s = StringUtil.getTrimedString(MotionEvent.actionToString(action));
         return s.startsWith("ACTION_") ? s.substring("ACTION_".length()) : s;
 //        switch (action) {
@@ -39,6 +40,9 @@ public class InputUtil {
         return orientation == Configuration.ORIENTATION_LANDSCAPE ? "HORIZONTAL" : "VERTICAL";
     }
 
+    public static String getKeyActionName(int keyCode) {
+        return getTouchActionName(keyCode);
+    }
     public static String getKeyCodeName(int keyCode) {
         String s = StringUtil.getTrimedString(KeyEvent.keyCodeToString(keyCode));
         return s.startsWith("KEYCODE_") ? s.substring("KEYCODE_".length()) : s;
@@ -48,6 +52,25 @@ public class InputUtil {
         return "" + scanCode;  //它是 hardware key id  KeyEvent.keyCodeToString(scanCode);
     }
 
+
+    public static final int HTTP_ACTION_REQUEST = 0;
+    public static final int HTTP_ACTION_RESPONSE = 1;
+    public static final String HTTP_ACTION_REQUEST_NAME = "REQUEST";
+    public static final String HTTP_ACTION_RESPONSE_NAME = "RESPONSE";
+    public static final String HTTP_HEADER_NAME = "HEADER";
+    public static final String HTTP_CONTENT_NAME = "CONTENT";
+
+    public static final String[] HTTP_ACTION_NAMES = new String[] {
+            HTTP_ACTION_REQUEST_NAME, HTTP_ACTION_RESPONSE_NAME
+    };
+    public static final List<String> HTTP_ACTION_NAME_LIST = Arrays.asList(HTTP_ACTION_NAMES);
+
+    public static int getHTTPActionCode(String action) {
+        return HTTP_ACTION_NAME_LIST.indexOf(action);
+    }
+    public static String getHTTPActionName(int action) {
+        return HTTP_ACTION_NAME_LIST.get(action);
+    }
 
 
 
@@ -92,4 +115,16 @@ public class InputUtil {
     }
 
 
+    public static String getActionName(int type, int action) {
+        switch (type) {
+            case EVENT_TYPE_KEY:
+                return getKeyActionName(action);
+            case EVENT_TYPE_UI:
+                return getUIActionName(action);
+            case EVENT_TYPE_HTTP:
+                return getHTTPActionName(action);
+            default:
+                return getTouchActionName(action);
+        }
+    }
 }

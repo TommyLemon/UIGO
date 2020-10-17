@@ -296,7 +296,7 @@ public class UIAutoActivity extends Activity {
 //                float splitY = floatSplitY.getY() + rlUIAutoSplitY.getHeight()/2;
 //                float relativeY = event.getY() <= splitY ? event.getY() : (event.getY() - screenHeight);
 //
-//                tvTouch.setText(Calendar.getInstance().getTime().toLocaleString() +  "   " + InputUtil.getActionName(event.getAction()) + "\nx:" + event.getX() + "; y:" + event.getY() + "; relativeY: " + relativeY + "; pointerCount: " + event.getPointerCount() + "\n" + s);
+//                tvTouch.setText(Calendar.getInstance().getTime().toLocaleString() +  "   " + InputUtil.getTouchActionName(event.getAction()) + "\nx:" + event.getX() + "; y:" + event.getY() + "; relativeY: " + relativeY + "; pointerCount: " + event.getPointerCount() + "\n" + s);
 ////                Toast.makeText(context, "vTouch.action:" + (event.getAction()) + "; x:" + event.getX() + "; y:" + event.getY(), Toast.LENGTH_SHORT).show();
 //
 ////死循环                llTouch.dispatchTouchEvent(event);

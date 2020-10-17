@@ -6,7 +6,7 @@
     android:minHeight="24dp"
     android:gravity="center"
     android:textSize="8sp"
-    android:textColor="@android:color/black"
+    android:textColor="@android:color/white"
     android:paddingLeft="2dp"
     android:paddingRight="2dp"
     android:paddingTop="0dp"
