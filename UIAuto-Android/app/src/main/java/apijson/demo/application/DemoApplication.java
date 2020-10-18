@@ -101,32 +101,24 @@ public class DemoApplication extends Application {
                 //
                 // MotionEvent event = (MotionEvent) msg.obj;
                 // dispatchEventToCurrentActivity(event);
-                step ++;
-                tvControllerCount.setText(step + "/" + allStep);
+
                 //根据递归链表来实现，能精准地实现两个事件之间的间隔，不受处理时间不一致，甚至卡顿等影响。还能及时终止
                 Node<InputEvent> curNode = (Node<InputEvent>) msg.obj;
                 currentEventNode = curNode;
-                onEventChange(step - 1, curNode.type);
 
-                // if (curNode.disable) {
-                //     msg = new Message();
-                //     msg.obj = curNode.next;
-                //     handleMessage(msg);
-                //     // sendMessageDelayed(msg, 50);
-                //     return;
-                // }
-
-                while (curNode.disable) {
+                while (curNode != null && curNode.disable) {
                     step ++;
                     curNode = curNode.next;
-                    if (curNode == null) {
-                        tvControllerCount.setText(step + "/" + allStep);
-                        onEventChange(step - 1, curNode.type);
+                }
 
-                        tvControllerPlay.setText("recover");
-                        showCoverAndSplit(true, false, getCurrentActivity());
-                        return;
-                    }
+                step ++;
+                tvControllerCount.setText(step + "/" + allStep);
+                onEventChange(step - 1, curNode == null ? 0 : curNode.type);
+
+                if (curNode == null) {
+                    tvControllerPlay.setText("recover");
+                    showCoverAndSplit(true, false, getCurrentActivity());
+                    return;
                 }
 
 
@@ -169,41 +161,17 @@ public class DemoApplication extends Application {
                 // 分拆为下面两条，都放在 UI 操作后，减少延迟
                 // dispatchEventToCurrentActivity(curItem, false);
 
-                if (nextNode == null) {
-                    dispatchEventToCurrentActivity(curItem, false);
-
-                    tvControllerPlay.setText("recover");
-                    showCoverAndSplit(true, false, getCurrentActivity());
-                    return;
-                }
-
-                while (nextNode.disable) {
+                while (nextNode != null && nextNode.disable) {
                     step ++;
                     nextNode = nextNode.next;
-                    if (nextNode == null) {
-                        tvControllerCount.setText(step + "/" + allStep);
-                        onEventChange(step - 1, nextNode.type);
-
-                        tvControllerPlay.setText("recover");
-                        showCoverAndSplit(true, false, getCurrentActivity());
-                        return;
-                    }
                 }
 
                 msg = new Message();
                 msg.obj = nextNode;
                 //暂停，等待时机
-                if (nextNode.type == InputUtil.EVENT_TYPE_UI || nextNode.type == InputUtil.EVENT_TYPE_HTTP) {
+                if (nextNode != null && (nextNode.type == InputUtil.EVENT_TYPE_UI || nextNode.type == InputUtil.EVENT_TYPE_HTTP)) {
                     handleMessage(msg);
-                    // dispatchEventToCurrentActivity(curItem, false);
-                    // step ++;
-                    // tvControllerCount.setText(step + "/" + allStep);
-                    // //根据递归链表来实现，能精准地实现两个事件之间的间隔，不受处理时间不一致，甚至卡顿等影响。还能及时终止
-                    // currentEventNode = nextNode;
-                    // onEventChange(step - 1, nextNode.type);
                     dispatchEventToCurrentActivity(curItem, false);
-
-                    // sendMessageDelayed(msg, 50);
                 }
                 else {
                     dispatchEventToCurrentActivity(curItem, false);
@@ -661,17 +629,17 @@ public class DemoApplication extends Application {
                             // }
 
 
-                            // JSONArray allList = eventList;
+                            JSONArray allList = eventList;
 
-                            JSONArray allList = new JSONArray();  //  eventList; //
-                            if (eventList != null) {
-                                for (int i = 0; i < eventList.size(); i++) {
-                                    JSONObject obj = eventList.getJSONObject(i);
-                                    if (obj != null && obj.getBooleanValue("disable") == false) {
-                                        allList.add(obj);
-                                    }
-                                }
-                            }
+                            // JSONArray allList = new JSONArray();  //  eventList; //
+                            // if (eventList != null) {
+                            //     for (int i = 0; i < eventList.size(); i++) {
+                            //         JSONObject obj = eventList.getJSONObject(i);
+                            //         if (obj != null && obj.getBooleanValue("disable") == false) {
+                            //             allList.add(obj);
+                            //         }
+                            //     }
+                            // }
 
                             cache.edit().remove(cacheKey).putString(cacheKey, JSON.toJSONString(allList)).commit();
                         }
@@ -1169,6 +1137,10 @@ public class DemoApplication extends Application {
     }
 
     public boolean dispatchEventToCurrentActivity(InputEvent ie, boolean record) {
+        if (ie == null) {
+            return false;
+        }
+
         activity = getCurrentActivity();
         if (activity != null) {
             if (ie instanceof MotionEvent) {
