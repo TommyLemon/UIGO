@@ -127,18 +127,18 @@ public class DemoApplication extends Application {
                     return;
                 }
 
-                Node<InputEvent> prevNode = curNode.prev;
-                Node<InputEvent> nextNode = curNode.next;
-
-                InputEvent prevItem = prevNode == null ? null : prevNode.item;
                 InputEvent curItem = curNode.item;
-                InputEvent nextItem = nextNode == null ? null : nextNode.item;
 
-                if (curItem != null && prevItem != null) {
-                    duration += (prevItem == null ? 0 : (curItem.getEventTime() - prevItem.getEventTime()));
+                Node<InputEvent> prevNode = curNode.prev;
+                InputEvent prevItem = prevNode == null ? null : prevNode.item;
+
+                if (prevNode != null) {
+                    duration += (prevItem == null || curItem == null
+                            ? (curNode.time - prevNode.time)
+                            : (curItem.getEventTime() - prevItem.getEventTime())
+                    );
                     tvControllerTime.setText(TIME_FORMAT.format(duration));
                 }
-
 
                 splitX = curNode.splitX;
                 splitY = curNode.splitY;
@@ -161,6 +161,7 @@ public class DemoApplication extends Application {
                 // 分拆为下面两条，都放在 UI 操作后，减少延迟
                 // dispatchEventToCurrentActivity(curItem, false);
 
+                Node<InputEvent> nextNode = curNode.next;
                 while (nextNode != null && nextNode.disable) {
                     step ++;
                     nextNode = nextNode.next;
@@ -171,11 +172,18 @@ public class DemoApplication extends Application {
                 //暂停，等待时机
                 if (nextNode != null && (nextNode.type == InputUtil.EVENT_TYPE_UI || nextNode.type == InputUtil.EVENT_TYPE_HTTP)) {
                     handleMessage(msg);
-                    dispatchEventToCurrentActivity(curItem, false);
+                    dispatchEventToCurrentActivity(curNode.item, false);
                 }
                 else {
-                    dispatchEventToCurrentActivity(curItem, false);
-                    sendMessageDelayed(msg, curItem == null || nextItem == null ? 0 : nextItem.getEventTime() - curItem.getEventTime());
+                    dispatchEventToCurrentActivity(curNode.item, false);
+
+                    InputEvent nextItem = nextNode == null ? null : nextNode.item;
+                    sendMessageDelayed(
+                            msg, nextNode == null ? 0 : (nextItem == null || curItem == null
+                                    ? (nextNode.time - curNode.time)
+                                    : (nextItem.getEventTime() - curItem.getEventTime())
+                            )
+                    );
                 }
 
             }
