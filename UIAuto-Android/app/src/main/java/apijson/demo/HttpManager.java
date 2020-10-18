@@ -17,8 +17,6 @@ package apijson.demo;
 import android.app.Activity;
 import android.content.Context;
 import android.os.AsyncTask;
-import android.os.Handler;
-import android.os.Looper;
 import android.support.v4.app.Fragment;
 import android.text.TextUtils;
 import android.util.Log;
@@ -137,7 +135,6 @@ public class HttpManager {
     //
     //	}
 
-    private Handler handler = new Handler(Looper.getMainLooper());
 
     public static final MediaType TYPE_JSON = MediaType.parse("application/json; charset=utf-8");
 
@@ -175,7 +172,7 @@ public class HttpManager {
 
                     httpRequestString = toHttpJSONString(httpRequest == null ? null : httpRequest.headers().toString(), request);
 
-                    handler.post(new Runnable() {
+                    DemoApplication.getInstance().post(new Runnable() {
                         @Override
                         public void run() {
                             DemoApplication.getInstance().onHTTPEvent(
@@ -205,7 +202,7 @@ public class HttpManager {
                 super.onPostExecute(e);
                 listener.onHttpResponse(0, responseBody, e);
 
-                handler.post(new Runnable() {
+                DemoApplication.getInstance().post(new Runnable() {
                     @Override
                     public void run() {
                         DemoApplication.getInstance().onHTTPEvent(

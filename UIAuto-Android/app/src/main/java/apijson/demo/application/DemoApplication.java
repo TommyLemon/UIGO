@@ -23,6 +23,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.RecyclerView;
@@ -181,6 +182,13 @@ public class DemoApplication extends Application {
             }
         }
     };
+
+    public void post(@NonNull Runnable r) {
+        handler.post(r);
+    }
+    public void postDelayed(@NonNull Runnable r, long delayMillis) {
+        handler.postDelayed(r, delayMillis);
+    }
 
 
 
@@ -1434,7 +1442,7 @@ public class DemoApplication extends Application {
                     ) {
                 Message msg = handler.obtainMessage();
                 msg.obj = currentEventNode == null ? null : currentEventNode.next;
-                handler.sendMessage(msg);
+                handler.sendMessageDelayed(msg, 500);
             }
         }
         else {
@@ -1471,14 +1479,14 @@ public class DemoApplication extends Application {
                     ) {
                 Message msg = handler.obtainMessage();
                 msg.obj = currentEventNode == null ? null : currentEventNode.next;
-                handler.sendMessage(msg);
+                handler.sendMessageDelayed(msg, 500);
             }
         }
         else {
             JSONObject obj = newEvent(activity, fragment);
             obj.put("type", InputUtil.EVENT_TYPE_HTTP);
             obj.put("action", action);
-            obj.put("disable", true) ;  //action != InputUtil.HTTP_ACTION_RESPONSE);
+            obj.put("disable", action != InputUtil.HTTP_ACTION_RESPONSE);
             obj.put("format", format);
             obj.put("url", url);
             obj.put("request", request);
@@ -1709,6 +1717,7 @@ public class DemoApplication extends Application {
 
         showCover(true, activity);
     }
+
 
 
     private static class Node<E> {
