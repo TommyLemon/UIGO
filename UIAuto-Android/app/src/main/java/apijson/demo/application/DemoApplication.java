@@ -108,11 +108,25 @@ public class DemoApplication extends Application {
                 currentEventNode = curNode;
                 onEventChange(step - 1, curNode.type);
 
-                if (curNode.disable) {
-                    msg = Message.obtain();
-                    msg.obj = curNode.next;
-                    handleMessage(msg);
-                    return;
+                // if (curNode.disable) {
+                //     msg = new Message();
+                //     msg.obj = curNode.next;
+                //     handleMessage(msg);
+                //     // sendMessageDelayed(msg, 50);
+                //     return;
+                // }
+
+                while (curNode.disable) {
+                    step ++;
+                    curNode = curNode.next;
+                    if (curNode == null) {
+                        tvControllerCount.setText(step + "/" + allStep);
+                        onEventChange(step - 1, curNode.type);
+
+                        tvControllerPlay.setText("recover");
+                        showCoverAndSplit(true, false, getCurrentActivity());
+                        return;
+                    }
                 }
 
 
@@ -133,15 +147,6 @@ public class DemoApplication extends Application {
                     tvControllerTime.setText(TIME_FORMAT.format(duration));
                 }
 
-                // 分拆为下面两条，都放在 UI 操作后，减少延迟 dispatchEventToCurrentActivity(curItem, false);
-
-                if (nextNode == null) {
-                    dispatchEventToCurrentActivity(curItem, false);
-
-                    tvControllerPlay.setText("recover");
-                    showCoverAndSplit(true, false, getCurrentActivity());
-                    return;
-                }
 
                 splitX = curNode.splitX;
                 splitY = curNode.splitY;
@@ -161,22 +166,48 @@ public class DemoApplication extends Application {
                     }
                 }
 
-                msg = Message.obtain();
+                // 分拆为下面两条，都放在 UI 操作后，减少延迟
+                // dispatchEventToCurrentActivity(curItem, false);
+
+                if (nextNode == null) {
+                    dispatchEventToCurrentActivity(curItem, false);
+
+                    tvControllerPlay.setText("recover");
+                    showCoverAndSplit(true, false, getCurrentActivity());
+                    return;
+                }
+
+                while (nextNode.disable) {
+                    step ++;
+                    nextNode = nextNode.next;
+                    if (nextNode == null) {
+                        tvControllerCount.setText(step + "/" + allStep);
+                        onEventChange(step - 1, nextNode.type);
+
+                        tvControllerPlay.setText("recover");
+                        showCoverAndSplit(true, false, getCurrentActivity());
+                        return;
+                    }
+                }
+
+                msg = new Message();
                 msg.obj = nextNode;
                 //暂停，等待时机
-                if (nextNode.disable == false && (nextNode.type == InputUtil.EVENT_TYPE_UI || nextNode.type == InputUtil.EVENT_TYPE_HTTP)) {
-                    // handleMessage(msg);
-                    step ++;
-                    tvControllerCount.setText(step + "/" + allStep);
-                    //根据递归链表来实现，能精准地实现两个事件之间的间隔，不受处理时间不一致，甚至卡顿等影响。还能及时终止
-                    currentEventNode = nextNode;
-                    onEventChange(step - 1, nextNode.type);
-
+                if (nextNode.type == InputUtil.EVENT_TYPE_UI || nextNode.type == InputUtil.EVENT_TYPE_HTTP) {
+                    handleMessage(msg);
+                    // dispatchEventToCurrentActivity(curItem, false);
+                    // step ++;
+                    // tvControllerCount.setText(step + "/" + allStep);
+                    // //根据递归链表来实现，能精准地实现两个事件之间的间隔，不受处理时间不一致，甚至卡顿等影响。还能及时终止
+                    // currentEventNode = nextNode;
+                    // onEventChange(step - 1, nextNode.type);
                     dispatchEventToCurrentActivity(curItem, false);
+
+                    // sendMessageDelayed(msg, 50);
                 }
                 else {
                     dispatchEventToCurrentActivity(curItem, false);
-                    sendMessageDelayed(msg, curItem == null || nextItem == null ? 100 : nextItem.getEventTime() - curItem.getEventTime());
+                    sendMessageDelayed(msg, curItem == null || nextItem == null ? 0 : nextItem.getEventTime() - curItem.getEventTime());
                 }
 
             }
@@ -314,7 +345,7 @@ public class DemoApplication extends Application {
             @Override
             public boolean dispatchGenericMotionEvent(MotionEvent event) {
 //				dispatchEventToCurrentActivity(event);
-                addInputEvent(event, activity);
+// 和 dispatchTouchEvent 重复                addInputEvent(event, activity);
                 return windowCallback.dispatchGenericMotionEvent(event);
             }
 
@@ -462,7 +493,7 @@ public class DemoApplication extends Application {
             @Override
             public void onActivityPaused(Activity activity) {
                 Log.v(TAG, "onActivityPaused  activity = " + activity.getClass().getName());
-                setCurrentActivity(activityList.isEmpty() ? null : activityList.get(activityList.size() - 1));
+                // setCurrentActivity(activityList.isEmpty() ? null : activityList.get(activityList.size() - 1));
                 onUIEvent(InputUtil.UI_ACTION_PAUSE, activity);
             }
 
@@ -628,6 +659,10 @@ public class DemoApplication extends Application {
                             // } else {
                             //     allList.addAll(eventList);
                             // }
+
+
+                            // JSONArray allList = eventList;
+
                             JSONArray allList = new JSONArray();  //  eventList; //
                             if (eventList != null) {
                                 for (int i = 0; i < eventList.size(); i++) {
@@ -1403,20 +1438,22 @@ public class DemoApplication extends Application {
         onEventChange(position, type == InputUtil.EVENT_TYPE_TOUCH ? 0L : 500L);
     }
     public void onEventChange(int position, long delayMillis) {
-        // tagAdapter.notifyItemRangeChanged(position - 1, position + 1);
-        tagAdapter.notifyDataSetChanged();
-
-        if (position < 0 || position >= tagAdapter.getItemCount()) {
-            Log.e(TAG, "onEventChange  position < 0 || position >= tagAdapter.getItemCount() >> return;");
-            return;
-        }
-
-        rvControllerTag.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                rvControllerTag.smoothScrollToPosition(position);
-            }
-        }, delayMillis);
+        // // tagAdapter.notifyItemRangeChanged(position - 1, position + 1);
+        // if (tagAdapter != null) {
+        //     tagAdapter.notifyDataSetChanged();
+        // }
+        //
+        // if (position < 0 || position >= tagAdapter.getItemCount()) {
+        //     Log.e(TAG, "onEventChange  position < 0 || position >= tagAdapter.getItemCount() >> return;");
+        //     return;
+        // }
+        //
+        // rvControllerTag.postDelayed(new Runnable() {
+        //     @Override
+        //     public void run() {
+        //         rvControllerTag.smoothScrollToPosition(position);
+        //     }
+        // }, delayMillis);
     }
 
     public void onUIEvent(int action, Activity activity) {
@@ -1436,7 +1473,7 @@ public class DemoApplication extends Application {
         }
 
         if (isRecover) {
-            if (currentEventNode.type == InputUtil.EVENT_TYPE_UI && currentEventNode.action == action
+            if (currentEventNode != null && currentEventNode.type == InputUtil.EVENT_TYPE_UI && currentEventNode.action == action
                     && (currentEventNode.activity == null || currentEventNode.activity.equals(activity == null ? null : activity.getClass().getName()))
                     && (currentEventNode.fragment == null || currentEventNode.fragment.equals(fragment == null ? null : fragment.getClass().getName()))
                     ) {
@@ -1472,7 +1509,7 @@ public class DemoApplication extends Application {
         }
 
         if (isRecover) {
-            if (currentEventNode.type == InputUtil.EVENT_TYPE_HTTP && currentEventNode.action == action
+            if (currentEventNode != null && currentEventNode.type == InputUtil.EVENT_TYPE_HTTP && currentEventNode.action == action
                     && (url != null && url.equals(currentEventNode.url))
                     && (currentEventNode.activity == null || currentEventNode.activity.equals(activity == null ? null : activity.getClass().getName()))
                     && (currentEventNode.fragment == null || currentEventNode.fragment.equals(fragment == null ? null : fragment.getClass().getName()))
@@ -1571,7 +1608,7 @@ public class DemoApplication extends Application {
 
     int count = 0;
 
-    public JSONObject addEvent(JSONObject event) {
+    public synchronized JSONObject addEvent(JSONObject event) {
         if (event == null || isRecover) {
             Log.e(TAG, "addEvent  event == null >> return null;");
             return event;
@@ -1591,19 +1628,19 @@ public class DemoApplication extends Application {
 
         // if (eventList == null) {
         //     eventList = new JSONArray();
+        // // }
+        // if (step > 0 && step < allStep) {
+        //     eventList.add(step - 1, event);
+        // } else {
+        eventList.add(event);
         // }
-        if (step > 0 && step < allStep) {
-            eventList.add(step - 1, event);
-        } else {
-            eventList.add(event);
-        }
 
         onEventChange(tagAdapter.getItemCount() - 1, event.getIntValue("type"));
 
         return event;
     }
 
-    public JSONArray removeEvent(JSONObject event) {
+    public synchronized JSONArray removeEvent(JSONObject event) {
         if (event == null) {
             Log.e(TAG, "addEvent  event == null >> return null;");
             return null;
