@@ -808,7 +808,7 @@
           var item
           for (var i = 0; i < hs.length; i++) {
             item = hs[i]
-            var index = item.indexOf('//')  //这里只支持单行注释，不用 removeComment 那种带多行的去注释方式
+            var index = item.lastIndexOf('  //')  // 不加空格会导致 http:// 被截断  ('//')  //这里只支持单行注释，不用 removeComment 那种带多行的去注释方式
             var item2 = index < 0 ? item : item.substring(0, index)
             item2 = item2.trim()
             if (item2.length <= 0) {
@@ -1462,14 +1462,13 @@
             }
             else {
               if (rpObj.Document != null && rpObj.Document.code == CODE_SUCCESS) {
-                App.remotes = []
-                App.showTestCase(true, false)
-
 
                 //自动生成随机配置（遍历 JSON，对所有可变值生成配置，排除 @key, key@, key() 等固定值）
                 var req = App.getRequest(vInput.value, {})
                 var config = StringUtil.trim(App.newRandomConfig(null, '', req))
                 if (config == '') {
+                  App.remotes = []
+                  App.showTestCase(true, false)
                   return;
                 }
 
@@ -1496,6 +1495,9 @@
                     vRandom.value = config
                   }
                   App.onResponse(url, res, err)
+
+                  App.remotes = []
+                  App.showTestCase(true, false)
                 })
               }
             }
@@ -4293,7 +4295,7 @@
           const lineItem = lines[i] || '';
 
           // remove comment
-          const commentIndex = lineItem.indexOf('//');
+          const commentIndex = lineItem.lastIndexOf('  //'); //  -1; // eval 本身支持注释 eval('1 // test') = 1 lineItem.indexOf('  //');
           const line = commentIndex < 0 ? lineItem : lineItem.substring(0, commentIndex).trim();
 
           if (line.length <= 0) {
