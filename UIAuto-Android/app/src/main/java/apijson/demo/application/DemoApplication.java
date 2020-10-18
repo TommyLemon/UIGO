@@ -162,10 +162,12 @@ public class DemoApplication extends Application {
                 // dispatchEventToCurrentActivity(curItem, false);
 
                 Node<InputEvent> nextNode = curNode.next;
+                long firstTime = nextNode == null ? 0 : nextNode.time;
                 while (nextNode != null && nextNode.disable) {
                     step ++;
                     nextNode = nextNode.next;
                 }
+                long lastTime = nextNode == null ? 0 : nextNode.time;
 
                 msg = new Message();
                 msg.obj = nextNode;
@@ -179,10 +181,10 @@ public class DemoApplication extends Application {
 
                     InputEvent nextItem = nextNode == null ? null : nextNode.item;
                     sendMessageDelayed(
-                            msg, nextNode == null ? 0 : (nextItem == null || curItem == null
+                            msg, (nextNode == null ? 0 : (nextItem == null || curItem == null
                                     ? (nextNode.time - curNode.time)
                                     : (nextItem.getEventTime() - curItem.getEventTime())
-                            )
+                            )) + (lastTime <= 0 || firstTime <= 0 ? 0 : lastTime - firstTime)  // 补偿 diable 项跳过的等待时间
                     );
                 }
 
@@ -1418,22 +1420,22 @@ public class DemoApplication extends Application {
         onEventChange(position, type == InputUtil.EVENT_TYPE_TOUCH ? 0L : 500L);
     }
     public void onEventChange(int position, long delayMillis) {
-        // // tagAdapter.notifyItemRangeChanged(position - 1, position + 1);
-        // if (tagAdapter != null) {
-        //     tagAdapter.notifyDataSetChanged();
-        // }
-        //
-        // if (position < 0 || position >= tagAdapter.getItemCount()) {
-        //     Log.e(TAG, "onEventChange  position < 0 || position >= tagAdapter.getItemCount() >> return;");
-        //     return;
-        // }
-        //
-        // rvControllerTag.postDelayed(new Runnable() {
-        //     @Override
-        //     public void run() {
-        //         rvControllerTag.smoothScrollToPosition(position);
-        //     }
-        // }, delayMillis);
+        if (tagAdapter != null) {
+            // tagAdapter.notifyItemRangeChanged(position - 1, position + 1);
+            tagAdapter.notifyDataSetChanged();
+        }
+
+        if (position < 0 || position >= tagAdapter.getItemCount()) {
+            Log.e(TAG, "onEventChange  position < 0 || position >= tagAdapter.getItemCount() >> return;");
+            return;
+        }
+
+        rvControllerTag.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                rvControllerTag.smoothScrollToPosition(position);
+            }
+        }, delayMillis);
     }
 
     public void onUIEvent(int action, Activity activity) {
@@ -1466,7 +1468,7 @@ public class DemoApplication extends Application {
             JSONObject obj = newEvent(activity, fragment);
             obj.put("type", InputUtil.EVENT_TYPE_UI);
             obj.put("action", action);
-            obj.put("disable", true);  // action != InputUtil.UI_ACTION_RESUME);
+            obj.put("disable", true);  //总是导致停止后续动作，尤其是返回键相关的事件  action != InputUtil.UI_ACTION_RESUME);
 
             addEvent(obj);
         }
