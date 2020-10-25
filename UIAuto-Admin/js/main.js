@@ -358,6 +358,11 @@
 
 // APIJSON <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
+  var OPERATE_TYPE_RECORD = 'RECORD'
+  var OPERATE_TYPE_REVIEW = 'REVIEW'
+  var OPERATE_TYPE_REPLAY = 'REPLAY'
+
+
   var REQUEST_TYPE_PARAM = 'PARAM'  // GET ?a=1&b=c&key=value
   var REQUEST_TYPE_FORM = 'FORM'  // POST x-www-form-urlencoded
   var REQUEST_TYPE_DATA = 'DATA'  // POST form-data
@@ -511,7 +516,7 @@
       tests: { '-1':{}, '0':{}, '1':{}, '2': {} },
       crossProcess: '交叉账号:已关闭',
       testProcess: '机器学习:已关闭',
-      randomTestTitle: '随机测试 Random Test',
+      randomTestTitle: '步骤 Step',
       testRandomCount: 1,
       testRandomProcess: '',
       compareColor: '#0000',
@@ -556,8 +561,8 @@
         id: 0,
         balance: null //点击更新提示需要判空 0.00
       },
-      type: '',
-      types: [ REQUEST_TYPE_JSON ],
+      type: OPERATE_TYPE_RECORD,
+      types: [ OPERATE_TYPE_RECORD, OPERATE_TYPE_REVIEW, OPERATE_TYPE_REPLAY ],
       host: 'apijson.demo.server.MathUtil.', // 'apijson.demo.server.DemoFunction.',
       branch: 'countArray',
       database: 'MYSQL',// 'POSTGRESQL',
@@ -770,7 +775,7 @@
         url = url || this.getUrl()
         var index = url.lastIndexOf('.')
         if (index <= 0) {
-          throw new Error('必须要有类名！完整的 URL 必须符合格式 package.Class.method ！')
+          throw new Error('必须要有类名！完整的 URL 必须符合格式 package.Class.name ！')
         }
         url = url.substring(0, index)
         index = url.lastIndexOf('.')
@@ -787,7 +792,7 @@
         url = url || this.getUrl()
         var index = url.lastIndexOf('.')
         if (index <= 0) {
-          throw new Error('必须要有类名！完整的 URL 必须符合格式 package.Class.method ！')
+          throw new Error('必须要有类名！完整的 URL 必须符合格式 package.Class.name ！')
         }
         url = url.substring(0, index)
         index = url.lastIndexOf('.')
@@ -1064,7 +1069,7 @@
       deleteDoc: function () {
         var isDeleteRandom = this.isDeleteRandom
         var item = (isDeleteRandom ? this.currentRandomItem : this.currentDocItem) || {}
-        var doc = (isDeleteRandom ? item.Random : item.Method) || {}
+        var doc = (isDeleteRandom ? item.Output : item.Input) || {}
 
         var type = isDeleteRandom ? '随机配置' : '方法'
         if (doc.id == null) {
@@ -1085,16 +1090,16 @@
         var url = this.server + '/delete'
         var req = isDeleteRandom ? {
           format: false,
-          'Random': {
+          'Output': {
             'id': doc.id
           },
-          'tag': 'Random'
+          'tag': 'Output'
         } : {
           format: false,
-          'Method': {
+          'Input': {
             'id': doc.id
           },
-          'tag': 'Method'
+          'tag': 'Input'
         }
         this.request(true, REQUEST_TYPE_JSON, url, req, {}, function (url, res, err) {
           App.onResponse(url, res, err)
@@ -1102,8 +1107,8 @@
           var rpObj = res.data || {}
 
           if (isDeleteRandom) {
-            if (rpObj.Random != null && rpObj.Random.code == CODE_SUCCESS) {
-              if (((item.Random || {}).toId || 0) <= 0) {
+            if (rpObj.Output != null && rpObj.Output.code == CODE_SUCCESS) {
+              if (((item.Output || {}).toId || 0) <= 0) {
                 App.randoms.splice(item.index, 1)
               }
               else {
@@ -1112,7 +1117,7 @@
               // App.showRandomList(true, App.currentRemoteItem)
             }
           } else {
-            if (rpObj.Method != null && rpObj.Method.code == CODE_SUCCESS) {
+            if (rpObj.Input != null && rpObj.Input.code == CODE_SUCCESS) {
               App.remotes.splice(item.index, 1)
               App.showTestCase(true, App.isLocalShow)
             }
@@ -1165,7 +1170,7 @@
             return
           }
 
-          if (isRandom && (((item || {}).Random || {}).id || 0) <= 0) {
+          if (isRandom && (((item || {}).Output || {}).id || 0) <= 0) {
             this.randomSubs.splice(index, 1)
             return
           }
@@ -1179,7 +1184,7 @@
         this.currentRandomItem = item
         this.isRandomListShow = false
         this.isRandomSubListShow = false
-        var random = (item || {}).Random || {}
+        var random = (item || {}).Output || {}
         this.randomTestTitle = random.name
         this.testRandomCount = random.count
         vRandom.value = StringUtil.get(random.config)
@@ -1197,27 +1202,18 @@
       // 根据测试用例/历史记录恢复数据
       restoreRemote: function (item, test) {
         this.currentRemoteItem = item
-        this.restore((item || {}).Method, ((item || {}).TestRecord || {}).response, true, test)
+        this.restore((item || {}).Flow, ((item || {}).TestRecord || {}).response, true, test)
       },
       // 根据历史恢复数据
       restore: function (item, response, isRemote, test) {
         item = item || {}
         // localforage.getItem(item.key || '', function (err, value) {
 
-          App.type = item.type;
+          App.type = OPERATE_TYPE_REVIEW;
           App.urlComment =  ': ' + item.type + CodeUtil.getComment(StringUtil.get(item.detail), false, '  ');
           App.requestVersion = item.version;
 
-          var host = StringUtil.get(App.host)
-          var url = item.package + '.' + item.class + '.' + item.method
-          if (url.startsWith(host.trim())) {
-            var branch = url.substring(host.endsWith(' ') ? host.length - 1 : host.length)
-            vUrl.value = branch
-          }
-          else {
-            App.host = ''
-            vUrl.value = url
-          }
+          vUrl.value = item.name
           vUrlComment.value = isSingle || StringUtil.isEmpty(App.urlComment, true)
             ? '' : vUrl.value + App.urlComment;
 
@@ -1386,7 +1382,7 @@
             return
           }
           var isExportRandom = App.isExportRandom
-          var did = ((App.currentRemoteItem || {}).Method || {}).id
+          var did = ((App.currentRemoteItem || {}).Input || {}).id
           if (isExportRandom && did == null) {
             alert('请先共享测试用例！')
             return
@@ -1415,40 +1411,30 @@
           var url = App.server + '/post'
           var req = isExportRandom ? {
             format: false,
-            'Random': {
+            'Input': {
               toId: 0,
               documentId: did,
               count: App.requestCount,
               name: App.exTxt.name,
               config: vRandom.value
             },
-            'TestRecord': {
+            'Output': {
               'response': JSON.stringify(currentResponse),
               'standard': isML ? JSON.stringify(stddObj) : null
             },
-            'tag': 'Random'
+            'tag': 'Input'
           } : {
             format: false,
-            'Method': {
-              'testAccountId': currentAccountId,
-              'method': App.getMethod(),
+            'Flow': {
+              'name': App.getMethod(),
               'detail': App.exTxt.name,
-              'type': (currentResponse.type || App.type) || null,
-              'genericType': (currentResponse.type || App.type) || null,
-              'class': App.getClass(),
-              'package': App.getPackage(),
-              'methodArgs': JSON.stringify(currentResponse.methodArgs),
-              'genericMethodArgs': JSON.stringify(App.getRequest(vInput.value, {}).methodArgs),
-              'request': App.toDoubleJSON(inputted)
+              'systemId': 1,
+              'deviceId': 1,
+              'imei': 1234,
+              'screencapUrl': "http://test.url",
+              'log': (currentResponse.type || App.type) || null,
             },
-            'TestRecord': {
-              'randomId': 0,
-              'host': App.getBaseUrl(),
-              'testAccountId': currentAccountId,
-              'response': JSON.stringify(currentResponse),
-              'standard': isML ? JSON.stringify(stddObj) : null
-            },
-            'tag': 'Method'
+            'tag': 'Flow'
           }
 
           App.request(true, REQUEST_TYPE_JSON, url, req, {}, function (url, res, err) {
@@ -1457,13 +1443,13 @@
             var rpObj = res.data || {}
 
             if (isExportRandom) {
-              if (rpObj.Random != null && rpObj.Random.code == CODE_SUCCESS) {
+              if (rpObj.Output != null && rpObj.Output.code == CODE_SUCCESS) {
                 App.randoms = []
-                App.showRandomList(true, (App.currentRemoteItem || {}).Method)
+                App.showRandomList(true, (App.currentRemoteItem || {}).Input)
               }
             }
             else {
-              if (rpObj.Method != null && rpObj.Method.code == CODE_SUCCESS) {
+              if (rpObj.Input != null && rpObj.Input.code == CODE_SUCCESS) {
 
                 //自动生成随机配置（遍历 JSON，对所有可变值生成配置，排除 @key, key@, key() 等固定值）
                 var config = StringUtil.trim(App.newRandomConfig(null, '', App.getRequest(vInput.value, {})))
@@ -1475,8 +1461,8 @@
 
                 App.request(true, REQUEST_TYPE_JSON, App.server + '/post', {
                   format: false,
-                  'Random': {
-                    documentId: rpObj.Method.id,
+                  'Output': {
+                    documentId: rpObj.Input.id,
                     count: App.requestCount,
                     name: '默认配置(上传测试用例时自动生成)',
                     config: config
@@ -1485,9 +1471,9 @@
                     host: App.getBaseUrl(),
                     response: ''
                   },
-                  'tag': 'Random'
+                  'tag': 'Output'
                 }, {}, function (url, res, err) {
-                  if (res.data != null && res.data.Random != null && res.data.Random.code == CODE_SUCCESS) {
+                  if (res.data != null && res.data.Output != null && res.data.Output.code == CODE_SUCCESS) {
                     alert('已自动生成并上传随机配置:\n' + config)
                     App.isRandomListShow = true
                   }
@@ -1756,7 +1742,7 @@
           var currentAccountId = App.getCurrentAccountId()
           App.request(true, REQUEST_TYPE_JSON, App.server + '/post', {
             format: false,
-            'Method': {
+            'Input': {
               'userId': App.User.id,
               'testAccountId': currentAccountId,
               'package': classItem.package == null ? null : classItem.package,  // .replace(/[.]/g, '/'),
@@ -1779,10 +1765,10 @@
               'testAccountId': currentAccountId,
               'response': ''
             },
-            'tag': 'Method'
+            'tag': 'Input'
           }, {}, function (url, res, err) {
             App.onResponse(url, res, err)
-            if (res.data != null && res.data.Method != null && res.data.Method.code == CODE_SUCCESS) {
+            if (res.data != null && res.data.Input != null && res.data.Input.code == CODE_SUCCESS) {
               App.uploadDoneCount ++
             } else {
               App.uploadFailCount ++
@@ -2075,7 +2061,7 @@
                 if (item == null) {
                   continue
                 }
-                var d = item.Method || {}
+                var d = item.Input || {}
                 this.compareResponse(allCount, testCases, i, item, (tests[d.id] || {})[0], false, accountIndex, true)
               }
             }
@@ -2086,55 +2072,17 @@
 
           var search = StringUtil.isEmpty(this.testCaseSearch, true) ? null : StringUtil.trim(this.testCaseSearch)
 
-
-          var host = StringUtil.get(App.host);
-          var pkg = App.getPackage()
-
-          var packagePrefix = ''
-          var classPrefix = ''
-          if (host.length > pkg.length) {
-            packagePrefix = pkg
-            classPrefix = host.substring(pkg.length)
-            var index = classPrefix.indexOf('.')
-            if (index == 0) {
-              classPrefix = classPrefix.substring(1)
-              index = classPrefix.indexOf('.')
-            }
-            if (index >= 0) {
-              classPrefix = classPrefix.substring(0, index)
-            }
-            classPrefix = classPrefix.trim()
-          }
-          packagePrefix = packagePrefix.trim()
-
           var req = {
             format: false,
             '[]': {
               'count': this.testCaseCount || 100, //200 条测试直接卡死 0,
               'page': this.testCasePage || 0,
-              'Method': {
-                '@order': 'date-',
+              'Flow': {
+                '@order': 'time-',
                 'userId{}': [0, App.User.id],
-                'arguments()': 'getMethodArguments(genericMethodArgs)',
-                'defination()': 'getMethodDefination(method,arguments,type,exceptions,null)',
-                'request()': 'getMethodRequest()',
-                'package$': StringUtil.isEmpty(packagePrefix) ? null : packagePrefix + '%',
-                'class$': StringUtil.isEmpty(classPrefix) ? null : classPrefix + '%',
-                'package*~': search,
-                'class*~': search,
-                'method*~': search,
-                'type*~': search,
+                'name$*~': search,
                 'detail*~': search,
-                '@combine': StringUtil.isEmpty(search) ? null : 'package*~,class*~,method*~,type*~,detail*~'
-              },
-              'TestRecord': {
-                'documentId@': '/Method/id',
-		'userId': App.User.id,
-                'testAccountId': App.getCurrentAccountId(),
-                'randomId': 0,
-                '@order': 'date-',
-                '@column': 'id,userId,documentId,response' + (App.isMLEnabled ? ',standard' : ''),
-                '@having': App.isMLEnabled ? 'length(standard)>2' : null  //用 MySQL 5.6   '@having': App.isMLEnabled ? 'json_length(standard)>0' : null
+                '@combine': StringUtil.isEmpty(search) ? null : 'name$*~,detail*~'
               }
             },
             '@role': 'LOGIN'
@@ -2185,32 +2133,32 @@
             '[]': {
               'count': (isSub ? this.randomSubCount : this.randomCount) || 100,
               'page': (isSub ? this.randomSubPage : this.randomPage) || 0,
-              'Random': {
+              'Output': {
                 'toId': isSub ? item.id : 0,
                 'documentId': isSub ? null : item.id,
-                '@order': "date-",
+                '@order': "time-",
                 'name$': search
               },
               'TestRecord': {
-                'randomId@': '/Random/id',
+                'randomId@': '/Output/id',
                 'testAccountId': App.getCurrentAccountId(),
                 'host': App.getBaseUrl(),
-                '@order': 'date-'
+                '@order': 'time-'
               },
               '[]': isSub ? null : {
                 'count': this.randomSubCount || 100,
                 'page': this.randomSubPage || 0,
-                'Random': {
-                  'toId@': '[]/Random/id',
+                'Output': {
+                  'toId@': '[]/Output/id',
                   'documentId': item.id,
-                  '@order': "date-",
+                  '@order': "time-",
                   'name$': subSearch
                 },
                 'TestRecord': {
-                  'randomId@': '/Random/id',
+                  'randomId@': '/Output/id',
                   'testAccountId': App.getCurrentAccountId(),
                   'host': App.getBaseUrl(),
-                  '@order': 'date-'
+                  '@order': 'time-'
                 }
               }
             }
@@ -2700,12 +2648,7 @@
       /**获取显示的请求类型名称
        */
       getTypeName: function (type) {
-        var ts = this.types
-        var t = type || REQUEST_TYPE_JSON
-        if (ts == null || ts.length <= 1 || (ts.length <= 2 && ts.indexOf(REQUEST_TYPE_PARAM) >= 0 && ts.indexOf(REQUEST_TYPE_GRPC) < 0)) {
-          return t == REQUEST_TYPE_PARAM ? 'GET' : 'POST'
-        }
-        return t
+        return type == OPERATE_TYPE_REVIEW ? '查看' : (type == OPERATE_TYPE_REPLAY ? '回放' : '录制')
       },
       /**请求类型切换
        */
@@ -2715,40 +2658,6 @@
           var index = this.types.indexOf(this.type)
           index++;
           this.type = this.types[index % count]
-        }
-
-        var url = StringUtil.get(vUrl.value)
-        var index = url.indexOf('?')
-        if (index >= 0) {
-          var params = StringUtil.split(url.substring(index + 1), '&')
-
-          var paramObj = {}
-          var p
-          var v
-          var ind
-          if (params != null) {
-            for (var i = 0; i < params.length; i++) {
-              p = params[i]
-              ind = p == null ? -1 : p.indexOf('=')
-              if (ind < 0) {
-                continue
-              }
-
-              v = p.substring(ind + 1)
-              try {
-                v = JSON.parse(v)
-              }
-              catch (e) {}
-
-              paramObj[p.substring(0, ind)] = v
-            }
-          }
-
-          vUrl.value = url.substring(0, index)
-          if ($.isEmptyObject(paramObj) == false) {
-            vInput.value = '//TODO 从 URL 上的参数转换过来：\n' +  JSON.stringify(paramObj, null, '    ') + '\n//FIXME 需要与下面原来的字段合并为一个 JSON：\n' + StringUtil.get(vInput.value)
-          }
-          clearTimeout(handler)  //解决 vUrl.value 和 vInput.value 变化导致刷新，而且会把 vInput.value 重置，加上下面 onChange 再刷新就卡死了
         }
 
         CodeUtil.type = this.type;
@@ -2817,7 +2726,7 @@
           "package": req.package || App.getPackage(url),
           "class": req.class || App.getClass(url),
           "classArgs": req.classArgs,
-          "method": req.method || App.getMethod(url),
+          "method": req.name || App.getMethod(url),
           "methodArgs": req.methodArgs,
           "static": req.static
         }
@@ -2835,7 +2744,7 @@
         }
         var method = App.getMethod()
         this.locals.unshift({
-          'Method': {
+          'Input': {
             'userId': App.User.id,
             'name': App.formatDateTime() + (StringUtil.isEmpty(req.tag, true) ? '' : ' ' + req.tag),
             'method': App.getMethod(url),
@@ -2877,7 +2786,7 @@
           .then(function (res) {
             res = res || {}
 	    //any one of then callback throw error will cause it calls then(null)
-            // if ((res.config || {}).method == 'options') {
+            // if ((res.config || {}).name == 'options') {
             //   return
             // }
             log('send >> success:\n' + JSON.stringify(res, null, '    '))
@@ -2956,20 +2865,20 @@
 
           if (type == 'random' || type == 'randomSub') {
 
-            var r = item == null ? null : item.Random
+            var r = item == null ? null : item.Output
             if (r == null || r.id == null) {
-              alert('请选择有效的选项！item.Random.id == null !')
+              alert('请选择有效的选项！item.Output.id == null !')
               return
             }
 
-            //修改 Random 的 count
+            //修改 Output 的 count
             this.request(true, REQUEST_TYPE_JSON, this.server + '/put', {
-              Random: {
+              Output: {
                 id: r.id,
                 count: r.count,
                 name: r.name
               },
-              tag: 'Random'
+              tag: 'Output'
             }, {}, function (url, res, err) {
 
               var isOk = (res.data || {}).code == CODE_SUCCESS
@@ -3083,14 +2992,14 @@
             this.saveCache(this.server, 'randomCount', this.randomCount)
 
             this.randoms = null
-            this.showRandomList(true, (this.currentRemoteItem || {}).Method, false)
+            this.showRandomList(true, (this.currentRemoteItem || {}).Input, false)
             break
           case 'randomSub':
             this.saveCache(this.server, 'randomSubPage', this.randomSubPage)
             this.saveCache(this.server, 'randomSubCount', this.randomSubCount)
 
             this.randomSubs = null
-            this.showRandomList(true, (this.currentRemoteItem || {}).Random, true)
+            this.showRandomList(true, (this.currentRemoteItem || {}).Output, true)
             break
           default:
             docObj = null
@@ -3227,7 +3136,7 @@
           + '<br>提供 用例和文档托管、机器学习自动化测试、自动生成用例和文档 等服务'
           + '<br>由 <a href="https://github.com/TommyLemon/UIAuto" target="_blank">UIAuto(前端网页工具)</a>, <a href="https://github.com/APIJSON/APIJSON" target="_blank">APIJSON(后端接口服务)</a> 等提供技术支持'
           + '<br>遵循 <a href="http://www.apache.org/licenses/LICENSE-2.0" target="_blank">Apache-2.0 开源协议</a>'
-          + '<br>Copyright &copy; 2020-' + new Date().getFullYear() + ' Tommy Lemon<br><br></p>'
+          + '<br>Copyright &copy; 2019-' + new Date().getFullYear() + ' Tommy Lemon<br><br></p>'
         );
 
         App.view = 'markdown';
@@ -3249,17 +3158,17 @@
           format: false,
           '@database': App.database,
           '@schema': App.schema,
-          '[]': {
+          'Device[]': {
             'count': count,
             'page': page,
-            'Method': {
+            'Input': {
               '@column': 'DISTINCT package',
               '@order': 'package+'
             },
-            'Method[]': {
+            'Input[]': {
               'count': 0,
-              'Method:group': {
-                'package@': '[]/Method/package',
+              'Input:group': {
+                'package@': '[]/Input/package',
                 '@column': 'DISTINCT class',
                 '@order': 'class+',
                 '@having': 'length(class)>0',
@@ -3267,9 +3176,9 @@
                 'class$': search,
                 '@combine': StringUtil.isEmpty(search) ? null : 'package$,class$'
               },
-              'Method': {
-                'package@': '[]/Method/package',
-                'class@': '/Method:group/class',
+              'Input': {
+                'package@': '[]/Input/package',
+                'class@': '/Input:group/class',
                 '@column': 'class,genericClassArgs',
                 '@order': 'class+',
                 'arguments()': "getMethodArguments(genericClassArgs)",
@@ -3305,7 +3214,7 @@
               item = list[i];
 
               //Table
-              table = item == null ? null : item.Method
+              table = item == null ? null : item.Input
               if (table == null) {
                 continue;
               }
@@ -3317,7 +3226,7 @@
 
               doc += '\n### ' + (i + 1) + '. ' + pkg + '\n'
 
-              columnList = item['Method[]'];
+              columnList = item['Input[]'];
               if (columnList == null) {
                 continue;
               }
@@ -3498,11 +3407,11 @@
         var doc = ''
         var item
         for (var i = 0; i < list.length; i ++) {
-          item = list[i] == null ? null : list[i].Method
-          if (item == null || item.method == null) {
+          item = list[i] == null ? null : list[i].Input
+          if (item == null || item.name == null) {
             continue
           }
-          doc += '\n\n#### ' + item.method  + '    ' + item.defination
+          doc += '\n\n#### ' + item.name  + '    ' + item.defination
           doc += '\n```json\n' + item.request + '\n```\n'
         }
         return doc
@@ -3572,7 +3481,7 @@
 
           for (var i = 0; i < (limit != null ? limit : list.length); i ++) {  //limit限制子项测试个数
             const item = list[i]
-            const random = item == null ? null : item.Random
+            const random = item == null ? null : item.Output
             if (random == null || random.name == null) {
               doneCount ++
               continue
@@ -3606,7 +3515,7 @@
        */
       testRandomSingle: function (show, testList, testSubList, item, type, url, json, header, callback) {
         item = item || {}
-        var random = item.Random = item.Random || {}
+        var random = item.Output = item.Output || {}
         var subs = item['[]'] || []
         var existCount = subs.length
         subs = existCount <= 0 ? subs : JSON.parse(JSON.stringify(subs))
@@ -3615,11 +3524,11 @@
         var respCount = 0;
 
         for (var i = 0; i < count; i ++) {
-          // var constConfig = i < existCount ? ((subs[i] || {}).Random || {}).config : this.getRandomConstConfig(random.config, random.id) //第1遍，把 key : expression 改为 key : value
+          // var constConfig = i < existCount ? ((subs[i] || {}).Output || {}).config : this.getRandomConstConfig(random.config, random.id) //第1遍，把 key : expression 改为 key : value
           // var constJson = this.getRandomJSON(JSON.parse(JSON.stringify(json)), constConfig, random.id) //第2遍，用新的 random config 来修改原 json
 
           const which = i;
-          var rawConfig = testSubList && i < existCount ? ((subs[i] || {}).Random || {}).config : random.config
+          var rawConfig = testSubList && i < existCount ? ((subs[i] || {}).Output || {}).config : random.config
           this.parseRandom(
             JSON.parse(JSON.stringify(json)), rawConfig, random.id
             , ! testSubList, testSubList && i >= existCount, testSubList && i >= existCount
@@ -3631,7 +3540,7 @@
                 if (which >= existCount) {
                   //异步导致顺序错乱 subs.push({
                   subs[which] = {
-                    Random: {
+                    Output: {
                       id: -i - 1, //表示未上传
                       toId: random.id == null ? 1 : random.id,  // 1 为了没选择测试用例时避免用 toId 判断子项错误
                       userId: random.userId,
@@ -3649,7 +3558,7 @@
                     //   randomId: -i - 1,
                     //   response: tr.response,
                     //   standard: tr.standard,
-                    //   date: tr.date,
+                    //   time: tr.time,
                     //   compare: tr.compare
                     // }
                   // })
@@ -3675,7 +3584,7 @@
                 "package": constJson.package || App.getPackage(url),
                 "class": constJson.class || App.getClass(url),
                 "classArgs": constJson.classArgs,
-                "method": constJson.method || App.getMethod(url),
+                "method": constJson.name || App.getMethod(url),
                 "methodArgs": constJson.methodArgs,
                 "static": constJson.static
               }
@@ -3721,8 +3630,8 @@
           var count = this.testRandomCount || 0;
           this.isRandomSubListShow = count > 1;
           this.testRandomSingle(show, false, this.isRandomSubListShow, {
-              Random: {
-                toId: 0, // ((this.currentRandomItem || {}).Random || {}).id || 0,
+              Output: {
+                toId: 0, // ((this.currentRandomItem || {}).Output || {}).id || 0,
                 userId: (this.User || {}).id,
                 count: count,
                 name: this.randomTestTitle,
@@ -4139,8 +4048,8 @@
 
         for (var i = 0; i < allCount; i++) {
           const item = list[i]
-          const document = item == null ? null : item.Method
-          if (document == null || document.method == null) {
+          const document = item == null ? null : item.Input
+          if (document == null || document.name == null) {
             doneCount++
             continue
           }
@@ -4161,7 +4070,7 @@
               "package": document.package,
               "class": document.class,
               "classArgs": App.getRequest(document.classArgs, []),
-              "method": document.method,
+              "method": document.name,
               "methodArgs": App.getRequest(document.methodArgs, []),
               "static": document.static
             }
@@ -4174,8 +4083,8 @@
             if (httpReq.class == null) {
               httpReq.class = document.class
             }
-            if (httpReq.method == null) {
-              httpReq.method = document.method
+            if (httpReq.name == null) {
+              httpReq.name = document.name
             }
             if (httpReq.classArgs == null) {
               httpReq.classArgs = App.getRequest(document.classArgs, [])
@@ -4201,8 +4110,8 @@
 
       compareResponse: function (allCount, list, index, item, response, isRandom, accountIndex, justRecoverTest, err) {
         var it = item || {} //请求异步
-        var d = (isRandom ? App.currentRemoteItem.Method : it.Method) || {} //请求异步
-        var r = isRandom ? it.Random : null //请求异步
+        var d = (isRandom ? App.currentRemoteItem.Input : it.Input) || {} //请求异步
+        var r = isRandom ? it.Output : null //请求异步
         var tr = it.TestRecord || {} //请求异步
 
 
@@ -4266,12 +4175,12 @@
 
         if (isRandom) {
           r = r || {}
-          it.Random = r
+          it.Output = r
 
           this.updateToRandomSummary(it, 1)
         }
         else {
-          it.Method = d
+          it.Input = d
         }
         it.TestRecord = tr
 
@@ -4315,16 +4224,16 @@
 
       //更新父级总览数据
       updateToRandomSummary: function (item, change) {
-        var random = item == null || change == null ? null : item.Random
+        var random = item == null || change == null ? null : item.Output
         var toId = random == null ? null : random.toId
         if (toId != null && toId > 0) {
 
           for (var i in App.randoms) {
 
             var toIt = App.randoms[i]
-            if (toIt != null && toIt.Random != null && toIt.Random.id == toId) {
+            if (toIt != null && toIt.Output != null && toIt.Output.id == toId) {
 
-              var toRandom = toIt.Random
+              var toRandom = toIt.Output
               var id = toRandom == null ? 0 : toRandom.id
               var count = id == null || id <= 0 ? 0 : toRandom.count
               if (count != null && count > 1) {
@@ -4379,16 +4288,16 @@
           document = App.currentRemoteItem || {}
         }
         else {
-          document = item.Method = item.Method || {}
+          document = item.Input = item.Input || {}
         }
-        var random = isRandom ? item.Random : null
+        var random = isRandom ? item.Output : null
         var testRecord = item.TestRecord = item.TestRecord || {}
 
         saveTextAs(
           '# APIJSON自动化回归测试-前\n主页: https://github.com/APIJSON/APIJSON'
-          + '\n\n接口名称: \n' + document.method
+          + '\n\n接口名称: \n' + document.name
           + '\n返回结果: \n' + JSON.stringify(JSON.parse(testRecord.response || '{}'), null, '    ')
-          , '测试：' + document.method + '-前.txt'
+          , '测试：' + document.name + '-前.txt'
         )
 
         /**
@@ -4401,9 +4310,9 @@
           var tests = App.tests[String(App.currentAccountIndex)] || {}
           saveTextAs(
             '# APIJSON自动化回归测试-后\n主页: https://github.com/APIJSON/APIJSON'
-            + '\n\n接口名称: \n' + document.method
+            + '\n\n接口名称: \n' + document.name
             + '\n返回结果: \n' + JSON.stringify(tests[document.id][isRandom ? random.id : 0] || {}, null, '    ')
-            , '测试：' + document.method + '-后.txt'
+            , '测试：' + document.name + '-后.txt'
           )
 
 
@@ -4411,10 +4320,10 @@
             setTimeout(function () {
               saveTextAs(
                 '# APIJSON自动化回归测试-标准\n主页: https://github.com/APIJSON/APIJSON'
-                + '\n\n接口名称: \n' + document.method
+                + '\n\n接口名称: \n' + document.name
                 + '\n测试结果: \n' + JSON.stringify(testRecord.compare || '{}', null, '    ')
                 + '\n测试标准: \n' + JSON.stringify(JSON.parse(testRecord.standard || '{}'), null, '    ')
-                , '测试：' + document.method + '-标准.txt'
+                , '测试：' + document.name + '-标准.txt'
               )
             }, 5000)
           }
@@ -4429,7 +4338,7 @@
        */
       handleTest: function (right, index, item, isRandom) {
         item = item || {}
-        var random = item.Random = item.Random || {}
+        var random = item.Output = item.Output || {}
         var document;
         if (isRandom) {
           if ((random.count || 0) > 1) {
@@ -4442,7 +4351,7 @@
           document = this.currentRemoteItem || {}
         }
         else {
-          document = item.Method = item.Method || {}
+          document = item.Input = item.Input || {}
         }
         var testRecord = item.TestRecord = item.TestRecord || {}
 
@@ -4527,7 +4436,7 @@
             // if (isML != true) {
             url = this.server + '/post'
             const req = {
-              Random: isNewRandom != true ? null : {
+              Output: isNewRandom != true ? null : {
                 toId: random.toId,
                 documentId: random.documentId,
                 name: random.name,
@@ -4542,7 +4451,7 @@
                 response: JSON.stringify(currentResponse || {}),
                 standard: isML ? JSON.stringify(stddObj) : null
               },
-              tag: isNewRandom ? 'Random' : 'TestRecord'
+              tag: isNewRandom ? 'Output' : 'TestRecord'
             }
             // }
             // else {
@@ -4579,10 +4488,10 @@
                 // testRecord.standard = stdd
 
                 if (isRandom) {
-                  var r = req == null ? null : req.Random
-                  if (r != null && (data.Random || {}).id != null) {
-                    r.id = data.Random.id
-                    item.Random = r
+                  var r = req == null ? null : req.Output
+                  if (r != null && (data.Output || {}).id != null) {
+                    r.id = data.Output.id
+                    item.Output = r
                   }
                   if ((data.TestRecord || {}).id != null) {
                     testRecord.id = data.TestRecord.id
@@ -4615,7 +4524,7 @@
 
       updateTestRecord: function (allCount, list, index, item, response, isRandom) {
         item = item || {}
-        var doc = (isRandom ? item.Random : item.Method) || {}
+        var doc = (isRandom ? item.Output : item.Input) || {}
 
         this.request(true, REQUEST_TYPE_JSON, this.server + '/get', {
           TestRecord: {
@@ -4623,7 +4532,7 @@
             randomId: isRandom ? doc.id : null,
             testAccountId: App.getCurrentAccountId(),
             'host': App.getBaseUrl(),
-            '@order': 'date-',
+            '@order': 'time-',
             '@column': 'id,userId,documentId,randomId,response' + (App.isMLEnabled ? ',standard' : ''),
             '@having': App.isMLEnabled ? 'length(standard)>2' : null  // '@having': App.isMLEnabled ? 'json_length(standard)>0' : null
           }
@@ -4644,7 +4553,7 @@
       //显示详细信息, :data-hint :data, :hint 都报错，只能这样
       setRequestHint(index, item, isRandom, isClass) {
         item = item || {}
-        var d = item == null ? null : (isRandom ? item.Random : item.Method);
+        var d = item == null ? null : (isRandom ? item.Output : item.Input);
         // this.$refs[isRandom ? 'randomTexts' : (isClass ? 'testCaseClassTexts' : 'testCaseMethodTexts')][index]
         //   .setAttribute('data-hint', r == null ? '' : (isRandom ? r : JSON.stringify(this.getRequest(isClass ? r.classArgs : r.methodArgs), null, ' ')));
 
@@ -4670,7 +4579,7 @@
       //显示详细信息, :data-hint :data, :hint 都报错，只能这样
       setTestHint(index, item, isRandom) {
         item = item || {};
-        var toId = isRandom ? ((item.Random || {}).toId || 0) : 0;
+        var toId = isRandom ? ((item.Output || {}).toId || 0) : 0;
         var h = item.hintMessage;
         this.$refs[isRandom ? (toId <= 0 ? 'testRandomResultButtons' : 'testRandomSubResultButtons') : 'testResultButtons'][index].setAttribute('data-hint', h || '');
       },
@@ -4716,10 +4625,6 @@
         var language = this.getCache('', 'language')
         if (StringUtil.isEmpty(language, true) == false) {
           this.language = CodeUtil.language = language
-        }
-        var types = this.getCache('', 'types')
-        if (types != null && types.length > 0) {
-          this.types = types
         }
         var server = this.getCache('', 'server')
         if (StringUtil.isEmpty(server, true) == false) {
