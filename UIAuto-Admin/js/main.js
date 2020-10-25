@@ -1202,7 +1202,7 @@
       // 根据测试用例/历史记录恢复数据
       restoreRemote: function (item, test) {
         this.currentRemoteItem = item
-        this.restore((item || {}).Flow, ((item || {}).TestRecord || {}).response, true, test)
+        this.restore((item || {}).Flow, ((item || {}).Flow || {}).log, true, test)
       },
       // 根据历史恢复数据
       restore: function (item, response, isRemote, test) {
@@ -1219,14 +1219,14 @@
 
 
           App.showTestCase(false, App.isLocalShow)
-          vInput.value = StringUtil.get(item.request)
+          // vInput.value = StringUtil.get(item.request)
           vHeader.value = StringUtil.get(item.header)
-          vRandom.value = StringUtil.get(item.random)
+          // vRandom.value = StringUtil.get(item.random)
           App.onChange(false)
 
           if (isRemote) {
             App.randoms = []
-            App.showRandomList(App.isRandomListShow, item)
+            App.showRandomList(true, item)
           }
 
           if (test) {
@@ -1236,7 +1236,7 @@
             if (StringUtil.isEmpty(response, true) == false) {
               setTimeout(function () {
                 App.jsoncon = StringUtil.trim(response)
-                App.view = 'code'
+                App.view = 'output'
               }, 500)
             }
           }
@@ -2108,13 +2108,9 @@
       },
 
       //显示远程的随机配置文档
-      showRandomList: function (show, item, isSub) {
+      showRandomList: function (show, item) {
         this.isRandomEditable = false
-        this.isRandomListShow = show && ! isSub
-        this.isRandomSubListShow = show && isSub
-        if (! isSub) {
-          this.randomSubs = []
-        }
+        this.isRandomListShow = show
 
         vOutput.value = show ? '' : (output || '')
         this.showDoc()
@@ -2124,42 +2120,21 @@
         if (show && this.isRandomShow && this.randoms.length <= 0 && item != null && item.id != null) {
           this.isRandomListShow = false
 
-          var subSearch = StringUtil.isEmpty(this.randomSubSearch, true)
-            ? null : '%' + StringUtil.trim(this.randomSubSearch) + '%'
-          var search = isSub ? subSearch : (StringUtil.isEmpty(this.randomSearch, true)
-            ? null : '%' + StringUtil.trim(this.randomSearch) + '%')
+          var search =StringUtil.isEmpty(this.randomSearch, true) ? null : '%' + StringUtil.trim(this.randomSearch) + '%'
           var url = App.server + '/get'
           var req = {
             '[]': {
-              'count': (isSub ? this.randomSubCount : this.randomCount) || 100,
-              'page': (isSub ? this.randomSubPage : this.randomPage) || 0,
-              'Output': {
-                'toId': isSub ? item.id : 0,
-                'documentId': isSub ? null : item.id,
+              'count': this.randomCount || 100,
+              'page': this.randomPage || 0,
+              'Input': {
+                'flowId': item.id,
                 '@order': "time-",
                 'name$': search
               },
-              'TestRecord': {
-                'randomId@': '/Output/id',
+              'Output': {
+                'inputId@': '/Input/id',
                 'testAccountId': App.getCurrentAccountId(),
-                'host': App.getBaseUrl(),
                 '@order': 'time-'
-              },
-              '[]': isSub ? null : {
-                'count': this.randomSubCount || 100,
-                'page': this.randomSubPage || 0,
-                'Output': {
-                  'toId@': '[]/Output/id',
-                  'documentId': item.id,
-                  '@order': "time-",
-                  'name$': subSearch
-                },
-                'TestRecord': {
-                  'randomId@': '/Output/id',
-                  'testAccountId': App.getCurrentAccountId(),
-                  'host': App.getBaseUrl(),
-                  '@order': 'time-'
-                }
               }
             }
           }
@@ -2171,17 +2146,8 @@
             var rpObj = res.data
 
             if (rpObj != null && rpObj.code === CODE_SUCCESS) {
-              App.isRandomListShow = ! isSub
-              App.isRandomSubListShow = isSub
-              if (isSub) {
-                if (App.currentRandomItem == null) {
-                  App.currentRandomItem = {}
-                }
-                App.randomSubs = App.currentRandomItem.subs = App.currentRandomItem['[]'] = rpObj['[]']
-              }
-              else {
-                App.randoms = rpObj['[]']
-              }
+              App.isRandomListShow = true
+              App.randoms = rpObj['[]']
 
               vOutput.value = show ? '' : (output || '')
               App.showDoc()
@@ -3161,28 +3127,18 @@
           'Device[]': {
             'count': count,
             'page': page,
-            'Input': {
-              '@column': 'DISTINCT package',
-              '@order': 'package+'
-            },
-            'Input[]': {
-              'count': 0,
-              'Input:group': {
-                'package@': '[]/Input/package',
-                '@column': 'DISTINCT class',
-                '@order': 'class+',
-                '@having': 'length(class)>0',
-                'package$': search,
-                'class$': search,
-                '@combine': StringUtil.isEmpty(search) ? null : 'package$,class$'
-              },
-              'Input': {
-                'package@': '[]/Input/package',
-                'class@': '/Input:group/class',
-                '@column': 'class,genericClassArgs',
-                '@order': 'class+',
-                'arguments()': "getMethodArguments(genericClassArgs)",
-              }
+            'Device': {
+              '@order': 'name+'
+            }
+          },
+          'System[]': {
+            'count': count,
+            'page': page,
+            'System': {
+              '@order': 'name+,version-',
+              'name$': search,
+              'version$': search,
+              '@combine': StringUtil.isEmpty(search) ? null : 'name$,version$'
             }
           }
         }, {}, function (url, res, err) {
@@ -4553,7 +4509,7 @@
       //显示详细信息, :data-hint :data, :hint 都报错，只能这样
       setRequestHint(index, item, isRandom, isClass) {
         item = item || {}
-        var d = item == null ? null : (isRandom ? item.Output : item.Input);
+        var d = item == null ? null : (isRandom ? item.Input : item.Flow);
         // this.$refs[isRandom ? 'randomTexts' : (isClass ? 'testCaseClassTexts' : 'testCaseMethodTexts')][index]
         //   .setAttribute('data-hint', r == null ? '' : (isRandom ? r : JSON.stringify(this.getRequest(isClass ? r.classArgs : r.methodArgs), null, ' ')));
 
@@ -4562,17 +4518,7 @@
           this.$refs[toId <= 0 ? 'randomTexts' : 'randomSubTexts'][index].setAttribute('data-hint', (d || {}).config == null ? '' : d.config);
         }
         else {
-          var args = (this.getRequest(d.request) || [])[isClass ? 'classArgs' : 'methodArgs']
-
-          var s = '('
-          if (args != null) {
-            for (var i in args) {
-              var val = (args[i] || {}).value
-              s += (i <= 0 ? '' : ', ') + (val == null ? 'null' : JSON.stringify(val, null, ' '))
-            }
-          }
-          s += ')'
-          this.$refs[isClass ? 'testCaseClassTexts' : 'testCaseMethodTexts'][index].setAttribute('data-hint', s);
+          this.$refs[isClass ? 'testCaseClassTexts' : 'testCaseMethodTexts'][index].setAttribute('data-hint', d.name);
         }
       },
 

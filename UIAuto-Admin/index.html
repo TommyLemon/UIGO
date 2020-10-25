@@ -204,11 +204,9 @@
         </div>
 
         <div v-show="isRandomShow" style="position: absolute; right: 0px;
-          display: inline-flex; width: 40%; min-width: 300px; height: 100%;
+          width: 40%; min-width: 300px; height: 100%;
           border-left: #DDD 1px solid; z-index: 100;" wrap="off" >
               <div class="left-bar" style="border-top: #DDD 1px solid; position: relative">
-                  <input v-show="isRandomListShow != true && isRandomSubListShow != true" id="vTestRandomCount" v-model="testRandomCount" style="margin-left: 10px; min-width: 12px; max-width: 30px; width: auto; text-align: center" type="number" />
-                  <a v-show="isRandomListShow != true && isRandomSubListShow != true" style="margin-left: 4px;">次</a>
                   <a style="display: flex;flex-grow: 1;padding-left: 10px;padding-right: 2px;font-size: medium;color: black" >{{ (isRandomListShow || StringUtil.isEmpty(randomTestTitle, true) ? '步骤 Step' : randomTestTitle) + (isRandomListShow || isRandomSubListShow ? ' (' + ((isRandomListShow ? randoms : randomSubs) || []).length + ')' : '') }}
                       <a style="padding-right: 10px;padding-top: 2px">
                           {{ testRandomProcess }}
@@ -241,13 +239,12 @@
                       <a v-show="! isRandomEditable" style="top: 13px; left: 68px; position: absolute" class="hint--rounded hint--no-animate" ref="randomTexts" @mouseover="setRequestHint(index, item, true)" href="javascript:void(0)" @click="restoreRandom(item)" >{{ (item.Input || {}).name }}</a>
                       <input v-show="isRandomEditable" style="top: 10px; left: 68px; position: absolute; display: inline-flex; width: 64%" v-model="(item.Output || {}).name" @keyup="doOnKeyUp(event, 'random', false, item)" />
 
-                      <button v-show="((item.Input || {}).count || 0) > 1 && (item.totalCount || 0) <= 0" style="position: absolute;top: 10px;right: 36px;display: inline-block;" @click="handleTest(true, index, item, true)">{{ '查看 ' + ((item.subs || item['[]']) || []).length + ' 个子项' }}</button>
-                      <div v-show="((item.Output || {}).count || 0) > 1 && (item.totalCount || 0) > 0" style="background: lightgray; position: absolute; padding: 1px; top: 10px;right: 36px;display: inline-block" @click="handleTest(true, index, item, true)">
+                      <div v-show="((item.Input || {}).count || 0) > 1 && (item.totalCount || 0) > 0" style="background: lightgray; position: absolute; padding: 1px; top: 10px;right: 36px;display: inline-block" @click="handleTest(true, index, item, true)">
                           <!-- 只能写成一行来消除间隙，不能换行、空格 -->
                           <a style="background: transparent; color: black; position: relative; min-width: 6px; width: auto; height: 100%; margin: 0; padding: 2px">{{ (item.totalCount || 0) + ':' }}</a><a style="background: white; color: black; position: relative; min-width: 6px; width: auto; height: 100%; margin: 0; padding: 2px">{{ item.whiteCount || 0 }}</a><a style="background: green; color: white; position: relative; min-width: 6px; width: auto; height: 100%; margin: 0; padding: 2px">{{ (item || {}).greenCount || 0 }}</a><a style="background: blue; color: white; position: relative; min-width: 6px; width: auto; height: 100%; margin: 0; padding: 2px">{{ (item || {}).blueCount || 0 }}</a><a style="background: orange; color: white; position: relative; min-width: 6px; width: auto; height: 100%; margin: 0; padding: 2px">{{ (item || {}).orangeCount || 0 }}</a><a style="background: red; color: white; position: relative; min-width: 6px; width: auto; height: 100%; margin: 0; padding: 2px">{{ (item || {}).redCount || 0 }}</a>
                       </div>
 
-                      <div v-show="! isRandomEditable && ((item.Output || {}).count || 1) <= 1" style="position: absolute;top: 10px;right: 36px;display: inline-block;">
+                      <div v-show="! isRandomEditable && ((item.Input || {}).count || 1) <= 1" style="position: absolute;top: 10px;right: 36px;display: inline-block;">
                           <div :style="{ background: item.compareColor }" v-show="item.compareType != null" >
                               <button class="hint--left" ref="testRandomResultButtons" @mouseover="setTestHint(index, item, true)" v-show="item.compareType != null" @click="handleTest(false, index, item, true)" style="position: relative;">{{ item.compareMessage + (item.showType == 'before' ? '-前' : '-后') }}</button>
                               <svg class="icon" style="position: relative;margin-left: 10px" @click="downloadTest(index, item, true)">
@@ -265,13 +262,14 @@
                   </li>
               </ul>
 
-              <div v-show="isRandomListShow" style="bottom: 0px; padding: 4px 13px 4px 10px; position: absolute; width: 100%; text-align: right; background-color: white; z-index: 100">
+              <div v-show="isRandomListShow" style="bottom: 40px; padding: 4px 13px 4px 10px; position: absolute; width: 100%; text-align: center; background-color: white; z-index: 100">
                   <a >搜索</a>
-                  <input id="vRandomSearch" v-model="randomSearch" style="width: 60px;text-align: center" @keyup="doOnKeyUp(event, 'random', true)" />
+                  <input id="vRandomSearch" v-model="randomSearch" style="display: inline-flex; min-width: 220px; text-align: center" @keyup="doOnKeyUp(event, 'random', true)" />
+                  <br/>
                   <button @click="pageDown('random')">上一页</button>
                   <input id="vRandomPage" v-model="randomPage" style="width: 30px;text-align: center"  type="number" @keyup="doOnKeyUp(event, 'random', true)" />
                   <button @click="pageUp('random')">下一页</button>
-                  <a >每页</a>
+                 <a >每页</a>
                   <input id="vRandomCount" v-model="randomCount" style="width: 30px;text-align: center"  type="number" @keyup="doOnKeyUp(event, 'random', true)" />
                   <a >条</a>
               </div>
