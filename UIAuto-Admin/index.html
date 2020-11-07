@@ -163,9 +163,19 @@
       <div class="left-panel">
           <ul v-show="isTestCaseShow" class="historys" style="width: 100%;height: 100%;overflow: hidden;overflow-y: scroll;padding-bottom: 50px">
               <li v-for="(item, index) in testCases" >
-                  <div style="display: inline-table; height: 45px">
-                      <a class="hint--rounded hint--no-animate" style="display: inline-flex; height: 100%; position: absolute; left: 10px; top: 6px; font-size: small; color: dimgray" ref="testCaseMethodTexts" @mouseover="setRequestHint(index, item)" href="javascript:void(0)" @click="restoreRemote(item)" >{{ item.Flow.name }}</a>
-                      <div :style="{ background: item.compareColor }" v-show="item.compareType != null" style="position: absolute; top: 4px; bottom: 4px; right: 36px; display: inline-block;">
+                  <div style="display: inline-table; padding: 0px; margin: 0px" >
+                      <img width="90" height="195" src="img/Screenshot_2020-11-07-16-38-20-932_apijson.demo.jpg" style="width: 90px; min-height: 160px; height: 100%; margin: 4px; position: relative;" @click="restoreRemote(item)" href="javascript:void(0)"/>
+                      <input style="width: 75%; min-width: 90px; align-content: flex-start; position: absolute; left: 118px; top: 14px; font-size: medium; color: black" ref="testCaseMethodTexts" v-model="(item.Flow || {}).name" />
+                      <a style="white-space: pre-wrap; display: inline-flex; height: 100%; position: absolute; left: 118px; top: 45px; font-size: small; color: dimgray" ref="testCaseMethodTexts" @click="restoreRemote(item)" href="javascript:void(0)">{{
+                          '时间：' + (item.Flow.time == null ? '?' : item.Flow.time)
+                          + '\n品牌：' + ((item.Device || {}).brand || '?')
+                          + '\n机型：' + ((item.Device || {}).model || '?')
+                          + '\n系统：' + 'Android ' + ((item.System || {}).versionName || '?')
+                          + '\n分辨率：' + ((item.Device || {}).height || '?') + 'x' + ((item.Device || {}).width || '?')
+                          + '\nIMEI：' + ((item.Flow || {}).imei || '?')
+                          }}</a>
+
+                      <div :style="{ background: item.compareColor }" v-show="item.compareType != null" style="position: absolute; bottom: 4px; right: 26px; display: inline-block;">
                           <button class="hint--left" ref="testResultButtons" @mouseover="setTestHint(index, item)" v-show="item.compareType != null" @click="handleTest(false, index, item)" style="position: relative; height: 100%">{{ item.compareMessage + (item.showType == 'before' ? '-前' : '-后') }}</button>
                           <svg class="icon" style="position: relative;margin-left: 10px" @click="downloadTest(index, item)">
                               <use xlink:href="svg/icon.svg#export-txt"></use>
@@ -174,7 +184,7 @@
                           <!-- 仅用来占位，解决上面按钮隐藏后，下载图标纵向没对齐 -->
                           <button v-show="! ((item.showType != 'before' && item.compareType != 0) || (item.showType == 'before' && (item.TestRecord || {}).id != null))" style="color: white;background: white;border-color: white; height: 100%" disabled>对的，纠正</button>
                       </div>
-                      <svg v-show="isLocalShow || (item.Input != null && item.Input.userId == User.id)" class="icon" style="margin-right: 5px; top: 13px" @click="remove(item, index, true)">
+                      <svg v-show="isLocalShow || (item.Input != null && item.Input.userId == User.id)" class="icon" style="margin-right: 2px; top: 17px" @click="remove(item, index, true)">
                           <use xlink:href="svg/icon.svg#trash"></use>
                       </svg>
                   </div>
@@ -183,8 +193,8 @@
       <div v-show="! isTestCaseShow" style="width: 100%;height: 100%;" >
 
         <div id="vContainer" style="width: 100%; height: 100%; position: absolute; flex-grow: 1; display: inline" >
-          <img id="vComment" ref="vComment" width="720" height="1560" src="img/Screenshot_2020-11-07-16-35-27-473_apijson.demo.jpg" style="min-width: 270px; min-height: 585px; max-width: 300px; width: 45%; height: 92%; margin: 4px; position: relative;" />
-          <img id="vInput" ref="vInput" width="720" height="1560" src="img/Screenshot_2020-11-07-16-37-36-400_apijson.demo.jpg" style="min-width: 270px; min-height: 585px; max-width: 300px; width: 45%; height: 92%; margin: 4px; position: relative;" />
+          <img id="vComment" ref="vComment" width="270" height="585" src="img/Screenshot_2020-11-07-16-35-27-473_apijson.demo.jpg" style="min-width: 270px; min-height: 585px; max-width: 300px; width: 45%; height: 92%; margin: 4px; position: relative;" />
+          <img id="vInput" ref="vInput" width="270" height="585" src="img/Screenshot_2020-11-07-16-37-36-400_apijson.demo.jpg" style="min-width: 270px; min-height: 585px; max-width: 300px; width: 45%; height: 92%; margin: 4px; position: relative;" />
         </div>
 
           <div v-show="isRandomShow" style="position: absolute; right: 310px; width: 1px; height: 100%; background: #ddd" ></div>

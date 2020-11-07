@@ -1210,12 +1210,11 @@
         // localforage.getItem(item.key || '', function (err, value) {
 
           App.type = OPERATE_TYPE_REVIEW;
-          App.urlComment =  ': ' + item.type + CodeUtil.getComment(StringUtil.get(item.detail), false, '  ');
+          App.urlComment = CodeUtil.getComment(StringUtil.get(item.detail), false, '  ');
           App.requestVersion = item.version;
 
           vUrl.value = item.name
-          vUrlComment.value = isSingle || StringUtil.isEmpty(App.urlComment, true)
-            ? '' : vUrl.value + App.urlComment;
+          vUrlComment.value = isSingle || StringUtil.isEmpty(App.urlComment, true) ? '' : vUrl.value + App.urlComment;
 
 
           App.showTestCase(false, App.isLocalShow)
@@ -2085,6 +2084,12 @@
                 'name$*~': search,
                 'detail*~': search,
                 '@combine': StringUtil.isEmpty(search) ? null : 'name$*~,detail*~'
+              },
+              'Device': {
+                'id@': '/Flow/deviceId'
+              },
+              'System': {
+                'id@': '/Flow/systemId'
               }
             },
             '@role': 'LOGIN'
@@ -2122,7 +2127,7 @@
         if (show && this.isRandomShow && this.randoms.length <= 0 && item != null && item.id != null) {
           this.isRandomListShow = false
 
-          var search =StringUtil.isEmpty(this.randomSearch, true) ? null : '%' + StringUtil.trim(this.randomSearch) + '%'
+          var search = StringUtil.isEmpty(this.randomSearch, true) ? null : '%' + StringUtil.trim(this.randomSearch) + '%'
           var url = App.server + '/get'
           var req = {
             '[]': {
@@ -2624,8 +2629,13 @@
         CodeUtil.type = this.type;
         this.onChange(false);
 
-        if (this.type != OPERATE_TYPE_RECORD) {
-          App.showRandomList(true, App.currentDocItem)
+        if (this.type == OPERATE_TYPE_RECORD) {
+          this.isRandomListShow = false
+          this.randoms = []
+          this.isRandomListShow = true
+        }
+        else {
+          App.showRandomList(true, (App.currentRemoteItem || {}).Flow)
         }
       },
 
@@ -3384,10 +3394,12 @@
        * @param show
        */
       onClickTestRandom: function () {
-        this.testRandom(! this.isRandomListShow && ! this.isRandomSubListShow, this.isRandomListShow, this.isRandomSubListShow)
+        this.testRandom(! this.isRandomListShow, this.isRandomListShow)
       },
-      testRandom: function (show, testList, testSubList, limit) {
+      testRandom: function (show, testList) {
         this.isRandomEditable = false
+        const isRecord = App.type == OPERATE_TYPE_RECORD
+
         if (testList != true && testSubList != true) {
           this.testRandomProcess = ''
           this.testRandomWithText(show, null)
@@ -3408,11 +3420,11 @@
           //   return
           // }
 
-          const list = (testSubList ? this.randomSubs : this.randoms) || []
+          const list = this.randoms || []
           var allCount = list.length
           doneCount = 0
 
-          if (allCount <= 0) {
+          if (isRecord == false && allCount <= 0) {
             alert('请先获取随机配置\n点击[查看列表]按钮')
             return
           }
@@ -3430,8 +3442,6 @@
           for (var i = 0; i < list.length; i ++) {
             inputList[i] = list[i].Input
           }
-
-          const isRecord = App.type == OPERATE_TYPE_RECORD
 
           App.request(false, REQUEST_TYPE_JSON, App.project + '/method/invoke', {
             "package": 'apijson.demo.application', // 'uiauto',
