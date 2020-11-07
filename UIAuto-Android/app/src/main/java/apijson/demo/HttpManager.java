@@ -241,8 +241,7 @@ public class HttpManager {
     //     return toHttpJSONString(httpResponse.headers().toString(), str);
     // }
     private String toHttpJSONString(String headers, String body) {
-        return "Header: \n" + headers
-                + "\nContent: \n" + body;
+        return headers + "Content: \n" + body;
     }
 
     private Activity getActivity(OnHttpResponseListener listener) {

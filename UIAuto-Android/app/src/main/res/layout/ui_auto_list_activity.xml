@@ -60,13 +60,13 @@
         >
 
         <Button
-            android:id="@+id/btnUIAutoListRecover"
+            android:id="@+id/btnUIAutoListReplay"
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
             android:textAllCaps="false"
             android:gravity="center"
-            android:text="@string/recover"
-            android:onClick="recover"
+            android:text="@string/replay"
+            android:onClick="replay"
             />
 
         <ProgressBar

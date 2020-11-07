@@ -31,5 +31,5 @@ dependencies {
     api 'com.alibaba:fastjson:1.2.61'
     api 'com.github.APIJSON:apijson-orm:3.9.0'
     api 'com.github.yhaolpz:FloatWindow:1.0.9'
-    api 'com.github.TommyLemon:UnitAuto:1.0.3'
+    api 'com.github.TommyLemon:UnitAuto:2.5.0'
 }

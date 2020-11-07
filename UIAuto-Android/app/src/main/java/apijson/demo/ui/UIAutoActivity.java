@@ -60,16 +60,16 @@ public class UIAutoActivity extends Activity {
     }
 
 
-//    private boolean isRecovering = false;
+//    private boolean isReplaying = false;
 //    private Handler handler = new Handler() {
 //        @Override
 //        public void handleMessage(Message msg) {
 //            super.handleMessage(msg);
 //
-//            if (isRecovering) {
+//            if (isReplaying) {
 //                //通过遍历数组来实现
 ////                if (lastCurTime >= System.currentTimeMillis()) {
-////                    isRecovering = false;
+////                    isReplaying = false;
 ////                    pbUIAutoSplit.setVisibility(View.GONE);
 ////                }
 ////
@@ -82,7 +82,7 @@ public class UIAutoActivity extends Activity {
 //                dispatchEventToCurrentActivity(eventNode.item);
 //
 //                if (eventNode.next == null) {
-//                    isRecovering = false;
+//                    isReplaying = false;
 //                    pbUIAutoSplit.setVisibility(View.GONE);
 //                    return;
 //                }
@@ -152,7 +152,7 @@ public class UIAutoActivity extends Activity {
 //        }
 
         if (eventList != null && eventList.isEmpty() == false) { //TODO 回放操作
-//            recover(eventList);
+//            replay(eventList);
             startActivity(UIAutoListActivity.createIntent(DemoApplication.getInstance(), eventList == null ? null : eventList.toJSONString()));
 //            return;
         }
@@ -199,7 +199,7 @@ public class UIAutoActivity extends Activity {
 //        ivUIAutoSplit.setOnClickListener(new View.OnClickListener() {
 //            @Override
 //            public void onClick(View v) {
-//                isRecovering = false;
+//                isReplaying = false;
 ////                ((ViewGroup) v.getParent()).removeView(v);
 //
 //                String cacheKey = UIAutoListActivity.CACHE_TOUCH;
@@ -375,7 +375,7 @@ public class UIAutoActivity extends Activity {
 //        finish();
 
         DemoApplication.getInstance().onUIAutoActivityCreate(this);
-        DemoApplication.getInstance().prepareRecord(this);
+        DemoApplication.getInstance().prepareRecord();
         finish();
     }
 
@@ -596,8 +596,8 @@ public class UIAutoActivity extends Activity {
 //    private long lastTime = 0;
 //    private long firstCurTime = 0;
 //    private long lastCurTime = 0;
-//    public void recover(JSONArray eventList) {
-//        isRecovering = true;
+//    public void replay(JSONArray eventList) {
+//        isReplaying = true;
 //
 ////        List<InputEvent> list = new LinkedList<>();
 //

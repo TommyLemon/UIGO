@@ -107,7 +107,7 @@ public class UIAutoListActivity extends Activity implements HttpManager.OnHttpRe
     private ListView lvUIAutoList;
     // private View llUIAutoListBar;
 
-    private View btnUIAutoListRecover;
+    private View btnUIAutoListReplay;
     private ProgressBar pbUIAutoList;
     private EditText etUIAutoListUrl;
     private Button btnUIAutoListGet;
@@ -170,12 +170,12 @@ public class UIAutoListActivity extends Activity implements HttpManager.OnHttpRe
         lvUIAutoList = findViewById(R.id.lvUIAutoList);
         // llUIAutoListBar = findViewById(R.id.llUIAutoListBar);
 
-        btnUIAutoListRecover = findViewById(R.id.btnUIAutoListRecover);
+        btnUIAutoListReplay = findViewById(R.id.btnUIAutoListReplay);
         pbUIAutoList = findViewById(R.id.pbUIAutoList);
         etUIAutoListUrl = findViewById(R.id.etUIAutoListUrl);
         btnUIAutoListGet = findViewById(R.id.btnUIAutoListGet);
 
-        btnUIAutoListRecover.setVisibility(isTouch ? View.VISIBLE : View.GONE);
+        btnUIAutoListReplay.setVisibility(isTouch ? View.VISIBLE : View.GONE);
         etUIAutoListName.setVisibility(isTouch ? View.VISIBLE : View.GONE);
         etUIAutoListName.setEnabled(isLocal || hasTempTouchList);
 //        llUIAutoListBar.setVisibility(isLocal ? View.GONE : View.VISIBLE);
@@ -534,22 +534,22 @@ public class UIAutoListActivity extends Activity implements HttpManager.OnHttpRe
         }).start();
     }
 
-    public void recover(View v) {
+    public void replay(View v) {
         if (isTouch) {
-            recover(array);
+            replay(array);
         } else {
             setResult(RESULT_OK, new Intent().putExtra(RESULT_LIST, JSON.toJSONString(array)));
             finish();
         }
     }
 
-    public void recover(JSONArray eventList) {
+    public void replay(JSONArray eventList) {
         finish();
 
         new Handler().postDelayed(new Runnable() {
             @Override
             public void run() {
-                DemoApplication.getInstance().prepareRecover(eventList, UIAutoListActivity.this);
+                DemoApplication.getInstance().prepareReplay(eventList);
             }
         }, 1000);
     }
@@ -613,7 +613,7 @@ public class UIAutoListActivity extends Activity implements HttpManager.OnHttpRe
         }
 
         if (requestCode == REQUEST_EVENT_LIST) {
-            recover(data == null ? null : JSON.parseArray(data.getStringExtra(UIAutoListActivity.RESULT_LIST)));
+            replay(data == null ? null : JSON.parseArray(data.getStringExtra(UIAutoListActivity.RESULT_LIST)));
         }
     }
 
