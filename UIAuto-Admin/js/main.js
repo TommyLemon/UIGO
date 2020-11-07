@@ -561,6 +561,7 @@
         id: 0,
         balance: null //点击更新提示需要判空 0.00
       },
+      isVideoFirst: false,
       type: OPERATE_TYPE_RECORD,
       types: [ OPERATE_TYPE_RECORD, OPERATE_TYPE_REVIEW, OPERATE_TYPE_REPLAY ],
       host: 'unitauto.test.TestUtil.', // 'apijson.demo.server.DemoFunction.',
@@ -1225,7 +1226,9 @@
 
           if (isRemote) {
             App.randoms = []
-            App.showRandomList(true, item)
+            if (App.type != OPERATE_TYPE_RECORD) {
+              App.showRandomList(true, item)
+            }
           }
 
           if (test) {
@@ -2594,9 +2597,17 @@
       transfer: function () {
         isSingle = ! isSingle;
 
-        this.isTestCaseShow = false
+        this.isVideoFirst = isSingle;
+        this.isTestCaseShow = false;
         //TODO 切换图片与视频位置
         // this.onChange(false);
+
+
+        (isSingle ? vComment : vInput).removeAttribute('left');
+        (! isSingle ? vComment : vInput).setAttribute('left', '0px');
+
+        vContainer.removeChild(isSingle ? vComment : vInput);
+        vContainer.appendChild(isSingle ? vComment : vInput);
       },
 
       /**获取显示的请求类型名称
@@ -2616,6 +2627,10 @@
 
         CodeUtil.type = this.type;
         this.onChange(false);
+
+        if (this.type != OPERATE_TYPE_RECORD) {
+          App.showRandomList(true, App.currentDocItem)
+        }
       },
 
       /**
@@ -2644,20 +2659,14 @@
       /**发送请求
        */
       send: function(isAdminOperation, callback) {
-        if (this.isTestCaseShow) {
-          alert('请先输入请求内容！')
+        if (this.type == OPERATE_TYPE_RECORD || this.type == OPERATE_TYPE_REPLAY) {
+          this.onClickTestRandom()
           return
         }
 
-        if (StringUtil.isEmpty(App.host, true)) {
-          // if (StringUtil.get(vUrl.value).startsWith('http://') != true && StringUtil.get(vUrl.value).startsWith('https://') != true) {
-          //   alert('URL 缺少 http:// 或 https:// 前缀，可能不完整或不合法，\n可能使用同域的 Host，很可能访问出错！')
-          // }
-        }
-        else {
-          if (StringUtil.get(vUrl.value).indexOf('://') >= 0) {
-            alert('URL Host 已经隐藏(固定) 为 \n' + App.host + ' \n将会自动在前面补全，导致 URL 不合法访问出错！\n如果要改 Host，右上角设置 > 显示(编辑)URL Host')
-          }
+        if (this.isTestCaseShow) {
+          alert('请先打开一个 操作流程 Flow！')
+          return
         }
 
         this.onHandle(vInput.value)
@@ -3411,7 +3420,7 @@
             alert('请先获取随机配置\n点击[查看列表]按钮')
             return
           }
-          this.testRandomProcess = '正在测试: ' + 0 + '/' + allCount
+          App.testRandomProcess = doneCount >= allCount ? '' : ('正在准备...')
 
           // if (testSubList) {
           //   this.resetCount(this.currentRandomItem)
@@ -3426,14 +3435,14 @@
             inputList[i] = list[i].Input
           }
 
+          const isRecord = App.type == OPERATE_TYPE_RECORD
 
-          App.testRandomProcess = doneCount >= allCount ? '' : ('正在准备...')
           App.request(false, REQUEST_TYPE_JSON, App.project + '/method/invoke', {
             "package": 'apijson.demo.application', // 'uiauto',
             "class": 'DemoApplication', // 'UIAutoApp',
             "constructor": 'getInstance',
-            "method": 'prepareRecover',
-            "methodArgs": [ inputList ]
+            "method": isRecord ? 'prepareRecord' : 'prepareReplay',
+            "methodArgs": isRecord ? null : [ inputList ]
           }, header, function (url_, res_, err_) {
             try {
               App.onResponse(url_, res_, err_)
@@ -3448,7 +3457,7 @@
               return
             }
 
-            App.testRandomProcess = '正在测试...'
+            App.testRandomProcess = '正在' + (isRecord ? '录制' : '回放') + '...'
             App.request(false, REQUEST_TYPE_JSON, App.project + '/method/invoke', {
               "package": 'apijson.demo.application', // 'uiauto',
               "class": 'DemoApplication', // 'UIAutoApp',
@@ -3468,8 +3477,8 @@
 
               for (var j = 0; j <= outputList.length; j++) {
                 doneCount++
-                App.testRandomProcess = doneCount >= allCount ? '' : ('正在测试: ' + doneCount + '/' + allCount)
-                App.compareResponse(allCount, list, index, item, res.data, true, App.currentAccountIndex, false, err)
+                App.testRandomProcess = doneCount >= allCount ? '' : ('已测数量: ' + doneCount)
+                App.compareResponse(allCount, list, j, outputList[j], res.data, true, App.currentAccountIndex, false, err)
               }
 
             });
@@ -4147,7 +4156,7 @@
             break;
           case JSONResponse.COMPARE_NO_STANDARD:
             it.compareColor = 'green'
-            it.compareMessage = '确认正确后点击[对的，纠正]'
+            it.compareMessage = '确认正确后 纠正'
             break;
           case JSONResponse.COMPARE_KEY_MORE:
             it.compareColor = 'green'
