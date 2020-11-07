@@ -45,7 +45,7 @@
     padding: 0;
   }
   .send {
-    width: 25%;
+    width: 20%;
     height: 100%;
     margin: 0;
     padding: 0;
@@ -125,6 +125,7 @@
   <div class="side-left">
     <div v-show="! isTestCaseShow" class="left-bar" >
       <button class="transfer" id="vType" @click="changeType()">{{ getTypeName(type) }}</button>
+      <button class="transfer" id="vTransfer" @click="transfer()">P/V</button>
       <div style="height: 100%;display: flex;flex-grow: 1">
         <input class="url" id="vUrlComment" type="text" style="width: 100%; position: absolute; z-index: -100; color: darkseagreen;background: #0000;"  />
         <input class="url" id="vUrl" type="text" @keyup="doOnKeyUp(event)" placeholder="请输入请求的接口地址" style="z-index: 0; background: #0000;" />
@@ -182,29 +183,13 @@
           </ul>
       <div v-show="! isTestCaseShow" style="width: 100%;height: 100%;" >
 
-        <div style="width: 100%;height: 100%;position: absolute;display: flex;flex-grow: 1" >
-          <textarea id="vComment" style="width: 100%; height: 100%; position: absolute; z-index: 0; color: darkseagreen; background-color: white;" wrap="off" disabled>
-          </textarea>
-          <textarea id="vInput" @keyup="onChange(true)" style="width: 100%;height: 100%; position: absolute;
-           z-index: 100; background: #0000;" wrap="off" >
-{
-    "static": true,
-    "methodArgs": [
-        {   // 可省略来自动判断的 type : Boolean,Integer,BigDecimal,String,JSONObject,JSONArray
-            "type": "long",
-            "value": 1
-        },
-        {
-            "type": "long",
-            "value": 2
-        }
-    ]
-}
-          </textarea>
+        <div style="width: 100%; height: 100%; position: absolute; flex-grow: 1; display: inline" >
+          <img id="vComment" width="720" height="1560" src="img/Screenshot_2020-11-07-16-35-27-473_apijson.demo.jpg" style="min-width: 270px; min-height: 585px; max-width: 300px; width: 45%; height: 92%; margin: 4px; position: relative; " />
+          <img id="vInput" width="720" height="1560" src="img/Screenshot_2020-11-07-16-37-36-400_apijson.demo.jpg" style="min-width: 270px; min-height: 585px; max-width: 300px; width: 45%; height: 92%; margin: 4px; right: 0px" />
         </div>
 
         <div v-show="isRandomShow" style="position: absolute; right: 0px;
-          width: 40%; min-width: 300px; height: 100%;
+          width: 35%; min-width: 300px; height: 100%; background: white;
           border-left: #DDD 1px solid; z-index: 100;" wrap="off" >
               <div class="left-bar" style="border-top: #DDD 1px solid; position: relative">
                   <a style="display: flex;flex-grow: 1;padding-left: 10px;padding-right: 2px;font-size: medium;color: black" >{{ (isRandomListShow || StringUtil.isEmpty(randomTestTitle, true) ? '步骤 Step' : randomTestTitle) + (isRandomListShow || isRandomSubListShow ? ' (' + ((isRandomListShow ? randoms : randomSubs) || []).length + ')' : '') }}
@@ -684,7 +669,7 @@
   var vVerify = document.getElementById("vVerify");
   var vRemember = document.getElementById("vRemember");
 
-  vUrl.value = new String('divide'); // 'countArray'); //main.js里访问不到，可能是script引用顺序问题
+  vUrl.value = new String('请求界面旋转屏幕'); // 'countArray'); //main.js里访问不到，可能是script引用顺序问题
 
   var vMarkdown = document.getElementById('vMarkdown');
   var vPage = document.getElementById('vPage');
@@ -699,15 +684,6 @@
   var vRandomSubPage = document.getElementById('vRandomSubPage');
   var vRandomSubCount = document.getElementById('vRandomSubCount');
   var vRandomSubSearch = document.getElementById('vRandomSubSearch');
-
-
-  function onScrollChanged() {
-    $(vComment).scrollLeft(vInput.scrollLeft);
-    $(vComment).scrollTop(vInput.scrollTop);
-  }
-
-  //vComment跟随vInput滚动，避免JSON重叠"露馅"
-  $(vInput).on('scroll', onScrollChanged);
 
 
   function onURLScrollChanged() {

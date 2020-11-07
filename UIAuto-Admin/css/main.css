@@ -162,7 +162,7 @@ a:active svg, a:hover svg{
   left: 0;
   top: 50px;
   bottom: 0;
-  width: 50%;
+  width: 46%;
   box-shadow: 1px 1px 1px rgba(245, 244, 244, 0.52);
   padding-top: 40px;
   padding-bottom: 10px;
@@ -210,10 +210,10 @@ textarea {
 
 .side-right {
   position: absolute;
-  left: 50%;
+  left: 46%;
   top: 50px;
   bottom: 0;
-  width: 50%;
+  width: 54%;
   padding-left: 5px;
   padding-bottom: 10px;
   display: flex;
@@ -376,8 +376,8 @@ textarea {
   width: 370px;
   background-color: #b5b5b5;
   left: 50%;
-  margin-left: -150px;
-  margin-top: 100px;
+  margin-left: -500px;
+  margin-top: 192px;
   padding: 30px;
   z-index: 100;
   border: #dadada  10px solid;
@@ -478,7 +478,7 @@ textarea {
   position: absolute;
   top: 50px;
   bottom: 0;
-  left: 50%;
+  left: 46%;
   z-index: 100;
   cursor: w-resize;
   border-right: rgba(221, 221, 221, 0.34) 1px solid;

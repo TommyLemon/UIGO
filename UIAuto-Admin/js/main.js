@@ -465,7 +465,7 @@
   var doc
   var output
 
-  var isSingle = true
+  var isSingle = false
 
   var doneCount
 
@@ -482,7 +482,7 @@
       error: {},
       requestVersion: 3,
       requestCount: 1,
-      urlComment: ': Integer  // 计算数组长度',
+      urlComment: '  // 1080x2340, Android 9.0, Xiaomi MIX 3, IMEI 8698100377666021',
       historys: [],
       history: {name: '请求0'},
       remotes: [],
@@ -716,8 +716,7 @@
           vUrl.value = branchUrl
         }
 
-        vUrlComment.value = isSingle || StringUtil.isEmpty(App.urlComment, true)
-          ? '' : vUrl.value + App.urlComment;
+        vUrlComment.value = isSingle || StringUtil.isEmpty(App.urlComment, true) ? '' : vUrl.value + App.urlComment;
       },
 
       //设置基地址
@@ -2495,70 +2494,68 @@
             throw new Error(e2.message)
           }
 
-          before = App.toDoubleJSON(StringUtil.trim(before));
-          log('onHandle  before = \n' + before);
-
-          var afterObj;
-          var after;
-          try {
-            afterObj = jsonlint.parse(before);
-            after = JSON.stringify(afterObj, null, "    ");
-            before = after;
-          }
-          catch (e) {
-            log('main.onHandle', 'try { return jsonlint.parse(before); \n } catch (e) {\n' + e.message)
-            log('main.onHandle', 'return jsonlint.parse(App.removeComment(before));')
-
-            try {
-              afterObj = jsonlint.parse(App.removeComment(before));
-              after = JSON.stringify(afterObj, null, "    ");
-            } catch (e2) {
-              throw new Error('请求 JSON 格式错误！请检查并编辑请求！\n\n如果JSON中有注释，请 手动删除 或 点击左边的 \'/" 按钮 来去掉。\n\n' + e2.message)
-            }
-          }
-
-          //关键词let在IE和Safari上不兼容
-          var code = '';
+          // before = App.toDoubleJSON(StringUtil.trim(before));
+          // log('onHandle  before = \n' + before);
+          //
+          // var afterObj;
+          // var after;
           // try {
-          //   code = this.getCode(after); //必须在before还是用 " 时使用，后面用会因为解析 ' 导致失败
-          // } catch(e) {
-          //   code = '\n\n\n建议:\n使用其它浏览器，例如 谷歌Chrome、火狐FireFox 或者 微软Edge， 因为这样能自动生成请求代码.'
-          //     + '\nError:\n' + e.message + '\n\n\n';
+          //   afterObj = jsonlint.parse(before);
+          //   after = JSON.stringify(afterObj, null, "    ");
+          //   before = after;
+          // }
+          // catch (e) {
+          //   log('main.onHandle', 'try { return jsonlint.parse(before); \n } catch (e) {\n' + e.message)
+          //   log('main.onHandle', 'return jsonlint.parse(App.removeComment(before));')
+          //
+          //   try {
+          //     afterObj = jsonlint.parse(App.removeComment(before));
+          //     after = JSON.stringify(afterObj, null, "    ");
+          //   } catch (e2) {
+          //     throw new Error('请求 JSON 格式错误！请检查并编辑请求！\n\n如果JSON中有注释，请 手动删除 或 点击左边的 \'/" 按钮 来去掉。\n\n' + e2.message)
+          //   }
           // }
 
-          if (isSingle) {
-            if (before.indexOf('"') >= 0) {
-              before = before.replace(/"/g, "'");
-            }
-          }
-          else {
-            if (before.indexOf("'") >= 0) {
-              before = before.replace(/'/g, '"');
-            }
-          }
+          // //关键词let在IE和Safari上不兼容
+          // var code = '';
+          // // try {
+          // //   code = this.getCode(after); //必须在before还是用 " 时使用，后面用会因为解析 ' 导致失败
+          // // } catch(e) {
+          // //   code = '\n\n\n建议:\n使用其它浏览器，例如 谷歌Chrome、火狐FireFox 或者 微软Edge， 因为这样能自动生成请求代码.'
+          // //     + '\nError:\n' + e.message + '\n\n\n';
+          // // }
+          //
+          // if (isSingle) {
+          //   if (before.indexOf('"') >= 0) {
+          //     before = before.replace(/"/g, "'");
+          //   }
+          // }
+          // else {
+          //   if (before.indexOf("'") >= 0) {
+          //     before = before.replace(/'/g, '"');
+          //   }
+          // }
 
-          vInput.value = before;
-          vSend.disabled = false;
-          vOutput.value = output = 'OK，请点击 [运行方法] 按钮来测试。[点击这里查看视频教程](http://i.youku.com/apijson)' + code;
+          // vInput.value = before;
+          // vSend.disabled = false;
+          vOutput.value = output = 'OK，请点击 [开始] 按钮来测试。[点击这里查看视频教程](http://i.youku.com/apijson)' // + code;
 
 
           App.showDoc()
 
           // try {
-          var m = App.getMethod();
-          var c = isSingle ? '' : CodeUtil.parseComment(after, docObj == null ? null : docObj['[]'], m, App.database)
+          // var m = App.getMethod();
+          // var c = isSingle ? '' : CodeUtil.parseComment(after, docObj == null ? null : docObj['[]'], m, App.database)
+          //
+          // if (isSingle != true && afterObj.tag == null) {
+          //   m = m == null ? 'GET' : m.toUpperCase()
+          //   if (['GETS', 'HEADS', 'POST', 'PUT', 'DELETE'].indexOf(m) >= 0) {
+          //     c += ' ! 非开放请求必须设置 tag ！例如 "tag": "User"'
+          //   }
+          // }
+          // vComment.value = c
+          vUrlComment.value = isSingle || StringUtil.isEmpty(App.urlComment, true) ? '' : vUrl.value + App.urlComment;
 
-          if (isSingle != true && afterObj.tag == null) {
-            m = m == null ? 'GET' : m.toUpperCase()
-            if (['GETS', 'HEADS', 'POST', 'PUT', 'DELETE'].indexOf(m) >= 0) {
-              c += ' ! 非开放请求必须设置 tag ！例如 "tag": "User"'
-            }
-          }
-          vComment.value = c
-          vUrlComment.value = isSingle || StringUtil.isEmpty(App.urlComment, true)
-            ? '' : vUrl.value + App.urlComment;
-
-          onScrollChanged()
           onURLScrollChanged()
           // } catch (e) {
           //   log('onHandle   try { vComment.value = CodeUtil.parseComment >> } catch (e) {\n' + e.message);
@@ -2598,17 +2595,8 @@
         isSingle = ! isSingle;
 
         this.isTestCaseShow = false
-
-        // // 删除注释 <<<<<<<<<<<<<<<<<<<<<
-        //
-        // var input = this.removeComment(vInput.value);
-        // if (vInput.value != input) {
-        //   vInput.value = input
-        // }
-        //
-        // // 删除注释 >>>>>>>>>>>>>>>>>>>>>
-
-        this.onChange(false);
+        //TODO 切换图片与视频位置
+        // this.onChange(false);
       },
 
       /**获取显示的请求类型名称
@@ -4628,7 +4616,7 @@
 
       //无效，只能在index里设置 vUrl.value = this.getCache('', 'URL_BASE')
       this.listHistory()
-      this.transfer()
+      this.onChange(false)
 
     }
   })
