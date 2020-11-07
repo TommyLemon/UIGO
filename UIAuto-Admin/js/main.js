@@ -2602,10 +2602,6 @@
         //TODO 切换图片与视频位置
         // this.onChange(false);
 
-
-        (isSingle ? vComment : vInput).removeAttribute('left');
-        (! isSingle ? vComment : vInput).setAttribute('left', '0px');
-
         vContainer.removeChild(isSingle ? vComment : vInput);
         vContainer.appendChild(isSingle ? vComment : vInput);
       },
