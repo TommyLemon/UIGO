@@ -563,7 +563,7 @@
       },
       type: OPERATE_TYPE_RECORD,
       types: [ OPERATE_TYPE_RECORD, OPERATE_TYPE_REVIEW, OPERATE_TYPE_REPLAY ],
-      host: 'apijson.demo.server.MathUtil.', // 'apijson.demo.server.DemoFunction.',
+      host: 'unitauto.test.TestUtil.', // 'apijson.demo.server.DemoFunction.',
       branch: 'countArray',
       database: 'MYSQL',// 'POSTGRESQL',
       schema: 'sys',
@@ -2127,7 +2127,7 @@
               'page': this.randomPage || 0,
               'Input': {
                 'flowId': item.id,
-                '@order': "time-",
+                '@order': "step+,time+,downTime+,eventTime+",
                 'name$': search
               },
               'Output': {
@@ -3413,34 +3413,49 @@
           }
           this.testRandomProcess = '正在测试: ' + 0 + '/' + allCount
 
-          if (testSubList) {
-            this.resetCount(this.currentRandomItem)
-          }
+          // if (testSubList) {
+          //   this.resetCount(this.currentRandomItem)
+          // }
 
-          var json = this.getRequest(vInput.value) || {}
-          var url = this.getUrl()
+          // var json = this.getRequest(vInput.value) || {}
+          // var url = this.getUrl()
           var header = this.getHeader(vHeader.value)
 
-          ORDER_MAP = {}  //重置
+          var inputList = []
+          for (var i = 0; i < list.length; i ++) {
+            inputList[i] = list[i].Input
+          }
 
-          for (var i = 0; i < (limit != null ? limit : list.length); i ++) {  //limit限制子项测试个数
-            const item = list[i]
-            const random = item == null ? null : item.Output
-            if (random == null || random.name == null) {
-              doneCount ++
-              continue
+
+          App.testRandomProcess = doneCount >= allCount ? '' : ('正在准备...')
+          App.request(false, REQUEST_TYPE_JSON, App.project + '/method/invoke', {
+            "package": 'apijson.demo.application', // 'uiauto',
+            "class": 'DemoApplication', // 'UIAutoApp',
+            "constructor": 'getInstance',
+            "method": 'prepareRecover',
+            "methodArgs": [ inputList ]
+          }, header, function (url_, res_, err_) {
+            try {
+              App.onResponse(url_, res_, err_)
+              App.log('test  App.request >> res.data = ' + JSON.stringify(res_.data, null, '  '))
+            } catch (e) {
+              App.log('test  App.request >> } catch (e) {\n' + e.message)
             }
-            this.log('test  random = ' + JSON.stringify(random, null, '  '))
 
-            const index = i
+            if (res_.data == null || res_.data.code != 200) {
+              alert('准备失败！' + (res_.data || {}).msg + '\n具体原因见右侧 JSON 结果及客户端日志')
+              App.testRandomProcess = ''
+              return
+            }
 
-            const itemAllCount = random.count || 0
-            allCount += (itemAllCount - 1)
-
-            this.testRandomSingle(show, false, itemAllCount > 1 && ! testSubList, item, this.type, url, json, header, function (url, res, err) {
-
-              doneCount ++
-              App.testRandomProcess = doneCount >= allCount ? '' : ('正在测试: ' + doneCount + '/' + allCount)
+            App.testRandomProcess = '正在测试...'
+            App.request(false, REQUEST_TYPE_JSON, App.project + '/method/invoke', {
+              "package": 'apijson.demo.application', // 'uiauto',
+              "class": 'DemoApplication', // 'UIAutoApp',
+              "constructor": 'getInstance',
+              "method": 'onClickPlay',
+              "static": false
+            }, header, function (url, res, err) {
               try {
                 App.onResponse(url, res, err)
                 App.log('test  App.request >> res.data = ' + JSON.stringify(res.data, null, '  '))
@@ -3448,9 +3463,48 @@
                 App.log('test  App.request >> } catch (e) {\n' + e.message)
               }
 
-              App.compareResponse(allCount, list, index, item, res.data, true, App.currentAccountIndex, false, err)
-            })
-          }
+              var data = res.data || {}
+              var outputList = data.outputList || []
+
+              for (var j = 0; j <= outputList.length; j++) {
+                doneCount++
+                App.testRandomProcess = doneCount >= allCount ? '' : ('正在测试: ' + doneCount + '/' + allCount)
+                App.compareResponse(allCount, list, index, item, res.data, true, App.currentAccountIndex, false, err)
+              }
+
+            });
+
+          });
+          // ORDER_MAP = {}  //重置
+
+          // for (var i = 0; i < (limit != null ? limit : list.length); i ++) {  //limit限制子项测试个数
+          //   const item = list[i]
+          //   const random = item == null ? null : item.Output
+          //   if (random == null || random.name == null) {
+          //     doneCount ++
+          //     continue
+          //   }
+          //   this.log('test  random = ' + JSON.stringify(random, null, '  '))
+          //
+          //   const index = i
+          //
+          //   const itemAllCount = random.count || 0
+          //   allCount += (itemAllCount - 1)
+          //
+          //   this.testRandomSingle(show, false, itemAllCount > 1 && ! testSubList, item, this.type, url, json, header, function (url, res, err) {
+          //
+          //     doneCount ++
+          //     App.testRandomProcess = doneCount >= allCount ? '' : ('正在测试: ' + doneCount + '/' + allCount)
+          //     try {
+          //       App.onResponse(url, res, err)
+          //       App.log('test  App.request >> res.data = ' + JSON.stringify(res.data, null, '  '))
+          //     } catch (e) {
+          //       App.log('test  App.request >> } catch (e) {\n' + e.message)
+          //     }
+          //
+          //     App.compareResponse(allCount, list, index, item, res.data, true, App.currentAccountIndex, false, err)
+          //   })
+          // }
         }
       },
       /**随机测试，动态替换键值对
@@ -3519,22 +3573,22 @@
                   }
                 };
 
-            if (show == true) {
-              vInput.value = JSON.stringify(constJson, null, '    ');
-              App.send(false, cb);
-            }
-            else {
-              var httpReq = {
-                "package": constJson.package || App.getPackage(url),
-                "class": constJson.class || App.getClass(url),
-                "classArgs": constJson.classArgs,
-                "method": constJson.name || App.getMethod(url),
-                "methodArgs": constJson.methodArgs,
-                "static": constJson.static
+                if (show == true) {
+                  vInput.value = JSON.stringify(constJson, null, '    ');
+                  App.send(false, cb);
+                }
+                else {
+                  var httpReq = {
+                    "package": constJson.package || App.getPackage(url),
+                    "class": constJson.class || App.getClass(url),
+                    "classArgs": constJson.classArgs,
+                    "method": constJson.name || App.getMethod(url),
+                    "methodArgs": constJson.methodArgs,
+                    "static": constJson.static
+                  }
+                  App.request(false, REQUEST_TYPE_JSON, App.project + '/method/invoke', httpReq, header, cb);
+                }
               }
-              App.request(false, REQUEST_TYPE_JSON, App.project + '/method/invoke', httpReq, header, cb);
-            }
-          }
 
               if (testSubList && respCount >= count) { // && which >= count - 1) {
                 App.randomSubs = subs

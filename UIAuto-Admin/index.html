@@ -100,7 +100,6 @@
                    {{ User.id != null && User.id > 0 ? User.name : '设置' }}
                 </a>
                 <ul class="themes pop" style="z-index: 200;padding: 0px;margin-top: 10px;width: 300px">
-                  <a style="border-bottom: #DDD 1px solid;width: 100%" href="javascript:void(0)" @click="showConfig(StringUtil.isEmpty(host, true), 3)">{{ StringUtil.isEmpty(host, true) ? '隐藏(固定)方法路径: 可用空格隔开' : '显示(编辑)方法路径: \n' + host }}</a>
                   <a style="border-bottom: #DDD 1px solid;width: 100%" href="javascript:void(0)" @click="showConfig(! isDelegateEnabled, 9)">服务器代理: {{ isDelegateEnabled ? '已开启，点击关闭' : '已关闭，点击开启' }}</a>
                   <a style="border-bottom: #DDD 1px solid;width: 100%;display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 1; overflow: hidden;" href="javascript:void(0)" @click="showConfig(! isRandomShow, 5)">{{ isRandomShow ? '隐藏(固定)步骤 Step' : '显示(编辑)步骤 Step' }}</a>
                   <a style="border-bottom: #DDD 1px solid;width: 100%;display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 1; overflow: hidden;" href="javascript:void(0)" @click="showConfig(! isHeaderShow, 4)">{{ isHeaderShow ? '隐藏(固定)请求头 Request Header' : '显示(编辑)请求头 Request Header' }}</a>
@@ -263,7 +262,7 @@
 
               <div v-show="isHeaderShow" style="width: 100%; height: 150px; position: relative;" >
                   <div class="left-bar" style="border-top: #DDD 1px solid; position: relative">
-                      <a style="padding-left: 10px;padding-right: 2px;font-size: medium;color: black" >请求头 Request Header<a style="display: flex;flex-grow: 1;padding-right: 10px;padding-top: 2px"> (每行都按 key : value 格式)</a></a>
+                      <a style="padding-left: 10px;padding-right: 2px;font-size: medium;color: black" >请求头 Request Header<a style="display: flex;flex-grow: 1;padding-right: 10px;padding-top: 2px"> (每行都按 key: value 格式)</a></a>
                       <a class="hint--top @cli-tool" data-hint="隐藏" style="float: right;padding: 8px;height: 100%"  href="javascript:void(0)" @click="showConfig(false, 4)">
                           <svg class="icon close-icon"  >
                               <use xlink:href="svg/icon.svg#close"></use>
@@ -669,7 +668,7 @@
   var vVerify = document.getElementById("vVerify");
   var vRemember = document.getElementById("vRemember");
 
-  vUrl.value = new String('请求界面旋转屏幕'); // 'countArray'); //main.js里访问不到，可能是script引用顺序问题
+  vUrl.value = new String('测试界面-旋转屏幕'); // 'countArray'); //main.js里访问不到，可能是script引用顺序问题
 
   var vMarkdown = document.getElementById('vMarkdown');
   var vPage = document.getElementById('vPage');
