@@ -1187,7 +1187,7 @@
         var random = (item || {}).Output || {}
         this.randomTestTitle = random.name
         this.testRandomCount = random.count
-        vRandom.value = StringUtil.get(random.config)
+        vRandom.value = StringUtil.get(random.config) || ''
 
         var response = ((item || {}).TestRecord || {}).response
         if (StringUtil.isEmpty(response, true) == false) {
@@ -1227,6 +1227,25 @@
             App.randoms = []
             if (App.type != OPERATE_TYPE_RECORD) {
               App.showRandomList(true, item)
+            }
+
+            if (item.logUrl != null && item.logUrl.indexOf('://') > 0) {
+              // App.request(false, REQUEST_TYPE_PARAM, item.logUrl, null, {'Accept:': 'text/plain;charset=UTF-8'}, function (url, res, err) {
+              //   output = res.data || ''
+              //   vOutput.value = output
+              //   App.view = 'output'
+              // })
+
+              axios({
+                url: (this.isDelegateEnabled ? this.server + '/delegate?$_delegate_url=' : '') + StringUtil.noBlank(item.logUrl),
+                method: 'GET',
+                responseType: 'text', // important
+                withCredentials: true
+              }).then((res) => {
+                  output = res.data || ''
+                  vOutput.value = output
+                  App.view = 'output'
+              });
             }
           }
 

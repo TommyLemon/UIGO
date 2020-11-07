@@ -140,9 +140,6 @@
 
       <a v-show="! isLocalShow" class="hint--top save-tool" data-hint="点击切换" href="javascript:void(0)" @click="enableCross(! isCrossEnabled)">{{ crossProcess }}</a>
       <a v-show="! isLocalShow" class="hint--top save-tool" data-hint="点击切换" href="javascript:void(0)" @click="enableML(! isMLEnabled)">{{ testProcess }}</a>
-      <a v-show="! isLocalShow" class="hint--top @cli-tool" data-hint="回归测试" href="javascript:void(0)" @click="test(false, isCrossEnabled ? -1 : currentAccountIndex)">
-        <img class="icon" src="img/refresh.png"/>
-      </a>
       <a v-show="isLocalShow" class="hint--top @cli-tool" data-hint="清空" href="javascript:void(0)" @click="clearLocal()">
         <svg class="icon" >
           <use xlink:href="svg/icon.svg#trash"></use>
@@ -165,17 +162,20 @@
               <li v-for="(item, index) in testCases" >
                   <div style="display: inline-table; padding: 0px; margin: 0px" >
                       <img width="90" height="195" src="img/Screenshot_2020-11-07-16-38-20-932_apijson.demo.jpg" style="width: 90px; min-height: 160px; height: 100%; margin: 4px; position: relative;" @click="restoreRemote(item)" href="javascript:void(0)"/>
-                      <input style="width: 75%; min-width: 90px; align-content: flex-start; position: absolute; left: 118px; top: 14px; font-size: medium; color: black" ref="testCaseMethodTexts" v-model="(item.Flow || {}).name" />
-                      <a style="white-space: pre-wrap; display: inline-flex; height: 100%; position: absolute; left: 118px; top: 45px; font-size: small; color: dimgray" ref="testCaseMethodTexts" @click="restoreRemote(item)" href="javascript:void(0)">{{
+                      <a style="width: 75%; min-width: 90px; align-content: flex-start; position: absolute; left: 118px; top: 14px; font-size: medium; color: black" >{{ (item.Flow || {}).name }}</a>
+                      <a style="white-space: pre-wrap; display: inline-flex; height: 100%; position: absolute; left: 118px; top: 40px; font-size: small; color: dimgray" @click="restoreRemote(item)" href="javascript:void(0)">{{
                           '时间：' + (item.Flow.time == null ? '?' : item.Flow.time)
                           + '\n品牌：' + ((item.Device || {}).brand || '?')
                           + '\n机型：' + ((item.Device || {}).model || '?')
                           + '\n系统：' + 'Android ' + ((item.System || {}).versionName || '?')
-                          + '\n分辨率：' + ((item.Device || {}).height || '?') + 'x' + ((item.Device || {}).width || '?')
+                          + '\n屏幕：' + ((item.Device || {}).width || '?') + 'x' + ((item.Device || {}).height || '?')
                           + '\nIMEI：' + ((item.Flow || {}).imei || '?')
+                          + '\n账号：' + ((item.Flow || {}).accountName || '?')
                           }}</a>
 
-                      <div :style="{ background: item.compareColor }" v-show="item.compareType != null" style="position: absolute; bottom: 4px; right: 26px; display: inline-block;">
+                      <input style="width: 75%; min-width: 90px; align-content: flex-start; position: absolute; left: 118px; bottom: 14px; right: 10px" v-model="(item.Flow || {}).note" placeholder="备注" />
+
+                      <div :style="{ background: item.compareColor }" v-show="item.compareType != null" style="position: absolute; bottom: 14px; right: 10px; display: inline-block;">
                           <button class="hint--left" ref="testResultButtons" @mouseover="setTestHint(index, item)" v-show="item.compareType != null" @click="handleTest(false, index, item)" style="position: relative; height: 100%">{{ item.compareMessage + (item.showType == 'before' ? '-前' : '-后') }}</button>
                           <svg class="icon" style="position: relative;margin-left: 10px" @click="downloadTest(index, item)">
                               <use xlink:href="svg/icon.svg#export-txt"></use>
