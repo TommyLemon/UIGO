@@ -272,8 +272,7 @@ public class DemoApplication extends Application {
   SharedPreferences cache;
   private long flowId = 0;
 
-  String screenshotDirPath;
-  File diretory;
+  File parentDirectory;
   @Override
   public void onCreate() {
     super.onCreate();
@@ -282,11 +281,10 @@ public class DemoApplication extends Application {
     UnitAutoApp.init(this);
     Log.d(TAG, "项目启动 >>>>>>>>>>>>>>>>>>>> \n\n");
 
-    screenshotDirPath = Environment.getExternalStorageDirectory().getAbsolutePath() + "/UnitAuto/record/screenshot";
-    diretory = getExternalFilesDir(Environment.DIRECTORY_PICTURES); // new File(screenshotDirPath);
-    if (diretory.exists() == false) {
+    parentDirectory = getExternalFilesDir(Environment.DIRECTORY_PICTURES); // new File(screenshotDirPath);
+    if (parentDirectory.exists() == false) {
       try {
-        diretory.mkdir();
+        parentDirectory.mkdir();
       } catch (Throwable e) {
         e.printStackTrace();
       }
@@ -1628,7 +1626,8 @@ public class DemoApplication extends Application {
 
           Window window = activity == null ? null : activity.getWindow();
           if (window != null && (eventNode.item == null || eventNode.action == MotionEvent.ACTION_DOWN)) {
-              obj.put("screenshotUrl", screenshot(diretory, window, inputId, toInputId));  // TODO 同步或用协程来上传图片
+            // TODO 同步或用协程来上传图片
+            obj.put("screenshotUrl", screenshot(directory == null || directory.exists() == false ? parentDirectory : directory, window, inputId, toInputId));
           }
         }
         outputList.add(obj);
@@ -1639,7 +1638,7 @@ public class DemoApplication extends Application {
   /**屏幕截图
    * @return
    */
-  public static String screenshot(File diretory, Window window, Long inputId, Long toInputId) {
+  public static String screenshot(File directory, Window window, Long inputId, Long toInputId) {
     if (window == null) {
       return null;
     }
@@ -1658,10 +1657,10 @@ public class DemoApplication extends Application {
       }
 
       //保存图片
-      File file = File.createTempFile("unitauto_screenshot_toInputId_" + Math.abs(toInputId) + "_time_" + System.currentTimeMillis(), ".png", diretory);
+      File file = File.createTempFile("unitauto_screenshot_toInputId_" + Math.abs(toInputId) + "_time_" + System.currentTimeMillis(), ".jpg", directory);
       filePath = file.getAbsolutePath();
       fos = new FileOutputStream(filePath);
-      bitmap.compress(Bitmap.CompressFormat.PNG, 50, fos);
+      bitmap.compress(Bitmap.CompressFormat.JPEG, 100, fos);
     }
     catch (Throwable e) {
       Log.e(TAG, "screenshot 截屏异常：" + e.toString());
@@ -1883,6 +1882,7 @@ public class DemoApplication extends Application {
     onEventChange(0, 0L);
   }
 
+  private File directory;
   public void prepareReplay(JSONArray eventList) {
     setEventList(eventList);
     isShowing = true;
@@ -1900,6 +1900,16 @@ public class DemoApplication extends Application {
       @Override
       public void run() {
         prepareAndSendEvent(eventList);
+
+        try {
+          directory = new File(parentDirectory.getAbsolutePath() + "/flowId_" + Math.abs(flowId));
+          if (directory.exists() == false || directory.isDirectory() == false) {
+            directory.delete();
+          }
+          directory.mkdir();
+        } catch (Throwable e) {
+          e.printStackTrace();
+        }
 
         new Handler(getMainLooper()).post(new Runnable() {
           @Override
