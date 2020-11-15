@@ -19,8 +19,10 @@ import android.app.Application;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
+import android.graphics.Bitmap;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
@@ -56,6 +58,9 @@ import com.yhao.floatwindow.IFloatWindow;
 import com.yhao.floatwindow.MoveType;
 import com.yhao.floatwindow.ViewStateListener;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.text.SimpleDateFormat;
 import java.util.LinkedList;
@@ -109,31 +114,40 @@ public class DemoApplication extends Application {
         Node<InputEvent> curNode = (Node<InputEvent>) msg.obj;
         currentEventNode = curNode;
 
+        // output(null, curNode, activity);
+
         while (curNode != null && curNode.disable) {
           step ++;
           curNode = curNode.next;
+
+          if (curNode != null && curNode.item != null) {
+            output(null, curNode, activity);
+          }
         }
 
         step ++;
-        tvControllerCount.setText(step + "/" + allStep);
+        boolean canRefreshUI = curNode == null || curNode.type != InputUtil.EVENT_TYPE_TOUCH || curNode.action != MotionEvent.ACTION_MOVE;
 
-        if (curNode == null || curNode.type != InputUtil.EVENT_TYPE_TOUCH || curNode.action != MotionEvent.ACTION_MOVE) {
+        if (canRefreshUI) {
+          tvControllerCount.setText(step + "/" + allStep);
           onEventChange(step - 1, curNode == null ? 0 : curNode.type);  // move 时刷新容易卡顿
         }
 
         if (curNode == null) {
+          tvControllerCount.setText(step + "/" + allStep);
           tvControllerPlay.setText(R.string.replay);
           showCoverAndSplit(true, false);
+          isSplitShowing = false;
+          isSplit2Showing = false;
           return;
         }
 
-
-        //暂停，等待时机
-        if (curNode.type == InputUtil.EVENT_TYPE_UI || curNode.type == InputUtil.EVENT_TYPE_HTTP) {
-          return;
-        }
 
         InputEvent curItem = curNode.item;
+        //暂停，等待时机
+        if (curItem == null) { // curNode.type == InputUtil.EVENT_TYPE_UI || curNode.type == InputUtil.EVENT_TYPE_HTTP) {
+          return;
+        }
 
         Node<InputEvent> prevNode = curNode.prev;
         InputEvent prevItem = prevNode == null ? null : prevNode.item;
@@ -143,24 +157,29 @@ public class DemoApplication extends Application {
             ? (curNode.time - prevNode.time)
             : (curItem.getEventTime() - prevItem.getEventTime())
           );
-          tvControllerTime.setText(TIME_FORMAT.format(duration));
+
+          if (canRefreshUI) {
+            tvControllerTime.setText(TIME_FORMAT.format(duration));
+          }
         }
 
-        splitX = curNode.splitX;
-        splitY = curNode.splitY;
-        if (floatBall != null && isSplitShowing) {
-          //居然怎么都不更新 vSplitX 和 vSplitY
-          // floatBall.hide();
-          // floatBall.updateX(windowX + splitX - splitSize/2);
-          // floatBall.updateY(windowY + splitY - splitSize/2);
-          // floatBall.show();
+        if (canRefreshUI) {
+          splitX = curNode.splitX;
+          splitY = curNode.splitY;
+          if (floatBall != null && isSplitShowing) {
+            //居然怎么都不更新 vSplitX 和 vSplitY
+            // floatBall.hide();
+            // floatBall.updateX(windowX + splitX - splitSize/2);
+            // floatBall.updateY(windowY + splitY - splitSize/2);
+            // floatBall.show();
 
-          //太卡
-          if (floatBall.getX() != (curNode.splitX - splitSize / 2)
-            || floatBall.getY() != (curNode.splitY - splitSize / 2)) {
-            // FloatWindow.destroy("floatBall");
-            // floatBall = null;
-            floatBall = showSplit(isSplitShowing, splitX, splitY, "floatBall", vFloatBall, vSplitX, vSplitY);
+            //太卡
+            if (floatBall.getX() != (curNode.splitX - splitSize / 2)
+              || floatBall.getY() != (curNode.splitY - splitSize / 2)) {
+              // FloatWindow.destroy("floatBall");
+              // floatBall = null;
+              floatBall = showSplit(isSplitShowing, splitX, splitY, "floatBall", vFloatBall, vSplitX, vSplitY);
+            }
           }
         }
 
@@ -170,27 +189,36 @@ public class DemoApplication extends Application {
         Node<InputEvent> nextNode = curNode.next;
         long firstTime = nextNode == null ? 0 : nextNode.time;
         while (nextNode != null && nextNode.disable) {
+          if (nextNode.item != null) {
+            output(null, nextNode, activity);
+          }
+
           step ++;
           nextNode = nextNode.next;
         }
-        long lastTime = nextNode == null ? 0 : nextNode.time;
+        // long lastTime = nextNode == null ? 0 : nextNode.time;
 
         msg = new Message();
         msg.obj = nextNode;
+
+        InputEvent nextItem = nextNode == null ? null : nextNode.item;
         //暂停，等待时机
-        if (nextNode != null && (nextNode.type == InputUtil.EVENT_TYPE_UI || nextNode.type == InputUtil.EVENT_TYPE_HTTP)) {
+        if (nextNode != null && nextItem == null) { // (nextNode.type == InputUtil.EVENT_TYPE_UI || nextNode.type == InputUtil.EVENT_TYPE_HTTP)) {
+          step --;
           handleMessage(msg);
+
           dispatchEventToCurrentActivity(curNode.item, false);
         }
         else {
+          output(null, curNode, activity);
+
           dispatchEventToCurrentActivity(curNode.item, false);
 
-          InputEvent nextItem = nextNode == null ? null : nextNode.item;
           sendMessageDelayed(
             msg, (nextNode == null ? 0 : (nextItem == null || curItem == null
               ? (nextNode.time - curNode.time)
               : (nextItem.getEventTime() - curItem.getEventTime())
-            )) + (lastTime <= 0 || firstTime <= 0 ? 0 : lastTime - firstTime)  // 补偿 diable 项跳过的等待时间
+            ))  // 相邻执行事件时间差本身就包含了  + (lastTime <= 0 || firstTime <= 0 ? 10 : lastTime - firstTime)  // 补偿 disable 项跳过的等待时间
           );
         }
 
@@ -244,6 +272,8 @@ public class DemoApplication extends Application {
   SharedPreferences cache;
   private long flowId = 0;
 
+  String screenshotDirPath;
+  File diretory;
   @Override
   public void onCreate() {
     super.onCreate();
@@ -252,6 +282,16 @@ public class DemoApplication extends Application {
     UnitAutoApp.init(this);
     Log.d(TAG, "项目启动 >>>>>>>>>>>>>>>>>>>> \n\n");
 
+    screenshotDirPath = Environment.getExternalStorageDirectory().getAbsolutePath() + "/UnitAuto/record/screenshot";
+    diretory = getExternalFilesDir(Environment.DIRECTORY_PICTURES); // new File(screenshotDirPath);
+    if (diretory.exists() == false) {
+      try {
+        diretory.mkdir();
+      } catch (Throwable e) {
+        e.printStackTrace();
+      }
+    }
+
     initUIAuto();
   }
 
@@ -259,7 +299,10 @@ public class DemoApplication extends Application {
     return getSharedPreferences(TAG, Context.MODE_PRIVATE);
   }
 
-  public void onUIAutoActivityCreate(Activity activity) {
+  public void onUIAutoActivityCreate() {
+    onUIAutoActivityCreate(getCurrentActivity());
+  }
+  public void onUIAutoActivityCreate(@NonNull Activity activity) {
     Window window = activity.getWindow();
     //反而让 vFloatCover 与底部差一个导航栏高度 window.addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
 
@@ -1474,6 +1517,8 @@ public class DemoApplication extends Application {
     }
 
     if (isReplay) {
+      output(null, currentEventNode, activity);
+
       if (currentEventNode != null && currentEventNode.type == InputUtil.EVENT_TYPE_UI && currentEventNode.action == action
         && (currentEventNode.activity == null || currentEventNode.activity.equals(activity == null ? null : activity.getClass().getName()))
         && (currentEventNode.fragment == null || currentEventNode.fragment.equals(fragment == null ? null : fragment.getClass().getName()))
@@ -1510,6 +1555,8 @@ public class DemoApplication extends Application {
     }
 
     if (isReplay) {
+      output(null, currentEventNode, activity);
+
       if (currentEventNode != null && currentEventNode.type == InputUtil.EVENT_TYPE_HTTP && currentEventNode.action == action
         && (url != null && url.equals(currentEventNode.url))
         && (currentEventNode.activity == null || currentEventNode.activity.equals(activity == null ? null : activity.getClass().getName()))
@@ -1533,6 +1580,114 @@ public class DemoApplication extends Application {
 
       addEvent(obj);
     }
+  }
+
+  private JSONArray outputList = new JSONArray();
+  public JSONArray getOutputList() {
+    return outputList;
+  }
+  public static List<Object> getOutputList(DemoApplication app, int limit, int offset) {
+    JSONArray outputList = app.getOutputList();
+    int size = outputList == null ? 0 : outputList.size();
+    if (size <= 0) {
+      return app.isSplitShowing ? new JSONArray() : null;
+    }
+
+    if (offset >= size) {
+      return app.isSplitShowing ? new JSONArray() : null;
+    }
+
+    return outputList.subList(offset, Math.min(offset + limit, size));
+  }
+
+  public void output(JSONObject out, Node<?> eventNode, Activity activity) {
+    if (eventNode == null) {
+      return;
+    }
+
+    new Thread(new Runnable() {
+      @Override
+      public void run() { //TODO 截屏等记录下来
+
+        Long inputId;
+        Long toInputId;
+        // if (eventNode.item == null) {  // 自动触发
+        inputId = eventNode.prev == null || eventNode.prev.disable ? null : eventNode.prev.id;
+        toInputId = eventNode.id;
+        // }
+        // else {  // 手动触发
+        //   inputId = eventNode == null || (eventNode.prev) == null ? null : eventNode.prev.id;
+        //   toInputId = eventNode == null ? null : eventNode.id;
+        // }
+
+        JSONObject obj = out != null ? out : new JSONObject(true);
+        obj.put("inputId", inputId);
+        obj.put("toInputId", toInputId);
+        if (eventNode.disable == false) {
+          obj.put("time", System.currentTimeMillis());  // TODO 如果有录屏，则不需要截屏，只需要记录时间点
+
+          Window window = activity == null ? null : activity.getWindow();
+          if (window != null && (eventNode.item == null || eventNode.action == MotionEvent.ACTION_DOWN)) {
+              obj.put("screenshotUrl", screenshot(diretory, window, inputId, toInputId));  // TODO 同步或用协程来上传图片
+          }
+        }
+        outputList.add(obj);
+      }
+    }).start();
+  }
+
+  /**屏幕截图
+   * @return
+   */
+  public static String screenshot(File diretory, Window window, Long inputId, Long toInputId) {
+    if (window == null) {
+      return null;
+    }
+
+    Bitmap bitmap = null;
+    FileOutputStream fos = null;
+    String filePath = null;
+    try {
+      synchronized (window) {  //必须，且只能是 Window，用 Activity 或 decorView 都不行 解决某些界面会报错 cannot find container of contentView
+        View decorView = window.getDecorView();
+        decorView.setDrawingCacheEnabled(true);
+        // decorView.buildDrawingCache(true);
+        bitmap = Bitmap.createBitmap(decorView.getDrawingCache());
+        decorView.destroyDrawingCache();
+        decorView.setDrawingCacheEnabled(false);
+      }
+
+      //保存图片
+      File file = File.createTempFile("unitauto_screenshot_toInputId_" + Math.abs(toInputId) + "_time_" + System.currentTimeMillis(), ".png", diretory);
+      filePath = file.getAbsolutePath();
+      fos = new FileOutputStream(filePath);
+      bitmap.compress(Bitmap.CompressFormat.PNG, 50, fos);
+    }
+    catch (Throwable e) {
+      Log.e(TAG, "screenshot 截屏异常：" + e.toString());
+    }
+    finally {
+      try {
+        bitmap.recycle();
+      } catch (Throwable e) {
+        e.printStackTrace();
+      }
+
+      if (fos != null) {
+        try {
+          fos.flush();
+        } catch (Throwable e) {
+          e.printStackTrace();
+        }
+        try {
+          fos.close();
+        } catch (Throwable e) {
+          e.printStackTrace();
+        }
+      }
+    }
+
+    return filePath;
   }
 
 
@@ -1746,7 +1901,7 @@ public class DemoApplication extends Application {
       public void run() {
         prepareAndSendEvent(eventList);
 
-        new Handler(Looper.getMainLooper()).post(new Runnable() {
+        new Handler(getMainLooper()).post(new Runnable() {
           @Override
           public void run() {
             showCover(true);

@@ -536,6 +536,7 @@
       currentDocItem: {},
       currentRemoteItem: {},
       currentRandomItem: {},
+      currentOutputList: [],
       isAdminOperation: false,
       loginType: 'login',
       isExportRemote: false,
@@ -562,13 +563,13 @@
         balance: null //点击更新提示需要判空 0.00
       },
       isVideoFirst: false,
-      type: OPERATE_TYPE_RECORD,
+      type: OPERATE_TYPE_REVIEW,
       types: [ OPERATE_TYPE_RECORD, OPERATE_TYPE_REVIEW, OPERATE_TYPE_REPLAY ],
-      host: 'unitauto.test.TestUtil.', // 'apijson.demo.server.DemoFunction.',
+      host: 'uiauto.UIAutoApp.', // 'unitauto.test.TestUtil.',
       branch: 'countArray',
       database: 'MYSQL',// 'POSTGRESQL',
       schema: 'sys',
-      server: 'http://apijson.cn:8081',  //apijson.org:8000
+      server: 'http://apijson.org:8080',
       // server: 'http://47.74.39.68:9090',  // apijson.org
       project: 'http://apijson.cn:8081',  //apijson.org:8000
       language: CodeUtil.LANGUAGE_KOTLIN,
@@ -1209,7 +1210,7 @@
         item = item || {}
         // localforage.getItem(item.key || '', function (err, value) {
 
-          App.type = OPERATE_TYPE_REVIEW;
+          // App.type = OPERATE_TYPE_REVIEW;
           App.urlComment = CodeUtil.getComment(StringUtil.get(item.detail), false, '  ');
           App.requestVersion = item.version;
 
@@ -1240,11 +1241,17 @@
                 url: (this.isDelegateEnabled ? this.server + '/delegate?$_delegate_url=' : '') + StringUtil.noBlank(item.logUrl),
                 method: 'GET',
                 responseType: 'text', // important
-                withCredentials: true
-              }).then((res) => {
+                withCredentials: true,
+                header: {
+                  'Accept': 'text/plain;charset=UFT8'
+                //   'Content-Type': 'text/plain;charset=GBK'
+                }
+              }).then(function(res) {
                   output = res.data || ''
                   vOutput.value = output
                   App.view = 'output'
+              }).catch(function(err) {
+                  App.onResponse(item.logUrl, {}, err)
               });
             }
           }
@@ -2514,79 +2521,19 @@
         //格式化输入代码
         try {
           try {
-            this.header = this.getHeader(vHeader.value)
+            this.header = this.getHeader(inputted)
           } catch (e2) {
             this.isHeaderShow = true
             vHeader.select()
             throw new Error(e2.message)
           }
 
-          // before = App.toDoubleJSON(StringUtil.trim(before));
-          // log('onHandle  before = \n' + before);
-          //
-          // var afterObj;
-          // var after;
-          // try {
-          //   afterObj = jsonlint.parse(before);
-          //   after = JSON.stringify(afterObj, null, "    ");
-          //   before = after;
-          // }
-          // catch (e) {
-          //   log('main.onHandle', 'try { return jsonlint.parse(before); \n } catch (e) {\n' + e.message)
-          //   log('main.onHandle', 'return jsonlint.parse(App.removeComment(before));')
-          //
-          //   try {
-          //     afterObj = jsonlint.parse(App.removeComment(before));
-          //     after = JSON.stringify(afterObj, null, "    ");
-          //   } catch (e2) {
-          //     throw new Error('请求 JSON 格式错误！请检查并编辑请求！\n\n如果JSON中有注释，请 手动删除 或 点击左边的 \'/" 按钮 来去掉。\n\n' + e2.message)
-          //   }
-          // }
-
-          // //关键词let在IE和Safari上不兼容
-          // var code = '';
-          // // try {
-          // //   code = this.getCode(after); //必须在before还是用 " 时使用，后面用会因为解析 ' 导致失败
-          // // } catch(e) {
-          // //   code = '\n\n\n建议:\n使用其它浏览器，例如 谷歌Chrome、火狐FireFox 或者 微软Edge， 因为这样能自动生成请求代码.'
-          // //     + '\nError:\n' + e.message + '\n\n\n';
-          // // }
-          //
-          // if (isSingle) {
-          //   if (before.indexOf('"') >= 0) {
-          //     before = before.replace(/"/g, "'");
-          //   }
-          // }
-          // else {
-          //   if (before.indexOf("'") >= 0) {
-          //     before = before.replace(/'/g, '"');
-          //   }
-          // }
-
-          // vInput.value = before;
-          // vSend.disabled = false;
           vOutput.value = output = 'OK，请点击 [开始] 按钮来测试。[点击这里查看视频教程](http://i.youku.com/apijson)' // + code;
 
-
           App.showDoc()
-
-          // try {
-          // var m = App.getMethod();
-          // var c = isSingle ? '' : CodeUtil.parseComment(after, docObj == null ? null : docObj['[]'], m, App.database)
-          //
-          // if (isSingle != true && afterObj.tag == null) {
-          //   m = m == null ? 'GET' : m.toUpperCase()
-          //   if (['GETS', 'HEADS', 'POST', 'PUT', 'DELETE'].indexOf(m) >= 0) {
-          //     c += ' ! 非开放请求必须设置 tag ！例如 "tag": "User"'
-          //   }
-          // }
-          // vComment.value = c
           vUrlComment.value = isSingle || StringUtil.isEmpty(App.urlComment, true) ? '' : vUrl.value + App.urlComment;
 
           onURLScrollChanged()
-          // } catch (e) {
-          //   log('onHandle   try { vComment.value = CodeUtil.parseComment >> } catch (e) {\n' + e.message);
-          // }
         } catch(e) {
           log(e)
           vSend.disabled = true
@@ -2603,8 +2550,8 @@
        */
       onChange: function (delay) {
         this.setBaseUrl();
-        inputted = new String(vInput.value);
-        vComment.value = '';
+        inputted = new String(vHeader.value);
+        // vComment.value = '';
         vUrlComment.value = '';
 
         clearTimeout(handler);
@@ -2694,57 +2641,57 @@
           return
         }
 
-        this.onHandle(vInput.value)
+        //TODO 播放视频、截屏、滚动日志
 
-        clearTimeout(handler)
-
-        var header
-        try {
-          header = this.getHeader(vHeader.value)
-        } catch (e) {
-          // alert(e.message)
-          return
-        }
-
-        var req = this.getRequest(vInput.value)
-
-        var url = this.getUrl()
-
-        var httpReq = {
-          "package": req.package || App.getPackage(url),
-          "class": req.class || App.getClass(url),
-          "classArgs": req.classArgs,
-          "method": req.name || App.getMethod(url),
-          "methodArgs": req.methodArgs,
-          "static": req.static
-        }
-
-        vOutput.value = "requesting... \nURL = " + url
-        this.view = 'output';
-
-
-        this.setBaseUrl()
-        this.request(isAdminOperation, REQUEST_TYPE_JSON, this.project + '/method/invoke', httpReq, isAdminOperation ? {} : header, callback)
-
-        this.locals = this.locals || []
-        if (this.locals.length >= 1000) { //最多1000条，太多会很卡
-          this.locals.splice(999, this.locals.length - 999)
-        }
-        var method = App.getMethod()
-        this.locals.unshift({
-          'Input': {
-            'userId': App.User.id,
-            'name': App.formatDateTime() + (StringUtil.isEmpty(req.tag, true) ? '' : ' ' + req.tag),
-            'method': App.getMethod(url),
-            'class': App.getClass(url),
-            'package': App.getPackage(url),
-            'type': App.type,
-            'url': method,
-            'request': JSON.stringify(req, null, '    '),
-            'header': vHeader.value
-          }
-        })
-        App.saveCache('', 'locals', this.locals)
+        // this.onHandle(vHeader.value)
+        //
+        // clearTimeout(handler)
+        //
+        // var header
+        // try {
+        //   header = this.getHeader(vHeader.value)
+        // } catch (e) {
+        //   // alert(e.message)
+        //   return
+        // }
+        //
+        // var url = this.getUrl()
+        //
+        // var httpReq = {
+        //   "package": req.package || App.getPackage(url),
+        //   "class": req.class || App.getClass(url),
+        //   "classArgs": req.classArgs,
+        //   "method": req.name || App.getMethod(url),
+        //   "methodArgs": req.methodArgs,
+        //   "static": req.static
+        // }
+        //
+        // vOutput.value = "requesting... \nURL = " + url
+        // this.view = 'output';
+        //
+        //
+        // this.setBaseUrl()
+        // this.request(isAdminOperation, REQUEST_TYPE_JSON, this.project + '/method/invoke', httpReq, isAdminOperation ? {} : header, callback)
+        //
+        // this.locals = this.locals || []
+        // if (this.locals.length >= 1000) { //最多1000条，太多会很卡
+        //   this.locals.splice(999, this.locals.length - 999)
+        // }
+        // var method = App.getMethod()
+        // this.locals.unshift({
+        //   'Input': {
+        //     'userId': App.User.id,
+        //     'name': App.formatDateTime() + (StringUtil.isEmpty(req.tag, true) ? '' : ' ' + req.tag),
+        //     'method': App.getMethod(url),
+        //     'class': App.getClass(url),
+        //     'package': App.getPackage(url),
+        //     'type': App.type,
+        //     'url': method,
+        //     'request': JSON.stringify(req, null, '    '),
+        //     'header': vHeader.value
+        //   }
+        // })
+        // App.saveCache('', 'locals', this.locals)
       },
 
       //请求
@@ -3497,14 +3444,7 @@
                 App.log('test  App.request >> } catch (e) {\n' + e.message)
               }
 
-              var data = res.data || {}
-              var outputList = data.outputList || []
-
-              for (var j = 0; j <= outputList.length; j++) {
-                doneCount++
-                App.testRandomProcess = doneCount >= allCount ? '' : ('已测数量: ' + doneCount)
-                App.compareResponse(allCount, list, j, outputList[j], res.data, true, App.currentAccountIndex, false, err)
-              }
+              App.loopRandomTestResult(list, inputList, allCount, 0, header)
 
             });
 
@@ -3541,6 +3481,73 @@
           // }
         }
       },
+
+      loopRandomTestResult: function (list, inputList, allCount, offset, header) {
+        App.request(false, REQUEST_TYPE_JSON, App.project + '/method/invoke', {
+          "static": true,
+          "package": 'apijson.demo.application', // 'uiauto',
+          "class": 'DemoApplication', // 'UIAutoApp',
+          "method": 'getOutputList',
+          "methodArgs": [{  // DemoApplication app
+            "type": "apijson.demo.application.DemoApplication",
+            "value": null  // TODO 可能要 {}
+          },{  // int limit
+            "type": "int",
+            "value": 100
+          },{  // int offset
+            "type": "int",
+            "value": offset
+          }]
+        }, header, function (url, res, err) {
+          try {
+            App.onResponse(url, res, err)
+            App.log('test  App.request >> res.data = ' + JSON.stringify(res.data, null, '  '))
+          } catch (e) {
+            App.log('test  App.request >> } catch (e2) {\n' + e.message)
+          }
+
+          var outputList = (res.data || {})['return'] || []
+          if (outputList == null || outputList.length <= 0) {
+            if (err == null && outputList == null && (res.data || {}).code == 200) {
+              App.testRandomProcess = ''
+              alert("测试完成")
+            }
+            else {
+              App.loopRandomTestResult(list, inputList, allCount, offset, header)
+            }
+            return;
+          }
+
+          if (App.currentOutputList == null || App.currentOutputList.length <= 0) {
+            App.currentOutputList = outputList
+          }
+          else {
+            App.currentOutputList.push(outputList)
+          }
+
+          for (var j = 0; j < outputList.length; j++) {
+            doneCount++
+            App.testRandomProcess = doneCount >= allCount ? '' : ('已测数量: ' + doneCount)
+            var ind = j + offset
+
+            for (var k = ind; k < list.length; k++) {
+              if (list[k] != null && list[k].Input.id == (outputList[j] || {}).toInputId) {
+                App.compareResponse(allCount, list, k, inputList[k], outputList[j], true, App.currentAccountIndex, false, err)
+                break
+              }
+            }
+          }
+
+          if (offset < allCount) {
+            App.loopRandomTestResult(list, inputList, allCount, offset + outputList.length, header)
+          }
+          else {
+            App.testRandomProcess = ''
+            alert("测试完成")
+          }
+        });
+      },
+
       /**随机测试，动态替换键值对
        * @param show
        * @param callback
@@ -4704,8 +4711,32 @@
 
       //无效，只能在index里设置 vUrl.value = this.getCache('', 'URL_BASE')
       this.listHistory()
-      this.onChange(false)
 
+      var isLoggedIn = ((this.User || {}).id || 0) > 0
+      this.type = isLoggedIn ? OPERATE_TYPE_REVIEW : OPERATE_TYPE_RECORD
+      if (isLoggedIn != true) {
+        vOutput.value = '请登录，未登录只能录制及简单测试，而且录制后不能上传'
+        this.view = 'error'
+      }
+      else {
+        this.request(false, REQUEST_TYPE_JSON, this.server + '/get', {
+          format: false,
+          'Flow': {
+            '@order': 'time-'
+          },
+          'Device': {
+            'id@': '/Flow/deviceId'
+          },
+          'System': {
+            'id@': '/Flow/systemId'
+          },
+          '@role': 'LOGIN'
+        }, {}, function (url, res, err) {
+          App.onResponse(url, res, err)
+          App.currentDocItem = res.data
+          App.restoreRemote(res.data)
+        })
+      }
     }
   })
 })()

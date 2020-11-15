@@ -545,11 +545,11 @@ public class UIAutoListActivity extends Activity implements HttpManager.OnHttpRe
 
     public void replay(JSONArray eventList) {
         finish();
-
         new Handler().postDelayed(new Runnable() {
             @Override
             public void run() {
-                DemoApplication.getInstance().prepareReplay(eventList);
+              DemoApplication.getInstance().onUIAutoActivityCreate();
+              DemoApplication.getInstance().prepareReplay(eventList);
             }
         }, 1000);
     }
