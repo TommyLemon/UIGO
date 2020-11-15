@@ -569,7 +569,7 @@
       branch: 'countArray',
       database: 'MYSQL',// 'POSTGRESQL',
       schema: 'sys',
-      server: 'http://apijson.org:8080',
+      server: 'http://apijson.cn:8080',  // admin.Flow does not exist  'http://apijson.org:8080',
       // server: 'http://47.74.39.68:9090',  // apijson.org
       project: 'http://apijson.cn:8081',  //apijson.org:8000
       language: CodeUtil.LANGUAGE_KOTLIN,
@@ -3532,7 +3532,7 @@
             App.testRandomProcess = doneCount >= allCount ? '' : ('已测数量: ' + doneCount)
             var ind = j + offset
             for (var k = ind; k < list.length; k++) {
-              if (list[k] != null && list[k].Input.id == (outputList[j] || {}).toInputId) {
+              if (list[k] != null && list[k].Input.id == (outputList[j] || {}).inputId) {
                 App.compareResponse(allCount, list, k, inputList[k], outputList[j], true, App.currentAccountIndex, false, err)
                 break
               }

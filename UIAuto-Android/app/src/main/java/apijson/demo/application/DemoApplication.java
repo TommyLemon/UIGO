@@ -1610,8 +1610,8 @@ public class DemoApplication extends Application {
         Long inputId;
         Long toInputId;
         // if (eventNode.item == null) {  // 自动触发
-        inputId = eventNode.prev == null || eventNode.prev.disable ? null : eventNode.prev.id;
-        toInputId = eventNode.id;
+        inputId = eventNode.id;
+        toInputId = eventNode.prev == null || eventNode.prev.disable ? null : eventNode.prev.id;
         // }
         // else {  // 手动触发
         //   inputId = eventNode == null || (eventNode.prev) == null ? null : eventNode.prev.id;
@@ -1657,7 +1657,7 @@ public class DemoApplication extends Application {
       }
 
       //保存图片
-      File file = File.createTempFile("unitauto_screenshot_toInputId_" + Math.abs(toInputId) + "_time_" + System.currentTimeMillis(), ".jpg", directory);
+      File file = File.createTempFile("unitauto_screenshot_inputId_" + Math.abs(inputId) + "_time_" + System.currentTimeMillis(), ".jpg", directory);
       filePath = file.getAbsolutePath();
       fos = new FileOutputStream(filePath);
       bitmap.compress(Bitmap.CompressFormat.JPEG, 100, fos);
