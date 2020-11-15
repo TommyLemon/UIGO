@@ -3528,12 +3528,11 @@
           }
 
           for (var j = 0; j < outputList.length; j++) {
+            doneCount ++
             App.testRandomProcess = doneCount >= allCount ? '' : ('已测数量: ' + doneCount)
             var ind = j + offset
-
             for (var k = ind; k < list.length; k++) {
               if (list[k] != null && list[k].Input.id == (outputList[j] || {}).toInputId) {
-                doneCount ++
                 App.compareResponse(allCount, list, k, inputList[k], outputList[j], true, App.currentAccountIndex, false, err)
                 break
               }
