@@ -30,44 +30,46 @@
 
 <body>
 <style type="text/css">
-  .url {
-    height: 100%;
-    border: none;
-    display: flex;
-    align-items: center;
-    flex-grow: 1
-    /* justify-content: center */
-  }
-  .transfer {
-    width: 58px;
-    height: 100%;
-    margin: 0;
-    padding: 0;
-  }
-  .send {
-    width: 20%;
-    height: 100%;
-    margin: 0;
-    padding: 0;
-  }
-  .statement {
-    position: absolute;
-    bottom: 0px;
-    width: 100%;
-    text-align: center;
-    font-size: small;
-    z-index: 100;
-    background-color: white;
-    color: #bbb;
-    border-top: #fafafa 1px solid;
-  }
+    .url {
+        height: 100%;
+        border: none;
+        display: flex;
+        align-items: center;
+        flex-grow: 1
+        /* justify-content: center */
+    }
+    .transfer {
+        width: 50px;
+        height: 100%;
+        margin: 0;
+        padding: 0;
+    }
+    .send {
+        width: 16%;
+        min-width: 30px;
+        max-width: 100px;
+        height: 100%;
+        margin: 0;
+        padding: 0;
+    }
+    .statement {
+        position: absolute;
+        bottom: 0px;
+        width: 100%;
+        text-align: center;
+        font-size: small;
+        z-index: 100;
+        background-color: white;
+        color: #bbb;
+        border-top: #fafafa 1px solid;
+    }
 </style>
 <div id="app" style="background-color: white">
   <div class="side-top">
 
     <img src="img/logo.png" class="logo-img"/>
     <a class="logo" href="http://apijson.org:8000" target="_blank">
-      <span class="on">&lt;APIJSON/&gt;</span><span >.org</span>
+      <span class="on">&lt;APIJSON/&gt;</span><span >.org(内测中)</span>
     </a>
     <a v-show="isDelayShow" >2s</a>
 
@@ -82,6 +84,10 @@
     </div>
 
     <div class="top-right">
+
+      <a v-show="User.id == null || User.id <= 0" href="https://git.code.tencent.com/Tencent_Open_Source/APIJSON" target="_blank" >
+        <img class="ui inline black image" height="24" src="http://apijson.org:8000/images/tencent_open_logo.png">
+      </a>
 
       <a v-show="User.id == null || User.id <= 0" href="https://gitee.com/TommyLemon/APIJSON" target="_blank">
         <img class="ui inline black image" height="24" src="https://gitee.com/logo-black.svg?20171024" width="60">
@@ -193,8 +199,8 @@
       <div v-show="! isTestCaseShow" style="width: 100%;height: 100%;" >
 
         <div id="vContainer" style="width: 100%; height: 100%; position: absolute; flex-grow: 1; display: inline" >
-          <img id="vComment" ref="vComment" width="270" height="585" src="img/Screenshot_2020-11-07-16-35-27-473_apijson.demo.jpg" style="min-width: 270px; min-height: 585px; max-width: 300px; width: 45%; height: 92%; margin: 4px; position: relative;" />
-          <img id="vInput" ref="vInput" width="270" height="585" src="img/Screenshot_2020-11-07-16-37-36-400_apijson.demo.jpg" style="min-width: 270px; min-height: 585px; max-width: 300px; width: 45%; height: 92%; margin: 4px; position: relative;" />
+          <img id="vComment" ref="vComment" width="270" height="585" src="img/Screenshot_2020-11-07-16-35-27-473_apijson.demo.jpg" style="min-width: 270px; min-height: 585px; max-width: 300px; max-height: 650px; width: 45%; height: 92%; margin: 4px; position: relative;" />
+          <img id="vInput" ref="vInput" width="270" height="585" src="img/Screenshot_2020-11-07-16-37-36-400_apijson.demo.jpg" style="min-width: 270px; min-height: 585px; max-width: 300px; max-height: 650px; width: 45%; height: 92%; margin: 4px; position: relative;" />
         </div>
 
           <div v-show="isRandomShow" style="position: absolute; right: 310px; width: 1px; height: 100%; background: #ddd" ></div>
