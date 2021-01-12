@@ -709,16 +709,16 @@
           if (isAdminOperation != true) {
             baseUrl = this.getBaseUrl()
           }
-          vUrl.value = (isAdminOperation ? App.server : baseUrl) + branchUrl
+          vUrl.value = (isAdminOperation ? this.server : baseUrl) + branchUrl
         }
         else {  //隐藏(固定)URL Host
           if (isAdminOperation) {
-            this.host = App.server
+            this.host = this.server
           }
           vUrl.value = branchUrl
         }
 
-        vUrlComment.value = isSingle || StringUtil.isEmpty(App.urlComment, true) ? '' : vUrl.value + App.urlComment;
+        vUrlComment.value = isSingle || StringUtil.isEmpty(this.urlComment, true) ? '' : vUrl.value + this.urlComment;
       },
 
       //设置基地址
@@ -3066,12 +3066,14 @@
         doc = d;
         vOutput.value += (
           '\n\n\n## 包和类文档\n自动查数据库表和字段属性来生成 \n\n' + d
-          + '<h3 align="center">简介</h3>'
-          + '<p align="center">本站为 UIAuto-自动化UI测试平台'
-          + '<br>提供 用例和文档托管、机器学习自动化测试、自动生成用例和文档 等服务'
-          + '<br>由 <a href="https://github.com/TommyLemon/UIAuto" target="_blank">UIAuto(前端网页工具)</a>, <a href="https://github.com/APIJSON/APIJSON" target="_blank">APIJSON(后端接口服务)</a> 等提供技术支持'
-          + '<br>遵循 <a href="http://www.apache.org/licenses/LICENSE-2.0" target="_blank">Apache-2.0 开源协议</a>'
-          + '<br>Copyright &copy; 2019-' + new Date().getFullYear() + ' Tommy Lemon<br><br></p>'
+        + '<h3 align="center">关于</h3>'
+        + '<p align="center">UIAuto-零代码 UI 测试'
+        + '<br>零代码 UI 测试、前后端自动分 Bug'
+        + '<br>由 <a href="https://github.com/TommyLemon/UIAuto" target="_blank">UIAuto(前端网页工具)</a>, <a href="https://github.com/Tencent/APIJSON" target="_blank">APIJSON(后端接口服务)</a> 等提供技术支持'
+        + '<br>遵循 <a href="http://www.apache.org/licenses/LICENSE-2.0" target="_blank">Apache-2.0 开源协议</a>'
+        + '<br>Copyright &copy; 2019-' + new Date().getFullYear() + ' Tommy Lemon'
+        + '<br><a href="https://beian.miit.gov.cn/" target="_blank"><span >粤ICP备18005508号-1</span></a>'
+        + '</p><br><br>'
         );
 
         App.view = 'markdown';
