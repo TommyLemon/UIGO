@@ -3365,7 +3365,7 @@
             doneCount ++
             App.testRandomProcess = doneCount >= allCount ? '' : ('已测数量: ' + doneCount)
 
-            var oj = outputList[j]
+            const oj = outputList[j]
             var oInputId = oj == null ? null : oj.inputId
             if (oInputId == null || oInputId <= 0) {
               continue
@@ -3373,10 +3373,13 @@
 
             // 部分非手动触发的事件(切换界面、HTTP 请求 Response 等) 导致位移不准确，必须全量匹配 var ind = j + offset
             for (var k = 0; k < list.length; k++) {
-              var ik = list[k]
+              const ik = list[k]
               if (ik != null && ik.Input != null && ik.Input.id == oInputId) {
-                App.compareResponse(allCount, list, k, ik, oj, true, App.currentAccountIndex, false, err)
-                // App.compareResponse(allCount, list, k, inputList[k], App.currentOutputList[k], true, App.currentAccountIndex, false, err)
+                const resultIndex = k
+                setTimeout(function () {  // 让图片切换更平滑，且保持和选项断言结果同时出现
+                  App.compareResponse(allCount, list, resultIndex, ik, oj, true, App.currentAccountIndex, false, err)
+                  // App.compareResponse(allCount, list, k, inputList[k], App.currentOutputList[k], true, App.currentAccountIndex, false, err)
+                }, 200*resultIndex)
                 break
               }
             }
@@ -4083,10 +4086,8 @@
 
         var pic = (response || {}).screenshotUrl
         if (StringUtil.isEmpty(pic) != true) {
-          setTimeout(function () {
             vComment.setAttribute("src", App.project + '/download?filePath=' + encodeURI(pic))
             // $('#vComment').attr("src", App.project + '/download?filePath=' + encodeURI(pic))
-          }, 500*index)
         }
 
         if (justRecoverTest) {
