@@ -4083,8 +4083,10 @@
 
         var pic = (response || {}).screenshotUrl
         if (StringUtil.isEmpty(pic) != true) {
-          vComment.setAttribute("src", App.project + '/download?filePath=' + encodeURI(pic))
-          // $('#vComment').attr("src", App.project + '/download?filePath=' + encodeURI(pic))
+          setTimeout(function () {
+            vComment.setAttribute("src", App.project + '/download?filePath=' + encodeURI(pic))
+            // $('#vComment').attr("src", App.project + '/download?filePath=' + encodeURI(pic))
+          }, 500*index)
         }
 
         if (justRecoverTest) {
@@ -4274,6 +4276,27 @@
           this.jsoncon = res || ''
 
           var pic = ((isBefore ? currentResponse : (StringUtil.isEmpty(testRecord.response, true) ? null : JSON.parse(testRecord.response))) || {}).screenshotUrl
+          if (StringUtil.isEmpty(pic)) {  // 往前寻找最近的截屏
+            if (list != null && list.length > index) {
+              while (index > 0) {
+                index --
+                var prevItem = list[index] || {}
+                var prevInput = prevItem.Input
+                var prevInputId = prevInput == null ? null : prevInput.id
+                if (prevInputId != null) {
+                  var prevOutput = isBefore
+                    ? (tests[prevInput.flowId] || {})[prevInput.toId <= 0 ? prevInputId : (prevInput.toId + '' + prevInput.id)]
+                    : prevItem.Output
+
+                  pic = prevOutput == null || prevOutput.inputId != prevInputId ? null : prevOutput.screenshotUrl
+                  if (StringUtil.isEmpty(pic) != true) {
+                      break
+                  }
+                }
+              }
+            }
+          }
+
           if (StringUtil.isEmpty(pic) != true) {
             vComment.setAttribute("src", App.project + '/download?filePath=' + encodeURI(pic))
             // $('#vComment').attr("src", App.project + '/download?filePath=' + encodeURI(pic))
