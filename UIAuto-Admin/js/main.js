@@ -585,7 +585,8 @@
       randomSearch: '',
       randomSubPage: 0,
       randomSubCount: 50,
-      randomSubSearch: ''
+      randomSubSearch: '',
+      picDelayTime: 0
     },
     methods: {
 
@@ -3227,6 +3228,7 @@
             return
           }
           App.testRandomProcess = doneCount >= allCount ? '' : ('正在准备...')
+          App.picDelayTime = 0
 
           // if (testSubList) {
           //   this.resetCount(this.currentRandomItem)
@@ -3379,7 +3381,11 @@
                 setTimeout(function () {  // 让图片切换更平滑，且保持和选项断言结果同时出现
                   App.compareResponse(allCount, list, resultIndex, ik, oj, true, App.currentAccountIndex, false, err)
                   // App.compareResponse(allCount, list, k, inputList[k], App.currentOutputList[k], true, App.currentAccountIndex, false, err)
-                }, 200*resultIndex)
+                }, App.picDelayTime) // 200*resultIndex)
+
+                if (StringUtil.isEmpty(oj.screenshotUrl, false) != true) {
+                  App.picDelayTime += 500
+                }
                 break
               }
             }
