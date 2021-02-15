@@ -4086,8 +4086,12 @@
 
         var pic = (response || {}).screenshotUrl
         if (StringUtil.isEmpty(pic) != true) {
-            vComment.setAttribute("src", App.project + '/download?filePath=' + encodeURI(pic))
-            // $('#vComment').attr("src", App.project + '/download?filePath=' + encodeURI(pic))
+          vComment.setAttribute("src", App.project + '/download?filePath=' + encodeURI(pic))
+          // $('#vComment').attr("src", App.project + '/download?filePath=' + encodeURI(pic))
+          // if (response != null && response.orientation == 2) {  // 没找到 resetRotate 方法，或许得记录上次状态，对比不同则旋转
+            // 不能让布局旋转，应该让像素旋转，可能需要用 Canvas 实现 vComment.css.transform = 'rotate(' + 90*response.orientation + 'deg)';
+          // }
+
         }
 
         if (justRecoverTest) {

@@ -1621,6 +1621,7 @@ public class DemoApplication extends Application {
         JSONObject obj = out != null ? out : new JSONObject(true);
         obj.put("inputId", inputId);
         obj.put("toInputId", toInputId);
+        obj.put("orientation", eventNode.orientation);
         if (eventNode.disable == false) {
           obj.put("time", System.currentTimeMillis());  // TODO 如果有录屏，则不需要截屏，只需要记录时间点
 
