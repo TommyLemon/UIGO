@@ -3228,7 +3228,6 @@
             return
           }
           App.testRandomProcess = doneCount >= allCount ? '' : ('正在准备...')
-          App.picDelayTime = 0
 
           // if (testSubList) {
           //   this.resetCount(this.currentRandomItem)
@@ -3363,6 +3362,7 @@
             App.currentOutputList.push(outputList)
           }
 
+          App.picDelayTime = 0
           for (var j = 0; j < outputList.length; j++) {
             doneCount ++
             App.testRandomProcess = doneCount >= allCount ? '' : ('已测数量: ' + doneCount)
