@@ -3072,7 +3072,7 @@
         + '<br>由 <a href="https://github.com/TommyLemon/UIAuto" target="_blank">UIAuto(前端网页工具)</a>, <a href="https://github.com/Tencent/APIJSON" target="_blank">APIJSON(后端接口服务)</a> 等提供技术支持'
         + '<br>遵循 <a href="http://www.apache.org/licenses/LICENSE-2.0" target="_blank">Apache-2.0 开源协议</a>'
         + '<br>Copyright &copy; 2019-' + new Date().getFullYear() + ' Tommy Lemon'
-        + '<br><a href="https://beian.miit.gov.cn/" target="_blank"><span >粤ICP备18005508号-1</span></a>'
+        // + '<br><a href="https://beian.miit.gov.cn/" target="_blank"><span >粤ICP备18005508号-1</span></a>'
         + '</p><br><br>'
         );
 
@@ -3517,7 +3517,9 @@
               alert("测试完成")
             }
             else {
-              App.loopRandomTestResult(list, inputList, allCount, offset, header)
+              setTimeout(function () {
+                App.loopRandomTestResult(list, inputList, allCount, offset, header)
+              }, 2000)
             }
             return;
           }
@@ -3536,6 +3538,7 @@
             for (var k = ind; k < list.length; k++) {
               if (list[k] != null && list[k].Input.id == (outputList[j] || {}).inputId) {
                 App.compareResponse(allCount, list, k, inputList[k], outputList[j], true, App.currentAccountIndex, false, err)
+                // App.compareResponse(allCount, list, k, inputList[k], App.currentOutputList[k], true, App.currentAccountIndex, false, err)
                 break
               }
             }
@@ -4156,7 +4159,6 @@
         var r = isRandom ? it.Output : null //请求异步
         var tr = it.TestRecord || {} //请求异步
 
-
         if (err != null) {
           tr.compare = {
             code: JSONResponse.COMPARE_ERROR, //请求出错
@@ -4170,6 +4172,19 @@
 
           var rsp = JSON.parse(JSON.stringify(App.removeDebugInfo(response) || {}))
           rsp = JSONResponse.array2object(rsp, 'methodArgs', ['methodArgs'], true)
+
+          // var pic = rsp.screenshotUrl
+          // if (StringUtil.isEmpty(pic) != true) {
+          //   delete rsp.screenshotUrl
+          //   //TODO 使用图片对比软件来对比不同区域
+          //
+          //   // if (img.complete != true) {
+          //   //   img.addEventListener('load', function(){/*已加载完*/})
+          //   // }
+          //   // else {/*已加载完*/
+          //   // vInput.setAttribute("src", App.project + '/download?filePath=' + encodeURI(pic))
+          //   // }
+          // }
 
           tr.compare = JSONResponse.compareResponse(standard, rsp, '', App.isMLEnabled, null, ['call()[]']) || {}
         }
@@ -4227,6 +4242,12 @@
         it.TestRecord = tr
 
         Vue.set(list, index, it)
+
+        var pic = (response || {}).screenshotUrl
+        if (StringUtil.isEmpty(pic) != true) {
+          // vInput.setAttribute("src", App.project + '/download?filePath=' + encodeURI(pic))
+          $('#vComment').attr("src", App.project + '/download?filePath=' + encodeURI(pic))
+        }
 
         if (justRecoverTest) {
           return
@@ -4413,6 +4434,11 @@
 
           this.view = 'code'
           this.jsoncon = res || ''
+
+          var pic = ((isBefore ? currentResponse : (StringUtil.isEmpty(testRecord.response, true) ? null : JSON.parse(testRecord.response))) || {}).screenshotUrl
+          if (StringUtil.isEmpty(pic) != true) {
+            vInput.setAttribute("src", App.project + '/download?filePath=' + encodeURI(pic))
+          }
         }
         else {
           var url

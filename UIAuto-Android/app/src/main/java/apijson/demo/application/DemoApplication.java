@@ -94,7 +94,7 @@ public class DemoApplication extends Application {
   private static final SimpleDateFormat TIME_FORMAT = new SimpleDateFormat("mm:ss");
 
   private boolean isReplay = false;
-  private Handler handler = new Handler() {
+  private final Handler handler = new Handler() {
     @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN)
     @Override
     public void handleMessage(Message msg) {
@@ -1661,6 +1661,8 @@ public class DemoApplication extends Application {
       filePath = file.getAbsolutePath();
       fos = new FileOutputStream(filePath);
       bitmap.compress(Bitmap.CompressFormat.JPEG, 100, fos);
+
+      filePath = directory.getName() + "/" + file.getName();  // 返回相对路径
     }
     catch (Throwable e) {
       Log.e(TAG, "screenshot 截屏异常：" + e.toString());
