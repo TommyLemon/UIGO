@@ -20,6 +20,9 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Matrix;
+import android.graphics.Rect;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
@@ -60,7 +63,6 @@ import com.yhao.floatwindow.ViewStateListener;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.text.SimpleDateFormat;
 import java.util.LinkedList;
@@ -1628,7 +1630,7 @@ public class DemoApplication extends Application {
           Window window = activity == null ? null : activity.getWindow();
           if (window != null && (eventNode.item == null || eventNode.action == MotionEvent.ACTION_DOWN)) {
             // TODO 同步或用协程来上传图片
-            obj.put("screenshotUrl", screenshot(directory == null || directory.exists() == false ? parentDirectory : directory, window, inputId, toInputId));
+            obj.put("screenshotUrl", screenshot(directory == null || directory.exists() == false ? parentDirectory : directory, window, inputId, toInputId, eventNode.orientation));
           }
         }
         outputList.add(obj);
@@ -1639,7 +1641,7 @@ public class DemoApplication extends Application {
   /**屏幕截图
    * @return
    */
-  public static String screenshot(File directory, Window window, Long inputId, Long toInputId) {
+  public static String screenshot(File directory, Window window, Long inputId, Long toInputId, int orientation) {
     if (window == null) {
       return null;
     }
@@ -1652,7 +1654,21 @@ public class DemoApplication extends Application {
         View decorView = window.getDecorView();
         decorView.setDrawingCacheEnabled(true);
         // decorView.buildDrawingCache(true);
-        bitmap = Bitmap.createBitmap(decorView.getDrawingCache());
+        bitmap = decorView.getDrawingCache();
+        int w = bitmap.getWidth();
+        int h = bitmap.getHeight();
+
+        Matrix matrix = new Matrix();
+        matrix.postRotate(w <= h ? 0 : -90);
+        bitmap = Bitmap.createBitmap(bitmap, 0, 0, w, h, matrix, false);
+
+        // 宽居然不是和高一样等比缩放，貌似没缩放
+        // float scale = 720f/w;
+        // int nw = 720;
+        // int nh = Math.round(h*scale);
+        // matrix.postScale(scale, scale);
+        // bitmap = Bitmap.createBitmap(bitmap, 0, 0, nw, nh, matrix, false);
+
         decorView.destroyDrawingCache();
         decorView.setDrawingCacheEnabled(false);
       }
