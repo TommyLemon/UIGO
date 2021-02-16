@@ -4042,48 +4042,9 @@
           var rsp = JSON.parse(JSON.stringify(App.removeDebugInfo(response) || {}))
           rsp = JSONResponse.array2object(rsp, 'methodArgs', ['methodArgs'], true)
 
-          var pic = (rsp.Output || {}).screenshotUrl
-          if (StringUtil.isEmpty(pic) != true) {
-            //TODO 使用图片对比软件来对比不同区域
-
-            // var beforeRsp = StringUtil.isEmpty(tr.response, true) ? null : JSON.parse(tr.response)
-            // axios({
-            //   method: "get",
-            //   url: App.project + '/download?filePath=' + encodeURI((beforeRsp.Output || {}).screenshotUrl),
-            //   responseType: 'arraybuffer'
-            // })
-            //   .then(res => {
-            //     const beforePic = res.data == null ? null : new Uint8ClampedArray(res.data)
-            //     if (beforePic instanceof ArrayBuffer != true) {
-            //       return
-            //     }
-            //
-            //     axios({
-            //       method: "get",
-            //       url: App.project + '/download?filePath=' + encodeURI(pic),
-            //       responseType: 'arraybuffer'
-            //     })
-            //       .then(res2 => {
-            //         console.log("response: ", res2);
-            //         var afterPic = new Uint8ClampedArray(res2.data)
-            //         var numDiffPixels = ImgDiffUtil.pixelmatch(beforePic, afterPic, null, 2340, 1080, {threshold: 0.1});
-            //         console.log('numDiffPixels = ' + numDiffPixels)
-            //       })
-            //       .catch(error2 => {
-            //         console.log("response: ", error2);
-            //       });
-            //
-            //   })
-            //   .catch(error => {
-            //     console.log("response: ", error);
-            //   });
-            // if (img.complete != true) {
-            //   img.addEventListener('load', function(){/*已加载完*/})
-            // }
-            // else {/*已加载完*/
-            // vInput.setAttribute("src", App.project + '/download?filePath=' + encodeURI(pic))
-            // }
-          }
+          var afterImgUrl = (rsp.Output || {}).screenshotUrl
+          var beforeRsp = StringUtil.isEmpty(afterImgUrl) || StringUtil.isEmpty(tr.response, true) ? null : JSON.parse(tr.response)
+          App.showImgDiff(beforeRsp == null ? null : (beforeRsp.Output || {}).screenshotUrl, afterImgUrl)
 
           tr.compare = JSONResponse.compareResponse(standard, rsp, '', App.isMLEnabled, null, ['call()[]']) || {}
         }
@@ -4145,11 +4106,6 @@
         var pic = ((response || {}).Output || {}).screenshotUrl
         if (StringUtil.isEmpty(pic) != true) {
           vComment.setAttribute("src", App.project + '/download?filePath=' + encodeURI(pic))
-          // $('#vComment').attr("src", App.project + '/download?filePath=' + encodeURI(pic))
-          // if (response != null && response.orientation == 2) {  // 没找到 resetRotate 方法，或许得记录上次状态，对比不同则旋转
-            // 不能让布局旋转，应该让像素旋转，可能需要用 Canvas 实现 vComment.css.transform = 'rotate(' + 90*response.orientation + 'deg)';
-          // }
-
         }
 
         if (justRecoverTest) {
@@ -4241,6 +4197,59 @@
           delete obj["time:start|duration|end"]
         }
         return obj
+      },
+
+      showImgDiff: function (beforeImgUrl, afterImgUrl) {
+        if (StringUtil.isEmpty(beforeImgUrl, true) || StringUtil.isEmpty(afterImgUrl, true)) {
+          return
+        }
+
+        axios({
+          method: "get",
+          url: App.project + '/download?filePath=' + encodeURI(beforeImgUrl),
+          responseType: 'arraybuffer'
+        })
+          .then(res => {
+            const beforePic = res.data == null ? null : new Uint8ClampedArray(res.data)
+            if (beforePic instanceof Uint8ClampedArray != true) {
+              return
+            }
+
+            axios({
+              method: "get",
+              url: App.project + '/download?filePath=' + encodeURI(afterImgUrl),
+              responseType: 'arraybuffer'
+            })
+              .then(res2 => {
+                console.log("response: ", res2);
+                var afterPic = res2.data == null ? null : new Uint8ClampedArray(res2.data)
+                if (afterPic instanceof Uint8ClampedArray != true) {
+                  return
+                }
+
+                var diffImgData = new Uint8ClampedArray(4*2340*1080)
+                var numDiffPixels = ImgDiffUtil.pixelmatch(beforePic, afterPic, diffImgData, 1080, 2340, {threshold: 0.1, diffMask: true});
+                console.log('numDiffPixels = ' + numDiffPixels)
+
+                if (numDiffPixels <= 0 || diffImgData.byteLength <= 0) {
+                  vDiff.style.display = 'none'
+                }
+                else {
+                  vDiff.style.display = 'block'
+
+                  var ctx = vDiff.getContext('2d');
+                  var imageData = new ImageData(diffImgData, 2340, 1080);
+                  ctx.putImageData(imageData, 0, 0);
+                }
+              })
+              .catch(error2 => {
+                console.log("response: ", error2);
+              });
+
+          })
+          .catch(error => {
+            console.log("response: ", error);
+          });
       },
 
       /**
@@ -4338,7 +4347,11 @@
           this.view = 'code'
           this.jsoncon = res || ''
 
-          var pic = (((isBefore ? currentResponse : (StringUtil.isEmpty(testRecord.response, true) ? null : JSON.parse(testRecord.response))) || {}).Output || {}).screenshotUrl
+          var beforeRsp = (StringUtil.isEmpty(testRecord.response, true) ? null : JSON.parse(testRecord.response)) || {}
+          var beforeImgUrl = (beforeRsp.Output || {}).screenshotUrl
+          var afterImgUrl = (currentResponse.Output || {}).screenshotUrl
+
+          var pic = isBefore ? afterImgUrl : beforeImgUrl
           if (StringUtil.isEmpty(pic)) {  // 往前寻找最近的截屏
             if (list != null && list.length > index) {
               while (index > 0) {
@@ -4347,14 +4360,15 @@
                 var prevInput = prevItem.Input
                 var prevInputId = prevInput == null ? null : prevInput.id
                 if (prevInputId != null) {
-                  var prevOutput = isBefore
-                    ? ((tests[prevInput.flowId] || {})[prevInput.toId <= 0 ? prevInputId : (prevInput.toId + '' + prevInput.id)] || {}).Output
-                    : prevItem.Output
-
-                  pic = prevOutput == null || prevOutput.inputId != prevInputId ? null : prevOutput.screenshotUrl
-                  if (StringUtil.isEmpty(pic) != true) {
-                      break
+                  var beforeOutput = prevItem.Output || {}
+                  if (beforeOutput == null || beforeOutput.inputId != prevInputId) {
+                    continue
                   }
+
+                  var afterOutput = ((tests[prevInput.flowId] || {})[prevInput.toId <= 0 ? prevInputId : (prevInput.toId + '' + prevInput.id)] || {}).Output
+                  beforeImgUrl = beforeOutput.screenshotUrl
+                  afterImgUrl = (afterOutput || {}).screenshotUrl
+                  pic = isBefore ? afterImgUrl : beforeImgUrl
                 }
               }
             }
@@ -4362,7 +4376,7 @@
 
           if (StringUtil.isEmpty(pic) != true) {
             vComment.setAttribute("src", App.project + '/download?filePath=' + encodeURI(pic))
-            // $('#vComment').attr("src", App.project + '/download?filePath=' + encodeURI(pic))
+            App.showImgDiff(beforeImgUrl, afterImgUrl)
           }
         }
         else {
