@@ -427,21 +427,21 @@
     return args == null || args.length <= index ? null : args[desc ? args.length - index : index];
   }
 
-  function getOrderIndex(inputId, line, argCount) {
-    // alert('inputId = ' + inputId + '; line = ' + line + '; argCount = ' + argCount);
+  function getOrderIndex(randomId, line, argCount) {
+    // alert('randomId = ' + randomId + '; line = ' + line + '; argCount = ' + argCount);
     // alert('ORDER_MAP = ' + JSON.stringify(ORDER_MAP, null, '  '));
 
-    if (inputId == null) {
-      inputId = 0;
+    if (randomId == null) {
+      randomId = 0;
     }
     if (ORDER_MAP == null) {
       ORDER_MAP = {};
     }
-    if (ORDER_MAP[inputId] == null) {
-      ORDER_MAP[inputId] = {};
+    if (ORDER_MAP[randomId] == null) {
+      ORDER_MAP[randomId] = {};
     }
 
-    var orderIndex = ORDER_MAP[inputId][line];
+    var orderIndex = ORDER_MAP[randomId][line];
     // alert('orderIndex = ' + orderIndex)
 
     if (orderIndex == null || orderIndex < -1) {
@@ -450,7 +450,7 @@
 
     orderIndex ++
     orderIndex = argCount == null || argCount <= 0 ? orderIndex : orderIndex%argCount;
-    ORDER_MAP[inputId][line] = orderIndex;
+    ORDER_MAP[randomId][line] = orderIndex;
 
     // alert('orderIndex = ' + orderIndex)
     // alert('ORDER_MAP = ' + JSON.stringify(ORDER_MAP, null, '  '));
@@ -777,7 +777,7 @@
         url = url || this.getUrl()
         var index = url.lastIndexOf('.')
         if (index <= 0) {
-          throw new Error('必须要有类名！完整的 URL 必须符合格式 package.Class.name ！')
+          throw new Error('必须要有类名！完整的 URL 必须符合格式 package.Class.method ！')
         }
         url = url.substring(0, index)
         index = url.lastIndexOf('.')
@@ -794,7 +794,7 @@
         url = url || this.getUrl()
         var index = url.lastIndexOf('.')
         if (index <= 0) {
-          throw new Error('必须要有类名！完整的 URL 必须符合格式 package.Class.name ！')
+          throw new Error('必须要有类名！完整的 URL 必须符合格式 package.Class.method ！')
         }
         url = url.substring(0, index)
         index = url.lastIndexOf('.')
@@ -1189,7 +1189,7 @@
         var random = (item || {}).Input || {}
         this.randomTestTitle = random.name
         this.testRandomCount = random.count
-        vRandom.value = StringUtil.get(random.config) || ''
+        vRandom.value = StringUtil.get(random.config)
 
         var response = ((item || {}).Output || {}).response
         if (StringUtil.isEmpty(response, true) == false) {
@@ -1293,7 +1293,7 @@
         if (App.isExportRemote == false) { //下载到本地
 
           if (App.isTestCaseShow) { //文档
-            saveTextAs('# ' + App.exTxt.name + '\n主页: https://github.com/APIJSON/APIJSON'
+            saveTextAs('# ' + App.exTxt.name + '\n主页: https://github.com/Tencent/APIJSON'
               + '\n\nBASE_URL: ' + this.getBaseUrl()
               + '\n\n\n## 测试用例(Markdown格式，可用工具预览) \n\n' + App.getDoc4TestCase()
               + '\n\n\n\n\n\n\n\n## 文档(Markdown格式，可用工具预览) \n\n' + doc
@@ -1394,7 +1394,7 @@
                 break;
             }
 
-            saveTextAs('# ' + App.exTxt.name + '\n主页: https://github.com/APIJSON/APIJSON'
+            saveTextAs('# ' + App.exTxt.name + '\n主页: https://github.com/Tencent/APIJSON'
               + '\n\n\nURL: ' + StringUtil.get(vUrl.value)
               + '\n\n\nHeader:\n' + StringUtil.get(vHeader.value)
               + '\n\n\nRequest:\n' + StringUtil.get(vInput.value)
@@ -1641,7 +1641,9 @@
               var branch = vUrl.value
               vUrl.value = StringUtil.get(App.host) + branch
               App.host = ''
-              App.showUrl(false, branch)
+
+              vUrlComment.value = isSingle || StringUtil.isEmpty(App.urlComment, true) ? '' : vUrl.value + App.urlComment;  //导致重复加前缀 App.showUrl(false, branch)
+
               App.showTestCase(true, false)
             }
 
@@ -2113,10 +2115,11 @@
           version: 1, // 全局默认版本号，非必须
           remember: vRemember.checked,
           format: false,
-          defaults: {
-            '@database': App.database,
-            '@schema': App.schema
-          }
+          // 后端决定
+          // defaults: {
+          //   '@database': App.database,
+          //   '@schema': App.schema
+          // }
         }
 
         if (isAdminOperation) {
@@ -2150,6 +2153,10 @@
               var item = App.accounts[App.currentAccountIndex]
               item.isLoggedIn = false
               App.onClickAccount(App.currentAccountIndex, item) //自动登录测试账号
+
+              if (user.id > 0) {
+                App.showTestCase(true, false)
+              }
             }
 
           })
@@ -2870,18 +2877,20 @@
             break;
         }
 
-        s += '\n\n#### 开放源码 '
-          + '\nAPIJSON 接口工具: https://github.com/TommyLemon/UIAuto '
-          + '\nAPIJSON 官方文档: https://github.com/vincentCheng/apijson-doc '
-          + '\nAPIJSON 英文文档: https://github.com/ruoranw/APIJSONdocs '
-          + '\nAPIJSON 官方网站: https://github.com/APIJSON/apijson.org '
-          + '\nAPIJSON -Java版: https://github.com/APIJSON/APIJSON '
-          + '\nAPIJSON - C# 版: https://github.com/liaozb/APIJSON.NET '
-          + '\nAPIJSON - PHP版: https://github.com/qq547057827/apijson-php '
-          + '\nAPIJSON -Node版: https://github.com/kevinaskin/apijson-node '
-          + '\nAPIJSON - Go 版: https://github.com/crazytaxi824/APIJSON '
-          + '\nAPIJSON -Python: https://github.com/zhangchunlin/uliweb-apijson '
-          + '\n感谢热心的作者们的贡献，GitHub 右上角点 ⭐Star 支持下他们吧 ^_^';
+        if (((App.User || {}).id || 0) > 0) {
+          s += '\n\n#### 开放源码 '
+            + '\nAPIJSON 接口测试: https://github.com/TommyLemon/APIAuto '
+            + '\nAPIJSON 单元测试: https://github.com/TommyLemon/UnitAuto '
+            + '\nAPIJSON 官方文档: https://github.com/vincentCheng/apijson-doc '
+            + '\nAPIJSON 英文文档: https://github.com/ruoranw/APIJSONdocs '
+            + '\nAPIJSON 官方网站: https://github.com/APIJSON/apijson.org '
+            + '\nAPIJSON -Java版: https://github.com/Tencent/APIJSON '
+            + '\nAPIJSON - C# 版: https://github.com/liaozb/APIJSON.NET '
+            + '\nAPIJSON - PHP版: https://github.com/qq547057827/apijson-php '
+            + '\nAPIJSON -Node版: https://github.com/kevinaskin/apijson-node '
+            + '\nAPIJSON -Python: https://github.com/zhangchunlin/uliweb-apijson '
+            + '\n感谢热心的作者们的贡献，GitHub 右上角点 ⭐Star 支持下他们吧 ^_^';
+        }
 
         return s;
       },
@@ -3379,7 +3388,9 @@
               if (ik != null && ik.Input != null && ik.Input.id == oInputId) {
                 const resultIndex = k
                 setTimeout(function () {  // 让图片切换更平滑，且保持和选项断言结果同时出现
-                  App.compareResponse(allCount, list, resultIndex, ik, oj, true, App.currentAccountIndex, false, err)
+                  App.compareResponse(allCount, list, resultIndex, ik, {
+                    'Output': oj, code: 200, msg: 'success'
+                  }, true, App.currentAccountIndex, false, err)
                   // App.compareResponse(allCount, list, k, inputList[k], App.currentOutputList[k], true, App.currentAccountIndex, false, err)
                 }, App.picDelayTime) // 200*resultIndex)
 
@@ -3475,6 +3486,8 @@
                   var httpReq = {
                     "package": constJson.package || App.getPackage(url),
                     "class": constJson.class || App.getClass(url),
+                    "this": constJson.this,
+                    "constructor": constJson.constructor,
                     "classArgs": constJson.classArgs,
                     "method": constJson.name || App.getMethod(url),
                     "methodArgs": constJson.methodArgs,
@@ -3559,7 +3572,7 @@
        * @param show
        * @param callback
        */
-      parseRandom: function (json, config, inputId, generateJSON, generateConfig, generateName, callback) {
+      parseRandom: function (json, config, randomId, generateJSON, generateConfig, generateName, callback) {
         var lines = config == null ? null : config.trim().split('\n')
         if (lines == null || lines.length <= 0) {
           // return null;
@@ -3573,7 +3586,7 @@
         var reqCount = lines.length; //有无效的行  lines.length;  //等待次数
         var respCount = 0;
 
-        inputId = inputId || 0;
+        randomId = randomId || 0;
         var randomNameKeys = []
         var constConfigLines = [] //TODO 改为 [{ "rawPath": "User/id", "replacePath": "User/id@", "replaceValue": "RANDOM_INT(1, 10)", "isExpression": true }] ?
 
@@ -3643,10 +3656,11 @@
               if (generateName) {
                 var valStr;
                 if (val instanceof Array) {
-                  valStr = '[' + val.length + ']';
+                  valStr = val.length <= 0 ? '[]' : '[..' + val.length + '..]';
                 }
                 else if (val instanceof Object) {
-                  valStr = '{...}';
+                  var kl = Object.keys(val).length
+                  valStr = kl <= 0 ? '{}' : '{..' + kl + '..}';
                 }
                 else if (typeof val == 'boolean') {
                   valStr = '' + val;
@@ -3721,7 +3735,7 @@
 
             const req = {};
             const listName = isRandom ? null : tableName + '-' + lastKeyInPath + '[]';
-            const orderIndex = isRandom ? null : getOrderIndex(inputId, line, null)
+            const orderIndex = isRandom ? null : getOrderIndex(randomId, line, null)
 
             if (isRandom) {
               req[tableName] = tableReq;
@@ -3758,8 +3772,8 @@
               else {
                 var val = (data[listName] || [])[0];
                 //越界，重新获取
-                if (val == null && orderIndex > 0 && ORDER_MAP[inputId] != null && ORDER_MAP[inputId][line] != null) {
-                  ORDER_MAP[inputId][line] = null;  //重置，避免还是在原来基础上叠加
+                if (val == null && orderIndex > 0 && ORDER_MAP[randomId] != null && ORDER_MAP[randomId][line] != null) {
+                  ORDER_MAP[randomId][line] = null;  //重置，避免还是在原来基础上叠加
                   request4Db(JSONResponse.getTableName(pathKeys[pathKeys.length - 2]), which, p_k, pathKeys, key, lastKeyInPath, false, isDesc, step);
                 }
                 else {
@@ -3768,13 +3782,13 @@
               }
 
               // var list = data[listName] || [];
-              //代码变化会导致缓存失效，而且不好判断，数据量大会导致页面很卡 ORDER_MAP[inputId][line].list = list;
+              //代码变化会导致缓存失效，而且不好判断，数据量大会导致页面很卡 ORDER_MAP[randomId][line].list = list;
               //
               // if (step == null) {
               //   invoke('randomIn(' + list.join() + ')');
               // }
               // else {
-              //   invoke('orderIn(' + isDesc + ', ' + step*getOrderIndex(inputId, line, list.length) + list.join() + ')');
+              //   invoke('orderIn(' + isDesc + ', ' + step*getOrderIndex(randomId, line, list.length) + list.join() + ')');
               // }
 
             })
@@ -3824,7 +3838,7 @@
 
               toEval = (fun == ORDER_IN ? 'orderIn' : 'orderInt')
                 + '(' + isDesc + ', ' + step*getOrderIndex(
-                  inputId, line
+                  randomId, line
                   , fun == ORDER_INT ? 0 : StringUtil.split(value.substring(start + 1, end)).length
                 ) + ', ' + value.substring(start + 1);
             }
@@ -3961,6 +3975,8 @@
             httpReq = {
               "package": document.package,
               "class": document.class,
+              "this": document.this,
+              "constructor": document.constructor,
               "classArgs": App.getRequest(document.classArgs, []),
               "method": document.name,
               "methodArgs": App.getRequest(document.methodArgs, []),
@@ -3978,11 +3994,17 @@
             if (httpReq.name == null) {
               httpReq.name = document.name
             }
+            if (httpReq.constructor == null) {
+              httpReq.constructor = document.constructor
+            }
             if (httpReq.classArgs == null) {
               httpReq.classArgs = App.getRequest(document.classArgs, [])
             }
             if (httpReq.methodArgs == null) {
               httpReq.methodArgs = App.getRequest(document.methodArgs, [])
+            }
+            if (httpReq.this == null) {
+              httpReq.this = document.this
             }
           }
 
@@ -4002,7 +4024,7 @@
 
       compareResponse: function (allCount, list, index, item, response, isRandom, accountIndex, justRecoverTest, err) {
         var it = item || {} //请求异步
-        var d = (isRandom ? App.currentRemoteItem.Input : it.Input) || {} //请求异步
+        var d = (isRandom ? App.currentRemoteItem.Flow : it.Flow) || {} //请求异步
         var r = isRandom ? it.Input : null //请求异步
         var tr = it.Output || {} //请求异步
 
@@ -4020,18 +4042,48 @@
           var rsp = JSON.parse(JSON.stringify(App.removeDebugInfo(response) || {}))
           rsp = JSONResponse.array2object(rsp, 'methodArgs', ['methodArgs'], true)
 
-          // var pic = rsp.screenshotUrl
-          // if (StringUtil.isEmpty(pic) != true) {
-          //   delete rsp.screenshotUrl
-          //   //TODO 使用图片对比软件来对比不同区域
-          //
-          //   // if (img.complete != true) {
-          //   //   img.addEventListener('load', function(){/*已加载完*/})
-          //   // }
-          //   // else {/*已加载完*/
-          //   // vInput.setAttribute("src", App.project + '/download?filePath=' + encodeURI(pic))
-          //   // }
-          // }
+          var pic = (rsp.Output || {}).screenshotUrl
+          if (StringUtil.isEmpty(pic) != true) {
+            //TODO 使用图片对比软件来对比不同区域
+
+            // var beforeRsp = StringUtil.isEmpty(tr.response, true) ? null : JSON.parse(tr.response)
+            // axios({
+            //   method: "get",
+            //   url: App.project + '/download?filePath=' + encodeURI((beforeRsp.Output || {}).screenshotUrl),
+            //   responseType: 'arraybuffer'
+            // })
+            //   .then(res => {
+            //     const beforePic = res.data == null ? null : new Uint8ClampedArray(res.data)
+            //     if (beforePic instanceof ArrayBuffer != true) {
+            //       return
+            //     }
+            //
+            //     axios({
+            //       method: "get",
+            //       url: App.project + '/download?filePath=' + encodeURI(pic),
+            //       responseType: 'arraybuffer'
+            //     })
+            //       .then(res2 => {
+            //         console.log("response: ", res2);
+            //         var afterPic = new Uint8ClampedArray(res2.data)
+            //         var numDiffPixels = ImgDiffUtil.pixelmatch(beforePic, afterPic, null, 2340, 1080, {threshold: 0.1});
+            //         console.log('numDiffPixels = ' + numDiffPixels)
+            //       })
+            //       .catch(error2 => {
+            //         console.log("response: ", error2);
+            //       });
+            //
+            //   })
+            //   .catch(error => {
+            //     console.log("response: ", error);
+            //   });
+            // if (img.complete != true) {
+            //   img.addEventListener('load', function(){/*已加载完*/})
+            // }
+            // else {/*已加载完*/
+            // vInput.setAttribute("src", App.project + '/download?filePath=' + encodeURI(pic))
+            // }
+          }
 
           tr.compare = JSONResponse.compareResponse(standard, rsp, '', App.isMLEnabled, null, ['call()[]']) || {}
         }
@@ -4090,7 +4142,7 @@
 
         Vue.set(list, index, it)
 
-        var pic = (response || {}).screenshotUrl
+        var pic = ((response || {}).Output || {}).screenshotUrl
         if (StringUtil.isEmpty(pic) != true) {
           vComment.setAttribute("src", App.project + '/download?filePath=' + encodeURI(pic))
           // $('#vComment').attr("src", App.project + '/download?filePath=' + encodeURI(pic))
@@ -4202,13 +4254,13 @@
           document = App.currentRemoteItem || {}
         }
         else {
-          document = item.Input = item.Input || {}
+          document = item.Flow = item.Flow || {}
         }
         var random = isRandom ? item.Input : null
         var testRecord = item.Output = item.Output || {}
 
         saveTextAs(
-          '# APIJSON自动化回归测试-前\n主页: https://github.com/APIJSON/APIJSON'
+          '# APIJSON自动化回归测试-前\n主页: https://github.com/Tencent/APIJSON'
           + '\n\n接口名称: \n' + document.name
           + '\n返回结果: \n' + JSON.stringify(JSON.parse(testRecord.response || '{}'), null, '    ')
           , '测试：' + document.name + '-前.txt'
@@ -4223,7 +4275,7 @@
         setTimeout(function () {
           var tests = App.tests[String(App.currentAccountIndex)] || {}
           saveTextAs(
-            '# APIJSON自动化回归测试-后\n主页: https://github.com/APIJSON/APIJSON'
+            '# APIJSON自动化回归测试-后\n主页: https://github.com/Tencent/APIJSON'
             + '\n\n接口名称: \n' + document.name
             + '\n返回结果: \n' + JSON.stringify(tests[document.id][isRandom ? random.id : 0] || {}, null, '    ')
             , '测试：' + document.name + '-后.txt'
@@ -4233,7 +4285,7 @@
           if (StringUtil.isEmpty(testRecord.standard, true) == false) {
             setTimeout(function () {
               saveTextAs(
-                '# APIJSON自动化回归测试-标准\n主页: https://github.com/APIJSON/APIJSON'
+                '# APIJSON自动化回归测试-标准\n主页: https://github.com/Tencent/APIJSON'
                 + '\n\n接口名称: \n' + document.name
                 + '\n测试结果: \n' + JSON.stringify(testRecord.compare || '{}', null, '    ')
                 + '\n测试标准: \n' + JSON.stringify(JSON.parse(testRecord.standard || '{}'), null, '    ')
@@ -4286,7 +4338,7 @@
           this.view = 'code'
           this.jsoncon = res || ''
 
-          var pic = ((isBefore ? currentResponse : (StringUtil.isEmpty(testRecord.response, true) ? null : JSON.parse(testRecord.response))) || {}).screenshotUrl
+          var pic = (((isBefore ? currentResponse : (StringUtil.isEmpty(testRecord.response, true) ? null : JSON.parse(testRecord.response))) || {}).Output || {}).screenshotUrl
           if (StringUtil.isEmpty(pic)) {  // 往前寻找最近的截屏
             if (list != null && list.length > index) {
               while (index > 0) {
@@ -4296,7 +4348,7 @@
                 var prevInputId = prevInput == null ? null : prevInput.id
                 if (prevInputId != null) {
                   var prevOutput = isBefore
-                    ? (tests[prevInput.flowId] || {})[prevInput.toId <= 0 ? prevInputId : (prevInput.toId + '' + prevInput.id)]
+                    ? ((tests[prevInput.flowId] || {})[prevInput.toId <= 0 ? prevInputId : (prevInput.toId + '' + prevInput.id)] || {}).Output
                     : prevItem.Output
 
                   pic = prevOutput == null || prevOutput.inputId != prevInputId ? null : prevOutput.screenshotUrl
@@ -4355,21 +4407,67 @@
             // }
 
 
-            var standard = StringUtil.isEmpty(testRecord.standard, true) ? null : JSON.parse(testRecord.standard);
+            var standard = (StringUtil.isEmpty(testRecord.standard, true) ? null : JSON.parse(testRecord.standard)) || {};
+
             var code = currentResponse.code;
             var thrw = currentResponse.throw;
+            var msg = currentResponse.msg;
+
+            var hasCode = standard.code != null;
+            var isCodeChange = standard.code != code;
+            var exceptions = standard.exceptions || [];
+
             delete currentResponse.code; //code必须一致
             delete currentResponse.throw; //throw必须一致
 
             var rsp = JSON.parse(JSON.stringify(currentResponse || {}))
             rsp = JSONResponse.array2object(rsp, 'methodArgs', ['methodArgs'], true)
 
+            var find = false;
+            if (isCodeChange && hasCode) {  // 走异常分支
+              for (var i = 0; i < exceptions.length; i++) {
+                var ei = exceptions[i];
+                if (ei != null && ei.code == code && ei.throw == thrw) {
+                  find = true;
+                  ei.repeat = (ei.repeat || 0) + 1;  // 统计重复出现次数
+                  break;
+                }
+              }
+
+              if (find) {
+                delete currentResponse.msg;
+              }
+            }
+
+
             var isML = this.isMLEnabled;
-            var stddObj = isML ? JSONResponse.updateStandard(standard || {}, rsp, ['call()[]']) : {};
-            stddObj.code = code;
+            var stddObj = isML ? (isCodeChange && hasCode ? standard : JSONResponse.updateStandard(standard, rsp, ['call()[]'])) : {};
+
             currentResponse.code = code;
-            stddObj.throw = thrw;
             currentResponse.throw = thrw;
+
+            if (isCodeChange) {
+              if (hasCode != true) {  // 走正常分支
+                stddObj.code = code;
+                stddObj.throw = thrw;
+              }
+              else {  // 走异常分支
+                currentResponse.msg = msg;
+
+                if (find != true) {
+                  exceptions.push({
+                    code: code,
+                    'throw': thrw,
+                    msg: msg
+                  })
+
+                  stddObj.exceptions = exceptions;
+                }
+              }
+            }
+            else {
+              stddObj.repeat = (stddObj.repeat || 0) + 1;  // 统计重复出现次数
+            }
 
             const isNewRandom = isRandom && random.id <= 0
 
@@ -4378,8 +4476,8 @@
             url = this.server + '/post'
             const req = {
               Input: isNewRandom != true ? null : {
+                toId: random.toId,
                 flowId: random.flowId,
-                inputId: random.id,
                 name: random.name,
                 count: random.count,
                 config: random.config
@@ -4613,32 +4711,15 @@
 
       //无效，只能在index里设置 vUrl.value = this.getCache('', 'URL_BASE')
       this.listHistory()
+      // this.transfer()
 
-      var isLoggedIn = ((this.User || {}).id || 0) > 0
-      this.type = isLoggedIn ? OPERATE_TYPE_REVIEW : OPERATE_TYPE_RECORD
-      if (isLoggedIn != true) {
-        vOutput.value = '请登录，未登录只能录制及简单测试，而且录制后不能上传'
-        this.view = 'error'
+      if (this.User != null && this.User.id != null && this.User.id > 0) {
+          setTimeout(function () {
+            App.showTestCase(true, false)  // 本地历史仍然要求登录  App.User == null || App.User.id == null)
+          }, 1000)
       }
-      else {
-        this.request(false, REQUEST_TYPE_JSON, this.server + '/get', {
-          format: false,
-          'Flow': {
-            '@order': 'time-'
-          },
-          'Device': {
-            'id@': '/Flow/deviceId'
-          },
-          'System': {
-            'id@': '/Flow/systemId'
-          },
-          '@role': 'LOGIN'
-        }, {}, function (url, res, err) {
-          App.onResponse(url, res, err)
-          App.currentDocItem = res.data
-          App.restoreRemote(res.data)
-        })
-      }
+
+
     }
   })
 })()
