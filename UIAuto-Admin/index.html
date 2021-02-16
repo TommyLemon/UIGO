@@ -198,18 +198,17 @@
           </ul>
       <div v-show="! isTestCaseShow" style="width: 100%;height: 100%;" >
 
-        <div id="vContainer" style="width: 100%; height: 100%; position: absolute; flex-grow: 1; display: inline" >
-          <img id="vComment" ref="vComment" width="270" height="585" src="img/Screenshot_2020-11-07-16-35-27-473_apijson.demo.jpg" style="min-width: 270px; min-height: 585px; max-width: 300px; max-height: 650px; width: 45%; height: 92%; margin: 4px; position: relative;" />
-          <img id="vInput" ref="vInput" width="270" height="585" src="img/Screenshot_2020-11-07-16-37-36-400_apijson.demo.jpg" style="min-width: 270px; min-height: 585px; max-width: 300px; max-height: 650px; width: 45%; height: 92%; margin: 4px; position: relative;" />
+        <div id="vContainer" style="width: 100%; height: 100%; position: absolute; flex-grow: 1; display: inline; " >
+          <img id="vComment" ref="vComment" src="img/Screenshot_2020-11-07-16-35-27-473_apijson.demo.jpg" style="width: 40%; min-width: 240px; min-height: 520px; max-width: 270px; max-height: 585px; margin: 4px; position: relative; vertical-align: top;" /><img id="vInput" ref="vInput" src="img/Screenshot_2020-11-07-16-37-36-400_apijson.demo.jpg" style="width: 40%; min-width: 240px; min-height: 520px; max-width: 270px; max-height: 585px; margin: 4px; position: relative;" /><img id="vBefore" ref="vBefore" src="img/Screenshot_2020-11-07-16-40-30-257_apijson.demo.jpg" style="width: 40%; min-width: 240px; min-height: 520px; max-width: 270px; max-height: 585px; margin: 4px; position: relative;" />
         </div>
 
-          <div v-show="isRandomShow" style="position: absolute; right: 310px; width: 1px; height: 100%; background: #ddd" ></div>
+          <div v-show="isRandomShow" style="position: absolute; right: 300px; width: 1px; height: 100%; background: #ddd" ></div>
 
           <div v-show="isRandomShow" style="position: absolute; right: 0px;
           width: 100%; height: 100%;
           border-left: #DDD 1px solid; z-index: 100;" wrap="off" >
-            <div style="min-width: 310px; width: 35%; height: 100%; right: 0px; height: 100%; background: white; position: absolute;" ></div>
-            <div class="left-bar" style="width: 35%; height: 40px; min-width: 310px; right: 0px; border-top: #DDD 1px solid; position: absolute; border-top: none;">
+            <div style="width: 300px; height: 100%; right: 0px; height: 100%; background: white; position: absolute;" ></div>
+            <div class="left-bar" style="height: 40px; width: 300px; right: 0px; border-top: #DDD 1px solid; position: absolute; border-top: none;">
                   <a style="display: flex;flex-grow: 1;padding-left: 4px;padding-right: 2px;font-size: medium;color: black" >{{ (isRandomListShow || StringUtil.isEmpty(randomTestTitle, true) ? '步骤 Step' : randomTestTitle) + (isRandomListShow || isRandomSubListShow ? '(' + ((isRandomListShow ? randoms : randomSubs) || []).length + ')' : '') }}
                       <a style="padding-right: 10px;padding-top: 2px">
                           {{ testRandomProcess }}
@@ -234,8 +233,8 @@
               <!-- 持久化存储的配置项 -->
               <ul v-show="isRandomListShow" class="historys" style="margin-top: 40px; background: transparent; width: 100%; height: 100%;overflow: hidden; overflow-y: scroll; padding-bottom: 150px;">
                   <li style="width: 100%; min-height: 60px; padding: 0px; margin: 0px; border: none; background: transparent" v-for="(item, index) in randoms" >
-                      <a v-show="! isRandomEditable" style="min-width: 310px; right: -20px; top: 4px; position: absolute; width: 35%" class="hint--rounded hint--no-animate" ref="randomTexts" @mouseover="setRequestHint(index, item, true)" href="javascript:void(0)" @click="restoreRandom(item)" >{{ (item.Input || {}).name }}</a>
-                      <input v-show="isRandomEditable" style="min-width: 310px; right: -20px; top: 4px; position: absolute; width: 35%" v-model="(item.Input || {}).name" @keyup="doOnKeyUp(event, 'random', false, item)" />
+                      <a v-show="! isRandomEditable" style="width: 300px; right: -20px; top: 4px; position: absolute;" class="hint--rounded hint--no-animate" ref="randomTexts" @mouseover="setRequestHint(index, item, true)" href="javascript:void(0)" @click="restoreRandom(item)" >{{ (item.Input || {}).name }}</a>
+                      <input v-show="isRandomEditable" style="width: 300px; right: -20px; top: 4px; position: absolute;" v-model="(item.Input || {}).name" @keyup="doOnKeyUp(event, 'random', false, item)" />
 
                       <div v-show="! isRandomEditable" style="position: absolute;bottom: 4px;right: 0px;display: inline-block;">
                           <div :style="{ background: item.compareColor }" v-show="item.compareType != null" >
@@ -252,18 +251,18 @@
                       <svg v-show="item.Input != null && item.Input.userId == User.id" class="icon" style="right: 0px; top: 10px; position: absolute" @click="remove(item, index, true, true)">
                           <use xlink:href="svg/icon.svg#trash"></use>
                       </svg>
-                      <div style="margin: 0px; padding: 0px; min-width: 326px; right: -30px;position: absolute; display: inline-flex; width: 35%; bottom: 1px; height: 1px; background: #ddd" ></div>
+                      <div style="margin: 0px; padding: 0px; width: 300px; right: 0px; position: absolute; display: inline-flex; bottom: 1px; height: 1px; background: #ddd" ></div>
                   </li>
               </ul>
 
-              <div v-show="isRandomListShow" style="min-width: 310px; right: 0px; position: absolute; width: 35%; bottom: 40px; padding: 4px 13px 4px 10px; text-align: center; background: white;">
+              <div v-show="isRandomListShow" style="width: 300px; right: 0px; position: absolute; bottom: 40px; padding: 4px 13px 4px 10px; text-align: center; background: white;">
                   <input id="vRandomSearch" v-model="randomSearch" style="display: inline-flex; min-width: 240px; width: 100%; margin-bottom: 4px; text-align: center" @keyup="doOnKeyUp(event, 'random', true)" placeholder="搜索" />
                   <br/>
-                  <button @click="pageDown('random')">上一页</button>
-                  <input id="vRandomPage" v-model="randomPage" style="width: 38px;text-align: center"  type="number" @keyup="doOnKeyUp(event, 'random', true)" />
-                  <button @click="pageUp('random')">下一页</button>
+                  <button @click="pageDown('random')">上页</button>
+                  <input id="vRandomPage" v-model="randomPage" style="width: 44px; text-align: center"  type="number" @keyup="doOnKeyUp(event, 'random', true)" />
+                  <button @click="pageUp('random')">下页</button>
                  <a >每页</a>
-                  <input id="vRandomCount" v-model="randomCount" style="width: 48px;text-align: center"  type="number" @keyup="doOnKeyUp(event, 'random', true)" />
+                  <input id="vRandomCount" v-model="randomCount" style="width: 60px; text-align: center"  type="number" @keyup="doOnKeyUp(event, 'random', true)" />
                   <a >条</a>
               </div>
         </div>

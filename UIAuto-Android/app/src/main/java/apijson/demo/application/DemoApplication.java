@@ -1674,7 +1674,7 @@ public class DemoApplication extends Application {
       }
 
       //保存图片
-      File file = File.createTempFile("unitauto_screenshot_inputId_" + Math.abs(inputId) + "_time_" + System.currentTimeMillis(), ".jpg", directory);
+      File file = File.createTempFile("uiauto_screenshot_inputId_" + Math.abs(inputId) + "_time_" + System.currentTimeMillis(), ".jpg", directory);
       filePath = file.getAbsolutePath();
       fos = new FileOutputStream(filePath);
       bitmap.compress(Bitmap.CompressFormat.JPEG, 100, fos);
