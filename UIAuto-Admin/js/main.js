@@ -575,16 +575,16 @@
       language: CodeUtil.LANGUAGE_KOTLIN,
       header: {},
       page: 0,
-      count: 100,
+      count: 50,
       search: '',
       testCasePage: 0,
-      testCaseCount: 50,
+      testCaseCount: 0,
       testCaseSearch: '',
       randomPage: 0,
-      randomCount: 50,
+      randomCount: 0,
       randomSearch: '',
       randomSubPage: 0,
-      randomSubCount: 50,
+      randomSubCount: 0,
       randomSubSearch: '',
       picDelayTime: 0
     },
@@ -4227,8 +4227,10 @@
                   return
                 }
 
-                var diffImgData = new Uint8ClampedArray(4*2340*1080)
-                var numDiffPixels = ImgDiffUtil.pixelmatch(beforePic, afterPic, diffImgData, 1080, 2340, {threshold: 0.1, diffMask: true});
+                var ctx = vDiff.getContext('2d');
+                var diffImgData = ctx.createImageData(1080, 2340) // new Uint8ClampedArray(4*2340*1080)
+
+                var numDiffPixels = ImgDiffUtil.pixelmatch(beforePic, afterPic, diffImgData.data, 1080, 2340, {threshold: 0.1, diffMask: true});
                 console.log('numDiffPixels = ' + numDiffPixels)
 
                 if (numDiffPixels <= 0 || diffImgData.byteLength <= 0) {
@@ -4237,9 +4239,10 @@
                 else {
                   vDiff.style.display = 'block'
 
-                  var ctx = vDiff.getContext('2d');
-                  var imageData = new ImageData(diffImgData, 2340, 1080);
-                  ctx.putImageData(imageData, 0, 0);
+                  // var ctx = vDiff.getContext('2d');
+                  // var imageData = new ImageData(diffImgData, 1080, 2340);
+                  // ctx.putImageData(imageData, 0, 0);
+                  ctx.putImageData(diffImgData, 0, 0);
                 }
               })
               .catch(error2 => {
