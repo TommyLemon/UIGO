@@ -375,9 +375,9 @@ public class UnitAutoActivity extends Activity implements HttpServerRequestCallb
                         File file = new File(filePath.startsWith("/") ? filePath : parentDirectory.getAbsolutePath() + "/" + filePath);
 
                         allHeaders.set("Content-Disposition", String.format("attachment;filename=\"%s", filePath));
-                        allHeaders.set("Cache-Control", "no-cache,no-store,must-revalidate");
-                        allHeaders.set("Pragma", "no-cache");
-                        allHeaders.set("Expires", "0");
+                        // allHeaders.set("Cache-Control", "no-cache,no-store,must-revalidate");
+                        // allHeaders.set("Pragma", "no-cache");
+                        // allHeaders.set("Expires", "0");
 
                         asyncHttpServerResponse.sendFile(file);
                       }

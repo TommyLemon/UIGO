@@ -114,20 +114,20 @@ public class DemoApplication extends Application {
 
         //根据递归链表来实现，能精准地实现两个事件之间的间隔，不受处理时间不一致，甚至卡顿等影响。还能及时终止
         Node<InputEvent> curNode = (Node<InputEvent>) msg.obj;
+        while (curNode != null && curNode.disable) {
+          currentEventNode = curNode = curNode.next;
+          step ++;
+
+          // if (curNode != null && curNode.item != null) {
+          //   output(null, curNode, activity);
+          // }
+        }
+
         currentEventNode = curNode;
+        step ++;
 
         // output(null, curNode, activity);
 
-        while (curNode != null && curNode.disable) {
-          step ++;
-          curNode = curNode.next;
-
-          if (curNode != null && curNode.item != null) {
-            output(null, curNode, activity);
-          }
-        }
-
-        step ++;
         boolean canRefreshUI = curNode == null || curNode.type != InputUtil.EVENT_TYPE_TOUCH || curNode.action != MotionEvent.ACTION_MOVE;
 
         if (canRefreshUI) {
@@ -191,12 +191,12 @@ public class DemoApplication extends Application {
         Node<InputEvent> nextNode = curNode.next;
         long firstTime = nextNode == null ? 0 : nextNode.time;
         while (nextNode != null && nextNode.disable) {
-          if (nextNode.item != null) {
-            output(null, nextNode, activity);
-          }
+          // if (nextNode.item != null) {
+          //   output(null, nextNode, activity);
+          // }
 
-          step ++;
           nextNode = nextNode.next;
+          step ++;
         }
         // long lastTime = nextNode == null ? 0 : nextNode.time;
 
@@ -206,7 +206,7 @@ public class DemoApplication extends Application {
         InputEvent nextItem = nextNode == null ? null : nextNode.item;
         //暂停，等待时机
         if (nextNode != null && nextItem == null) { // (nextNode.type == InputUtil.EVENT_TYPE_UI || nextNode.type == InputUtil.EVENT_TYPE_HTTP)) {
-          step --;
+          // step --;
           handleMessage(msg);
 
           dispatchEventToCurrentActivity(curNode.item, false);
@@ -1448,7 +1448,7 @@ public class DemoApplication extends Application {
 //                list.add(event);
 
       if (i <= 0) {
-        firstEventNode = new Node<>(null, event, null);
+        firstEventNode = new Node<>(null, null, null);
         eventNode = firstEventNode;
       }
 
@@ -1467,8 +1467,9 @@ public class DemoApplication extends Application {
       eventNode.windowX = obj.getIntValue("windowX");
       eventNode.windowY = obj.getIntValue("windowY");
       eventNode.orientation = obj.getIntValue("orientation");
+      eventNode.item = event;
 
-      eventNode.next = new Node<>(eventNode, event, null);
+      eventNode.next = new Node<>(eventNode, null, null);
       eventNode = eventNode.next;
     }
 
@@ -1674,10 +1675,10 @@ public class DemoApplication extends Application {
       }
 
       //保存图片
-      File file = File.createTempFile("uiauto_screenshot_inputId_" + Math.abs(inputId) + "_time_" + System.currentTimeMillis(), ".jpg", directory);
+      File file = File.createTempFile("uiauto_screenshot_inputId_" + Math.abs(inputId) + "_time_" + System.currentTimeMillis(), ".png", directory);
       filePath = file.getAbsolutePath();
       fos = new FileOutputStream(filePath);
-      bitmap.compress(Bitmap.CompressFormat.JPEG, 100, fos);
+      bitmap.compress(Bitmap.CompressFormat.PNG, 100, fos);
 
       filePath = directory.getName() + "/" + file.getName();  // 返回相对路径
     }
