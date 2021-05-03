@@ -102,10 +102,10 @@
       </a>
 
       <span class="pop-btn">
-                <a href="javascript:void(0)" >
+                <a href="javascript:void(0)" style="padding: 14px">
                    {{ User.id != null && User.id > 0 ? User.name : '设置' }}
                 </a>
-                <ul class="themes pop" style="z-index: 200;padding: 0px;margin-top: 10px;width: 300px">
+                <ul class="themes pop" style="z-index: 200;padding: 0px;margin-top: 8px;width: 300px">
                   <a style="border-bottom: #DDD 1px solid;width: 100%" href="javascript:void(0)" @click="showConfig(! isDelegateEnabled, 9)">服务器代理: {{ isDelegateEnabled ? '已开启，点击关闭' : '已关闭，点击开启' }}</a>
                   <a style="border-bottom: #DDD 1px solid;width: 100%;display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 1; overflow: hidden;" href="javascript:void(0)" @click="showConfig(! isRandomShow, 5)">{{ isRandomShow ? '隐藏(固定)步骤 Step' : '显示(编辑)步骤 Step' }}</a>
                   <a style="border-bottom: #DDD 1px solid;width: 100%;display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 1; overflow: hidden;" href="javascript:void(0)" @click="showConfig(! isHeaderShow, 4)">{{ isHeaderShow ? '隐藏(固定)请求头 Request Header' : '显示(编辑)请求头 Request Header' }}</a>
