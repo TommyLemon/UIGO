@@ -9,17 +9,13 @@ import java.util.List;
 
 public class InputUtil {
 
-  public static final int EVENT_TYPE_TOUCH = 0;
-  public static final int EVENT_TYPE_KEY = 1;
-  public static final int EVENT_TYPE_UI = 2;
-  public static final int EVENT_TYPE_HTTP = 3;
-
-  public static final int LAYOUT_TYPE_DENSITY = 0;
-  public static final int LAYOUT_TYPE_RATIO = 1;
-  public static final int LAYOUT_TYPE_ABSOLUTE = 2;
+    public static final int EVENT_TYPE_TOUCH = 0;
+    public static final int EVENT_TYPE_KEY = 1;
+    public static final int EVENT_TYPE_UI = 2;
+    public static final int EVENT_TYPE_HTTP = 3;
 
 
-  public static String getTouchActionName(int action) {
+    public static String getTouchActionName(int action) {
         String s = StringUtil.getTrimedString(MotionEvent.actionToString(action));
         return s.startsWith("ACTION_") ? s.substring("ACTION_".length()) : s;
 //        switch (action) {
