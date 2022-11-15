@@ -17,6 +17,7 @@ package apijson.demo.application;
 import android.app.Activity;
 import android.app.Application;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.content.res.Resources;
@@ -902,7 +903,8 @@ public class DemoApplication extends Application {
       @Override
       public void onClick(View v) {
         dismiss();
-        startActivity(UIAutoActivity.createIntent(getInstance()));
+        // Android 10: Calling startActivity() from outside of an Activity  context requires the FLAG_ACTIVITY_NEW_TASK flag
+        startActivity(UIAutoActivity.createIntent(getInstance()).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
       }
     });
 
@@ -1388,7 +1390,8 @@ public class DemoApplication extends Application {
                   //                startActivity(UIAutoListActivity.createIntent(DemoApplication.getInstance(), flowId));  // eventList == null ? null : eventList.toJSONString()));
 //                startActivityForResult(UIAutoListActivity.createIntent(DemoApplication.getInstance(), eventList == null ? null : eventList.toJSONString()), REQUEST_UI_AUTO_LIST);
                   count = 0;
-                  startActivity(UIAutoListActivity.createIntent(getInstance(), cacheKey));
+                  // Android 10: Calling startActivity() from outside of an Activity  context requires the FLAG_ACTIVITY_NEW_TASK flag
+                  startActivity(UIAutoListActivity.createIntent(getInstance(), cacheKey).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
                 }
               });
             }
