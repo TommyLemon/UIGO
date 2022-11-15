@@ -23,6 +23,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.text.TextUtils;
@@ -42,8 +43,15 @@ import com.koushikdutta.async.http.server.AsyncHttpServerRequest;
 import com.koushikdutta.async.http.server.AsyncHttpServerResponse;
 import com.koushikdutta.async.http.server.HttpServerRequestCallback;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.lang.reflect.Method;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.regex.Pattern;
 
 import unitauto.JSON;
 import unitauto.MethodUtil;
@@ -105,8 +113,8 @@ public class UnitAutoActivity extends Activity implements HttpServerRequestCallb
         cache = getSharedPreferences(TAG, Context.MODE_PRIVATE);
         port = cache.getString(KEY_PORT, "");
 
-        tvUnitIP.setText(IPUtil.getIpAddress(context) + ":");
         etUnitPort.setText(port);
+        setIp();
 
         getWindow().getDecorView().addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
             @Override
@@ -115,15 +123,15 @@ public class UnitAutoActivity extends Activity implements HttpServerRequestCallb
             }
         });
 
-
-      parentDirectory = getExternalFilesDir(Environment.DIRECTORY_PICTURES); // new File(screenshotDirPath);
-      if (parentDirectory.exists() == false) {
-        try {
-          parentDirectory.mkdir();
-        } catch (Throwable e) {
-          e.printStackTrace();
+        parentDirectory = getExternalFilesDir(Environment.DIRECTORY_PICTURES); // new File(screenshotDirPath);
+        if (parentDirectory.exists() == false) {
+            try {
+                parentDirectory.mkdir();
+            } catch (Throwable e) {
+                e.printStackTrace();
+            }
         }
-      }
+
     }
 
     @Override
@@ -131,9 +139,9 @@ public class UnitAutoActivity extends Activity implements HttpServerRequestCallb
         super.onResume();
         onConfigurationChanged(getResources().getConfiguration());
 
-        tvUnitIP.setText(IPUtil.getIpAddress(context) + ":");
         etUnitPort.setEnabled(! mAsyncServer.isRunning());
         pbUnit.setVisibility(mAsyncServer.isRunning() ? View.VISIBLE : View.GONE);
+        setIp();
     }
 
 
@@ -154,12 +162,229 @@ public class UnitAutoActivity extends Activity implements HttpServerRequestCallb
     }
 
     public void ip(View v) {
-        String ip = IPUtil.getIpAddress(context);
-        tvUnitIP.setText(ip + ":");
-
-        copyText(context, "http://" + ip + ":" + getPort());
+        setIp(true);
     }
 
+    public void setIp() {
+        setIp(false);
+    }
+    public void setIp(final boolean copy) {
+        String ip = IPUtil.getIpAddress(context);
+        boolean isValid = isIpValid(ip);
+
+        if (isValid == false && Build.VERSION.SDK_INT < Build.VERSION_CODES.P) {
+            ip = "192.168.143.1";
+            isValid = true;
+        }
+        if (isValid == false && Build.VERSION.SDK_INT == Build.VERSION_CODES.P) {
+            ip = "192.168.43.68";
+            isValid = true;
+        }
+
+        if (isValid == false) {
+            String s = getConnectIp();
+            if (isIpValid(ip)) {
+                ip = s;
+                isValid = true;
+            }
+        }
+
+        if (isValid) {
+            tvUnitIP.setText(ip + ":");
+            if (copy) {
+                copyText(context, "http://" + ip + ":" + getPort());
+            }
+            return;
+        }
+
+        Toast.makeText(this, R.string.ip_maybe_wrong_please_share_hotspot_and_use_another_device_to_view, Toast.LENGTH_LONG).show();
+
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                if (isAlive == false) {
+                    return;
+                }
+
+                try {
+                    HttpURLConnection conn = (HttpURLConnection) new URL("https://api4.ipify.org").openConnection();
+                    InputStream in = conn.getInputStream();
+                    InputStreamReader isw = new InputStreamReader(in);
+
+                    String s = "";
+                    int data = isw.read();
+                    while (data != -1) {
+                        char current = (char) data;
+                        data = isw.read();
+                        System.out.print(current);
+                        s += current;
+                    }
+
+                    final String ip = s;
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (isAlive == false) {
+                                return;
+                            }
+
+                            tvUnitIP.setText(ip + ":");
+                            if (copy) {
+                                copyText(context, "http://" + ip + ":" + getPort());
+                            }
+                        }
+                    });
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }).start();
+    }
+
+    private static final Pattern PATTERN = Pattern.compile("^[0-9\\.]+$");
+    public static boolean isIpValid(String ip) {
+        return StringUtil.isNotEmpty(ip, true) && "0.0.0.0".equals(ip) == false
+                && "192.168.0.1".equals(ip) == false && PATTERN.matcher(ip).matches();
+    }
+
+    private String getConnectIp() {
+        // List<String> connectIpList = new ArrayList<>();
+        try {
+            // verifyStoragePermissions(this);
+            BufferedReader br = new BufferedReader(new FileReader("/proc/net/arp"));
+            String line;
+            while ((line = br.readLine()) != null) {
+                String[] splitted = line.split(" +");
+                if (splitted != null && splitted.length >= 4) {
+                    String ip = splitted[0];
+                    // connectIpList.add(ip);
+                    Log.d(TAG, "getConnectIp ip =" + ip);
+                    return ip;
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        // return connectIpList;
+        return null;
+    }
+
+    // // Storage Permissions
+    // private static final int REQUEST_EXTERNAL_STORAGE = 1;
+    // private static String[] PERMISSIONS_STORAGE = {
+    //         Manifest.permission.READ_EXTERNAL_STORAGE,
+    //         Manifest.permission.WRITE_EXTERNAL_STORAGE
+    // };
+    //
+    // /**
+    //  * Checks if the app has permission to write to device storage
+    //  *
+    //  * If the app does not has permission then the user will be prompted to grant permissions
+    //  *
+    //  * @param activity
+    //  */
+    // public static void verifyStoragePermissions(Activity activity) {
+    //     // Check if we have write permission
+    //     int permission = ActivityCompat.checkSelfPermission(activity, Manifest.permission.WRITE_EXTERNAL_STORAGE);
+    //
+    //     if (permission != PackageManager.PERMISSION_GRANTED) {
+    //         // We don't have permission so prompt the user
+    //         ActivityCompat.requestPermissions(
+    //                 activity,
+    //                 PERMISSIONS_STORAGE,
+    //                 REQUEST_EXTERNAL_STORAGE
+    //         );
+    //     }
+    // }
+
+    // private String getIpAddress() {
+    //     IBinder b = ServiceManager.getService(Context.NETWORKMANAGEMENT_SERVICE);
+    //     INetworkManagementService service = INetworkManagementService.Stub.asInterface(b);
+    //
+    //     InterfaceConfiguration ifcg = null;
+    //     String address = null;
+    //     try {
+    //         ifcg = service.getInterfaceConfig("wlan0");
+    //         if (ifcg != null) {
+    //             LinkAddress linkAddr = ifcg.getLinkAddress();
+    //             Log.d("test" , "linkAddr" + linkAddr.toString());
+    //             if (linkAddr != null) {
+    //                 InetAddress Inetaddr = linkAddr.getAddress();
+    //                 Log.d("test" , "Inetaddr" + Inetaddr.toString());
+    //                 if (Inetaddr != null) {
+    //                     address = Inetaddr.getHostAddress();
+    //                     if (address != null) {
+    //                         Log.d("test" , "address " + address.toString());
+    //                     }
+    //                 }
+    //             }
+    //         }
+    //     } catch (Exception e) {
+    //         Log.e("test", "Error configuring interface :" + e);
+    //         return null;
+    //     }
+    //     return address;
+    // }
+    //
+    // private boolean configureIPv4(boolean enabled) {
+    //     Log.d(TAG, "configureIPv4(" + enabled + ")");
+    //
+    //     // TODO: Replace this hard-coded information with dynamically selected
+    //     // config passed down to us by a higher layer IP-coordinating element.
+    //     String ipAsString = null;
+    //     int prefixLen = 0;
+    //     if (mInterfaceType == ConnectivityManager.TETHERING_USB) {
+    //         ipAsString = USB_NEAR_IFACE_ADDR;
+    //         prefixLen = USB_PREFIX_LENGTH;
+    //     } else if (mInterfaceType == ConnectivityManager.TETHERING_WIFI) {
+    //         ipAsString = getRandomWifiIPv4Address();
+    //         prefixLen = WIFI_HOST_IFACE_PREFIX_LENGTH;
+    //     } else {
+    //         // Nothing to do, BT does this elsewhere.
+    //         return true;
+    //     }
+    //
+    //     final LinkAddress linkAddr;
+    //     try {
+    //         final InterfaceConfiguration ifcg = mNMService.getInterfaceConfig(mIfaceName);
+    //         if (ifcg == null) {
+    //             mLog.e("Received null interface config");
+    //             return false;
+    //         }
+    //
+    //         InetAddress addr = NetworkUtils.numericToInetAddress(ipAsString);
+    //         linkAddr = new LinkAddress(addr, prefixLen);
+    //         ifcg.setLinkAddress(linkAddr);
+    //         if (mInterfaceType == ConnectivityManager.TETHERING_WIFI) {
+    //             // The WiFi stack has ownership of the interface up/down state.
+    //             // It is unclear whether the Bluetooth or USB stacks will manage their own
+    //             // state.
+    //             ifcg.ignoreInterfaceUpDownStatus();
+    //         } else {
+    //             if (enabled) {
+    //                 ifcg.setInterfaceUp();
+    //             } else {
+    //                 ifcg.setInterfaceDown();
+    //             }
+    //         }
+    //         ifcg.clearFlag("running");
+    //         mNMService.setInterfaceConfig(mIfaceName, ifcg);
+    //     } catch (Exception e) {
+    //         mLog.e("Error configuring interface " + e);
+    //         return false;
+    //     }
+    //
+    //     // Directly-connected route.
+    //     final RouteInfo route = new RouteInfo(linkAddr);
+    //     if (enabled) {
+    //         mLinkProperties.addLinkAddress(linkAddr);
+    //         mLinkProperties.addRoute(route);
+    //     } else {
+    //         mLinkProperties.removeLinkAddress(linkAddr);
+    //         mLinkProperties.removeRoute(route);
+    //     }
+    //     return true;
+    // }
 
     /**
      * @param value
@@ -299,41 +524,52 @@ public class UnitAutoActivity extends Activity implements HttpServerRequestCallb
                     break;
 
                 case "/method/invoke":
+                  final boolean[] called = new boolean[] { false };
+                  final JSONObject reqObj = JSON.parseObject(request);
+                  Runnable runnable = new Runnable() {
 
-                    runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                      MethodUtil.Listener<JSONObject> listener = new MethodUtil.Listener<JSONObject>() {
 
                         @Override
-                        public void run() {
-                            MethodUtil.Listener<JSONObject> listener = new MethodUtil.Listener<JSONObject>() {
+                        public void complete(JSONObject data, Method method, MethodUtil.InterfaceProxy proxy, Object... extras) throws Exception {
+                          if (called[0] || asyncHttpServerResponse == null || asyncHttpServerResponse.isOpen() == false) {
+                            Log.w(TAG, "invokeMethod  listener.complete  called[0] || asyncHttpServerResponse == null ||  >> return;");
+                            return;
+                          }
+                          called[0] = true;
 
-                                @Override
-                                public void complete(JSONObject data, Method method, MethodUtil.InterfaceProxy proxy, Object... extras) throws Exception {
-                                    if (! asyncHttpServerResponse.isOpen()) {
-                                        Log.w(TAG, "invokeMethod  listener.complete  ! asyncHttpServerResponse.isOpen() >> return;");
-                                        return;
-                                    }
-
-                                    send(asyncHttpServerRequest, asyncHttpServerResponse, request, data.toJSONString());
-                                }
-                            };
-
-                            try {
-                                MethodUtil.invokeMethod(JSON.parseObject(request), null, listener);
-                            }
-                            catch (Exception e) {
-                                Log.e(TAG, "invokeMethod  try { JSONObject req = JSON.parseObject(request); ... } catch (Exception e) { \n" + e.getMessage());
-                                try {
-                                    listener.complete(MethodUtil.JSON_CALLBACK.newErrorResult(e));
-                                }
-                                catch (Exception e1) {
-                                    e1.printStackTrace();
-                                    send(asyncHttpServerRequest, asyncHttpServerResponse, request, MethodUtil.JSON_CALLBACK.newErrorResult(e1).toJSONString());
-                                }
-                            }
-
+                          send(asyncHttpServerRequest, asyncHttpServerResponse, request, data.toJSONString());
                         }
-                    });
-                    break;
+                      };
+
+                      try {
+                        MethodUtil.invokeMethod(reqObj, null, listener);
+                      }
+                      catch (Exception e) {
+                        Log.e(TAG, "invokeMethod  try { JSONObject req = JSON.parseObject(request); ... } catch (Exception e) { \n" + e.getMessage());
+                        try {
+                          listener.complete(MethodUtil.JSON_CALLBACK.newErrorResult(e));
+                        }
+                        catch (Exception e1) {
+                          e1.printStackTrace();
+                          send(asyncHttpServerRequest, asyncHttpServerResponse, request, MethodUtil.JSON_CALLBACK.newErrorResult(e1).toJSONString());
+                        }
+                      }
+
+                    }
+                  };
+
+                  Boolean ui = reqObj == null ? null : reqObj.getBoolean("ui");
+                  if (ui == null || ui) {
+                    runOnUiThread(runnable);
+                  }
+                  else {
+                    runnable.run();
+                  }
+
+                  break;
 
                 case "/uploadTo":  //FIXME 需要引入 OKHttp 等库来上传，或者直接 HTTPURLConnection?
                   // new Thread(new Runnable() {
@@ -367,17 +603,13 @@ public class UnitAutoActivity extends Activity implements HttpServerRequestCallb
                     public void run() {
                       try {
                         Multimap query = asyncHttpServerRequest.getQuery();
-                        String filePath = query == null ? null : query.getString("filePath");
-                        if (StringUtil.isEmpty(filePath, true)) {
-                          throw new IllegalArgumentException("URL 参数 filePath 不能为空！可以是相对路径或绝对路径");
-                        }
+                        String fileName = query == null ? null : query.getString("fileName");
+                        File file = new File(parentDirectory.getAbsolutePath() + "/" + fileName);
 
-                        File file = new File(filePath.startsWith("/") ? filePath : parentDirectory.getAbsolutePath() + "/" + filePath);
-
-                        allHeaders.set("Content-Disposition", String.format("attachment;filename=\"%s", filePath));
-                        // allHeaders.set("Cache-Control", "no-cache,no-store,must-revalidate");
-                        // allHeaders.set("Pragma", "no-cache");
-                        // allHeaders.set("Expires", "0");
+                        allHeaders.set("Content-Disposition", String.format("attachment;filename=\"%s", fileName));
+                        allHeaders.set("Cache-Control", "no-cache,no-store,must-revalidate");
+                        allHeaders.set("Pragma", "no-cache");
+                        allHeaders.set("Expires", "0");
 
                         asyncHttpServerResponse.sendFile(file);
                       }

@@ -1803,6 +1803,11 @@ public class DemoApplication extends Application {
     onUIEvent(action, null, fragment);
   }
   public void onUIEvent(int action, Activity activity, Fragment fragment) {
+    if (activity != null && activity.isFinishing() == false
+            && activity.isDestroyed() == false && activity.getWindow() != null) {
+      window = activity.getWindow();
+    }
+
     if (isSplitShowing == false) {
       Log.e(TAG, "onUIEvent  isSplitShowing == false >> return null;");
       return;
