@@ -10,42 +10,26 @@
     android:keepScreenOn="true"
     >
 
-    <LinearLayout
-        android:id="@+id/rlUIAutoSplitX"
+    <RelativeLayout
+        android:id="@+id/rlGaiawySplitX"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:gravity="center"
         android:background="#3000"
+        android:gravity="center_vertical"
         >
 
         <TextView
-            android:id="@+id/tvControllerDouble"
+            android:id="@+id/tvControllerX"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:padding="6dp"
-            android:text=" # "
+            android:gravity="left"
+            android:paddingLeft="6dp"
+            android:text="960\n80%"
             android:textColor="@android:color/white"
-            android:layout_marginRight="12dp"
-            />
-
-        <TextView
-            android:id="@+id/tvControllerReturn"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:padding="6dp"
-            android:text="《  "
-            android:textColor="@android:color/white"
-            />
-
-        <TextView
-            android:id="@+id/tvControllerCount"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:padding="6dp"
-            android:text="0/0"
-            android:textColor="@android:color/white"
-            />
+            android:textSize="12sp"
+            android:visibility="invisible"
+            tools:visibility="visible" />
 
         <TextView
             android:id="@+id/tvControllerPlay"
@@ -54,12 +38,47 @@
             android:padding="6dp"
             android:text="@string/record"
             android:textColor="@android:color/white"
+            android:layout_centerInParent="true"
             />
+
+
+        <TextView
+            android:id="@+id/tvControllerCount"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_toLeftOf="@id/tvControllerPlay"
+            android:padding="6dp"
+            android:text="0/0"
+            android:textColor="@android:color/white"
+            />
+
+        <TextView
+            android:id="@+id/tvControllerReturn"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_toLeftOf="@id/tvControllerCount"
+            android:padding="6dp"
+            android:text="《  "
+            android:textColor="@android:color/white"
+            />
+
+        <TextView
+            android:id="@+id/tvControllerDouble"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_toLeftOf="@id/tvControllerReturn"
+            android:padding="6dp"
+            android:text=" # "
+            android:textColor="@android:color/white"
+            android:layout_marginRight="6dp"
+            />
+
 
         <TextView
             android:id="@+id/tvControllerTime"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_toRightOf="@id/tvControllerPlay"
             android:padding="6dp"
             android:text="0:00"
             android:textColor="@android:color/white"
@@ -69,23 +88,36 @@
             android:id="@+id/tvControllerForward"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_toRightOf="@id/tvControllerTime"
             android:padding="6dp"
             android:text="  》"
             android:textColor="@android:color/white"
             />
 
-
         <TextView
             android:id="@+id/tvControllerSetting"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_toRightOf="@id/tvControllerForward"
+            android:layout_marginLeft="12dp"
             android:padding="6dp"
             android:text=" $ "
-            android:textColor="@android:color/white"
-            android:layout_marginLeft="12dp"
-            />
+            android:textColor="@android:color/white" />
 
-    </LinearLayout>
+        <TextView
+            android:id="@+id/tvControllerY"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentRight="true"
+            android:gravity="right"
+            android:paddingRight="6dp"
+            android:text="1860\n90%"
+            android:textColor="@android:color/white"
+            android:textSize="12sp"
+            android:visibility="invisible"
+            tools:visibility="visible" />
+
+    </RelativeLayout>
 
     <RelativeLayout
         android:layout_width="match_parent"

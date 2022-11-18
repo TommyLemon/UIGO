@@ -66,6 +66,7 @@ import com.yhao.floatwindow.ViewStateListener;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.lang.ref.WeakReference;
+import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.LinkedList;
 import java.util.List;
@@ -99,6 +100,8 @@ public class DemoApplication extends Application {
   }
 
   private static final SimpleDateFormat TIME_FORMAT = new SimpleDateFormat("mm:ss");
+
+  private final Handler mainHandler = new Handler(Looper.getMainLooper());
 
   private boolean isReplay = false;
   private final Handler handler = new Handler() {
@@ -140,8 +143,7 @@ public class DemoApplication extends Application {
           onEventChange(step - 1, curNode == null ? 0 : curNode.type);  // move 时刷新容易卡顿
         }
 
-        if (curNode == null) {
-          allStep --;
+        if (step > allStep || curNode == null) {
           tvControllerCount.setText(step + "/" + allStep);
           tvControllerPlay.setText(R.string.replay);
           showCoverAndSplit(true, false);
@@ -264,6 +266,7 @@ public class DemoApplication extends Application {
   ViewGroup vSplitX, vSplitX2;
   ViewGroup vSplitY, vSplitY2;
 
+  TextView tvControllerX;
   TextView tvControllerDouble;
   TextView tvControllerReturn;
   TextView tvControllerCount;
@@ -271,6 +274,7 @@ public class DemoApplication extends Application {
   TextView tvControllerTime;
   TextView tvControllerForward;
   TextView tvControllerSetting;
+  TextView tvControllerY;
 
   RecyclerView rvControllerTag;
 
@@ -637,6 +641,7 @@ public class DemoApplication extends Application {
     vSplitY = (ViewGroup) getLayoutInflater().inflate(R.layout.ui_auto_split_y_layout, null);
     vSplitY2 = (ViewGroup) getLayoutInflater().inflate(R.layout.ui_auto_split_y_layout, null);
 
+    tvControllerX = vFloatController.findViewById(R.id.tvControllerX);
     tvControllerDouble = vFloatController.findViewById(R.id.tvControllerDouble);
     tvControllerReturn = vFloatController.findViewById(R.id.tvControllerReturn);
     tvControllerCount = vFloatController.findViewById(R.id.tvControllerCount);
@@ -644,6 +649,7 @@ public class DemoApplication extends Application {
     tvControllerTime = vFloatController.findViewById(R.id.tvControllerTime);
     tvControllerForward = vFloatController.findViewById(R.id.tvControllerForward);
     tvControllerSetting = vFloatController.findViewById(R.id.tvControllerSetting);
+    tvControllerY = vFloatController.findViewById(R.id.tvControllerY);
 
     rvControllerTag = vFloatController.findViewById(R.id.rvControllerTag);
     tagAdapter = new RecyclerView.Adapter() {
@@ -903,8 +909,7 @@ public class DemoApplication extends Application {
       @Override
       public void onClick(View v) {
         dismiss();
-        // Android 10: Calling startActivity() from outside of an Activity  context requires the FLAG_ACTIVITY_NEW_TASK flag
-        startActivity(UIAutoActivity.createIntent(getInstance()).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+        startActivity(UIAutoActivity.createIntent(getInstance()));
       }
     });
 
@@ -953,9 +958,11 @@ public class DemoApplication extends Application {
   public void onUIAutoActivityDestroy(Activity activity) {
     cache.edit()
       .remove(SPLIT_X)
-      .putInt(SPLIT_X, Math.round(vSplitX.getX() + vSplitX.getWidth()/2 - windowWidth))
+      // .putInt(SPLIT_X, Math.round(vSplitX.getX() + vSplitX.getWidth()/2 - windowWidth))
+      .putInt(SPLIT_X, Math.round(floatSplitX.getX() + vSplitX.getWidth()/2 - windowWidth))
       .remove(SPLIT_Y)
-      .putInt(SPLIT_Y, Math.round(vSplitY.getY() + vSplitY.getHeight()/2 - windowHeight))
+      // .putInt(SPLIT_Y, Math.round(vSplitY.getY() + vSplitY.getHeight()/2 - windowHeight))
+      .putInt(SPLIT_Y, Math.round(floatSplitY.getY() + vSplitY.getHeight()/2 - windowHeight))
       .apply();
   }
 
@@ -1285,6 +1292,9 @@ public class DemoApplication extends Application {
             vSplitY.setVisibility(vFloatBall.getVisibility());
             vSplitX2.setVisibility(vFloatBall2.getVisibility());
             vSplitY2.setVisibility(vFloatBall2.getVisibility());
+            tvControllerX.setVisibility(v.getVisibility());
+            tvControllerY.setVisibility(v.getVisibility());
+
             // floatCover.show();
 
             // 太卡了 // 避免线条区域拦截了触摸事件
@@ -1328,6 +1338,9 @@ public class DemoApplication extends Application {
             vSplitY.setVisibility(View.GONE);
             vSplitX2.setVisibility(View.GONE);
             vSplitY2.setVisibility(View.GONE);
+
+            tvControllerX.setVisibility(View.GONE);
+            tvControllerY.setVisibility(View.GONE);
 
             // 太卡了 // 避免线条区域拦截了触摸事件
             // if (floatSplitX != null) {
@@ -1384,14 +1397,13 @@ public class DemoApplication extends Application {
                 cache.edit().remove(cacheKey).putString(cacheKey, JSON.toJSONString(allList)).commit();
               }
 
-              new Handler(Looper.getMainLooper()).post(new Runnable() {
+              mainHandler.post(new Runnable() {
                 @Override
                 public void run() {
                   //                startActivity(UIAutoListActivity.createIntent(DemoApplication.getInstance(), flowId));  // eventList == null ? null : eventList.toJSONString()));
 //                startActivityForResult(UIAutoListActivity.createIntent(DemoApplication.getInstance(), eventList == null ? null : eventList.toJSONString()), REQUEST_UI_AUTO_LIST);
                   count = 0;
-                  // Android 10: Calling startActivity() from outside of an Activity  context requires the FLAG_ACTIVITY_NEW_TASK flag
-                  startActivity(UIAutoListActivity.createIntent(getInstance(), cacheKey).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+                  startActivity(UIAutoListActivity.createIntent(getInstance(), cacheKey));
                 }
               });
             }
@@ -1403,21 +1415,30 @@ public class DemoApplication extends Application {
         .with(getApplicationContext())
         .setTag(ballName)
         .setView(vFloatBall)
-        .setWidth(splitSize)                               //设置控件宽高
+        .setWidth(splitSize)                       //设置控件宽高
         .setHeight(splitSize)
         .setX(x)                                   //设置控件初始位置
         .setY(y)
         .setMoveType(MoveType.active)
-        .setDesktopShow(true) //必须为 true，否则切换 Activity 就会自动隐藏                        //桌面显示
+        .setDesktopShow(true) //必须为 true，否则切换 Activity 就会自动隐藏 //桌面显示
         .setViewStateListener(new ViewStateListener() {
           @Override
           public void onPositionUpdate(int x, int y) {
+            int splitX = x + splitSize/2;
+            int splitY = y + splitSize/2;
+
             if (floatSplitX_ != null) {
-              floatSplitX_.updateX(x + splitSize/2 - dip2px(0.5f));
+              floatSplitX_.updateX(splitX - dip2px(0.5f));
             }
             if (floatSplitY_ != null) {
-              floatSplitY_.updateY(y + splitSize/2 - dip2px(0.5f));
+              floatSplitY_.updateY(splitY - dip2px(0.5f));
             }
+
+            double xr = 100f*splitX/windowWidth;
+            double yr = 100f*splitY/windowHeight;
+
+            tvControllerX.setText(DECIMAL_FORMAT.format(xr) + "%" + "\n" + DECIMAL_FORMAT.format(yr) + "%");
+            tvControllerY.setText(splitX + "\n" + splitY);
           }
 
           @Override
@@ -1459,9 +1480,13 @@ public class DemoApplication extends Application {
     }
 
     floatBall.show();
+    tvControllerX.setText(splitX + "\n" + (splitX/windowWidth) + "%");
+    tvControllerY.setText(splitY + "\n" + (splitY/windowHeight) + "%");
 
     return floatBall;
   }
+
+  public static final DecimalFormat DECIMAL_FORMAT = new DecimalFormat("0.0");
 
 
   public int getWindowX(Activity activity) {
@@ -1542,16 +1567,34 @@ public class DemoApplication extends Application {
   private long duration = 0;
   private int allStep = 0;
   private int step = 0;
+  private int lastStep = 0;
 
   private long currentTime = 0;
   public void replay() {
+    replay(0);
+  }
+  public void replay(int step) {
     isReplay = true;
 //        List<InputEvent> list = new LinkedList<>();
-
     if (step >= allStep) {
       step = 0;
       currentEventNode = firstEventNode;
     }
+    else {
+      Node<InputEvent> curNode = firstEventNode;
+      for (int i = 0; i < step; i++) {
+        curNode = curNode == null ? null : curNode.next;
+        if (curNode == null) {
+          curNode = firstEventNode;
+          step = 0;
+          break;
+        }
+      }
+
+      currentEventNode = curNode;
+    }
+
+    this.step = step;
 
     JSONObject first = allStep <= 0 ? null : eventList.getJSONObject(0);
     long firstTime = first == null ? 0 : first.getLongValue("time");
@@ -1578,6 +1621,9 @@ public class DemoApplication extends Application {
 
   private Node<InputEvent> eventNode = null;
   public void prepareAndSendEvent(@NotNull JSONArray eventList) {
+    prepareAndSendEvent(eventList, 0);
+  }
+  public void prepareAndSendEvent(@NotNull JSONArray eventList, int step) {
     for (int i = 0; i < eventList.size(); i++) {
       JSONObject obj = eventList.getJSONObject(i);
       if (obj == null) { // || obj.getBooleanValue("disable")) {
@@ -1709,7 +1755,7 @@ public class DemoApplication extends Application {
           obj.getLongValue("downTime"),
           obj.getLongValue("eventTime"),
           obj.getIntValue("action"),
-//                            obj.getIntValue("tagerCount"),
+//                            obj.getIntValue("targetCount"),
           rx,
           ry,
           obj.getFloatValue("pressure"),
@@ -2077,8 +2123,8 @@ public class DemoApplication extends Application {
       obj.put("deviceId", event.getDeviceId());
       //虽然 KeyEvent 和 MotionEvent 都有，但都不在父类 InputEvent 中 >>>>>>>>>>>>>>>>>>
 
-      obj.put("x", Math.round(event.getX() < vSplitX.getX() ? event.getX() : event.getX() - contentView.getX() - contentView.getWidth()));
-      obj.put("y", Math.round(event.getY() < vSplitY.getY() ? event.getY() : event.getY() - contentView.getY() - contentView.getHeight()));
+      obj.put("x", Math.round(event.getX() < floatSplitX.getX() ? event.getX() : event.getX() - contentView.getX() - contentView.getWidth()));
+      obj.put("y", Math.round(event.getY() < floatSplitY.getY() ? event.getY() : event.getY() - contentView.getY() - contentView.getHeight()));
       obj.put("rawX", Math.round(event.getRawX()));
       obj.put("rawY", Math.round(event.getRawY()));
       obj.put("size", event.getSize());
@@ -2090,6 +2136,25 @@ public class DemoApplication extends Application {
     }
 
     return addEvent(obj, type != InputUtil.EVENT_TYPE_TOUCH || action != MotionEvent.ACTION_MOVE);
+  }
+  public <V extends View> V findViewByTouchPoint(View view, float x, float y, boolean onlyFocusable) {
+    if (view == null || x < view.getX() || x > view.getX() + view.getWidth()
+            || y < view.getY() || y > view.getY() + view.getHeight()) {
+      return null;
+    }
+
+    if (view instanceof ViewGroup) {
+      ViewGroup vg = (ViewGroup) view;
+
+      for (int i = vg.getChildCount() - 1; i >= 0; i--) {
+        View v = findViewByTouchPoint(vg.getChildAt(i), x, y, onlyFocusable);
+        if (v != null) {
+          return (V) v;
+        }
+      }
+    }
+
+    return onlyFocusable == false || view.isFocusableInTouchMode() ? (V) view : null;
   }
 
   int count = 0;
@@ -2174,8 +2239,8 @@ public class DemoApplication extends Application {
     );
   }
   public JSONObject newEvent(int orientation, String activity, String fragment) {
-    splitX = Math.round(vSplitX.getX() + vSplitX.getWidth()/2 - contentView.getX() - contentView.getWidth());
-    splitY = Math.round(vSplitY.getY() + vSplitY.getHeight()/2 - contentView.getY() - contentView.getHeight());
+    splitX = Math.round(floatSplitX.getX() + vSplitX.getWidth()/2 - contentView.getX() - contentView.getWidth());
+    splitY = Math.round(floatSplitY.getY() + vSplitY.getHeight()/2 - contentView.getY() - contentView.getHeight());
 
     JSONObject event = new JSONObject(true);
     event.put("id", - System.currentTimeMillis());
@@ -2202,16 +2267,22 @@ public class DemoApplication extends Application {
   }
 
   public void setEventList(JSONArray eventList) {
+    setEventList(eventList, 0);
+  }
+  public void setEventList(JSONArray eventList, int step) {
     this.eventList = eventList == null ? new JSONArray() : eventList;
-    onEventChange(0, 0L);
+    onEventChange(step, 0L);
   }
 
   private File directory;
   public void prepareReplay(JSONArray eventList) {
-    setEventList(eventList);
+    prepareReplay(eventList, 0, false);
+  }
+  public void prepareReplay(JSONArray eventList, int step, boolean start) {
+    setEventList(eventList, step);
     isShowing = true;
     isReplay = true;
-    step = 0;
+    this.step = step;
     allStep = eventList == null ? 0 : eventList.size();
     duration = 0;
     flowId = - System.currentTimeMillis();
@@ -2223,7 +2294,7 @@ public class DemoApplication extends Application {
     new Thread(new Runnable() {
       @Override
       public void run() {
-        prepareAndSendEvent(eventList);
+        prepareAndSendEvent(eventList, step);
 
         try {
           directory = new File(parentDirectory.getAbsolutePath() + "/flowId_" + Math.abs(flowId));
@@ -2235,10 +2306,14 @@ public class DemoApplication extends Application {
           e.printStackTrace();
         }
 
-        new Handler(getMainLooper()).post(new Runnable() {
+        mainHandler.post(new Runnable() {
           @Override
           public void run() {
             showCover(true);
+
+            if (start) {
+              replay(step);
+            }
           }
         });
       }
@@ -2246,19 +2321,39 @@ public class DemoApplication extends Application {
   }
 
   public void prepareRecord() {
-    setEventList(null);
+    prepareRecord(true);
+  }
+  public void prepareRecord(boolean clear) {
+
     isShowing = true;
     isReplay = false;
-    step = 0;
-    allStep = 0;
-    duration = 0;
-    flowId = - System.currentTimeMillis();
+	if (clear) {
+	    setEventList(null);
+	    step = 0;
+	    allStep = 0;
+	    duration = 0;
+	    flowId = - System.currentTimeMillis();
+    }
 
     tvControllerPlay.setText("record");
     tvControllerCount.setText(step + "/" + allStep);
     tvControllerTime.setText("0:00");
 
     showCover(true);
+  }
+
+
+
+  public void startUIAutoActivity() {
+    startActivity(UIAutoActivity.createIntent(getCurrentActivity()));
+  }
+  @Override
+  public void startActivity(Intent intent) {
+    getCurrentActivity().startActivity(intent);
+  }
+  @Override
+  public void startActivity(Intent intent, Bundle options) {
+    getCurrentActivity().startActivity(intent, options);
   }
 
 
