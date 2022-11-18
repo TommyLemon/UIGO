@@ -1271,27 +1271,28 @@ public class DemoApplication extends Application {
     // showFloatView(true, "splitX2", vSplitX2, ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT, splitX2, 0, MoveType.inactive);
     // showFloatView(true, "splitY2", vSplitY2, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, 0, splitY2, MoveType.inactive);
 
-    IFloatWindow floatBall = FloatWindow.get(ballName);
+    IFloatWindow ball = FloatWindow.get(ballName);
     if (show == false) {
-      if (floatBall != null) {
-        floatBall.hide();
+      if (ball != null) {
+        ball.hide();
       }
-      return floatBall;
+      return ball;
     }
 
     int x = splitX - splitSize/2 + windowWidth;
     int y = splitY - splitSize/2 + windowHeight;
 
-    if (floatBall == null) {
+    if (ball == null) {
       vFloatBall.setExtraOnTouchListener(new View.OnTouchListener() {
         @Override
         public boolean onTouch(View v, MotionEvent event) {
           if (event.getAction() == MotionEvent.ACTION_DOWN) {
             // 虽然也能实现，但线条区域拦截了触摸事件
-            vSplitX.setVisibility(vFloatBall.getVisibility());
-            vSplitY.setVisibility(vFloatBall.getVisibility());
-            vSplitX2.setVisibility(vFloatBall2.getVisibility());
-            vSplitY2.setVisibility(vFloatBall2.getVisibility());
+            vSplitX.setVisibility(floatBall != null && floatBall.isShowing() ? vFloatBall.getVisibility() : View.GONE);
+            vSplitY.setVisibility(vSplitX.getVisibility());
+            vSplitX2.setVisibility(floatBall2 != null && floatBall2.isShowing() ? vFloatBall2.getVisibility() : View.GONE);
+            vSplitY2.setVisibility(vSplitX2.getVisibility());
+
             tvControllerX.setVisibility(v.getVisibility());
             tvControllerY.setVisibility(v.getVisibility());
 
@@ -1472,18 +1473,18 @@ public class DemoApplication extends Application {
 //                .setPermissionListener(mPermissionListener)  //监听权限申请结果
         .build();
 
-      floatBall = FloatWindow.get(ballName);
+      ball = FloatWindow.get(ballName);
     }
     else {
-      floatBall.updateX(x);
-      floatBall.updateY(y);
+      ball.updateX(x);
+      ball.updateY(y);
     }
 
-    floatBall.show();
+    ball.show();
     tvControllerX.setText(splitX + "\n" + (splitX/windowWidth) + "%");
     tvControllerY.setText(splitY + "\n" + (splitY/windowHeight) + "%");
 
-    return floatBall;
+    return ball;
   }
 
   public static final DecimalFormat DECIMAL_FORMAT = new DecimalFormat("0.0");
