@@ -1698,16 +1698,23 @@ public class DemoApplication extends Application {
         int layoutType = obj.getIntValue("layoutType");
         float density = obj.getIntValue("density");
 
-        // int ww = obj.getIntValue("windowWidth");
-        // int wh = obj.getIntValue("windowHeight");
+        int ww = obj.getIntValue("windowWidth");
+        int wh = obj.getIntValue("windowHeight");
 
         int cw = obj.getIntValue("contentWidth");
         int ch = obj.getIntValue("contentHeight");
 
-        float ratio = getScale(cw, ch, layoutType, density);
+        if (cw <= 100) {
+          cw = ww;
+        }
+        if (ch <= 100) {
+          ch = wh;
+        }
 
-        eventNode.splitX = Math.round(obj.getIntValue("splitX")*ratio);
-        eventNode.splitY = Math.round(obj.getIntValue("splitY")*ratio);
+        float ratio = getScale(cw, ch, layoutType, density);
+        if (ratio <= 0.1) {
+          ratio = 1;
+        }
 
         float x = obj.getFloatValue("x");
         float y = obj.getFloatValue("y");
@@ -1715,6 +1722,22 @@ public class DemoApplication extends Application {
         float sx2 = obj.getFloatValue("splitX2");
         float sy = obj.getFloatValue("splitY");
         float sy2 = obj.getFloatValue("splitY2");
+
+        if (sx == 0 || Math.abs(sx) >= cw) {
+          sx = Math.round(- splitSize - dip2px(30))/ratio;
+        }
+        else if (sx > 0) {
+          sx -= cw;
+        }
+        if (sy == 0 || Math.abs(sy) >= ch) {
+          sy = Math.round(- splitSize - dip2px(30))/ratio;
+        }
+        else if (sy > 0) {
+          sy -= ch;
+        }
+
+        eventNode.splitX = Math.round(sx*ratio);
+        eventNode.splitY = Math.round(sy*ratio);
 
         // float ratio = getScale(ww, ) //  1f*windowWidth/ww;  //始终以显示时宽度比例为准，不管是横屏还是竖屏   1f*Math.min(windowWidth, windowHeight)/Math.min(ww, wh);
 
@@ -1727,10 +1750,10 @@ public class DemoApplication extends Application {
         float maxSY = sy2 <= 0 ? minSY : Math.max(sy, sy2);
 
         float rx, ry;
-        if (x <= minSX) {  //靠左
+        if (x >= 0 && x <= minSX) {  //靠左
           rx = ratio*x;
         }
-        else if (x >= maxSX) {  //靠右
+        else if (x < 0 || x >= maxSX) {  //靠右
 //          rx = ratio*x;  //可以简化 windowWidth/1f - ratio*(ww - x);
           rx = contentWidth*1f + ratio*(x < 0 ? x : - (cw - x));
         }
@@ -1817,7 +1840,7 @@ public class DemoApplication extends Application {
       return 1.0f;
     }
 
-    if (layoutType == InputUtil.LAYOUT_TYPE_DENSITY) {  // 默认，相对位置像素密度比
+    if (density > 0.1 && layoutType == InputUtil.LAYOUT_TYPE_DENSITY) {  // 默认，相对位置像素密度比
       return DENSITY/density;
     }
 
