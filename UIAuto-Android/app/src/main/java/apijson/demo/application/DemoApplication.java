@@ -1711,46 +1711,53 @@ public class DemoApplication extends Application {
 
         float x = obj.getFloatValue("x");
         float y = obj.getFloatValue("y");
-//				float sx = obj.getFloatValue("splitX");
-//				float sx2 = obj.getFloatValue("splitX2");
+        float sx = obj.getFloatValue("splitX");
+        float sx2 = obj.getFloatValue("splitX2");
         float sy = obj.getFloatValue("splitY");
         float sy2 = obj.getFloatValue("splitY2");
 
         // float ratio = getScale(ww, ) //  1f*windowWidth/ww;  //始终以显示时宽度比例为准，不管是横屏还是竖屏   1f*Math.min(windowWidth, windowHeight)/Math.min(ww, wh);
 
         // TODO 既然已经存了 上下 绝对坐标、屏幕像素 等完整信息，没必要用负值？负值保证稳定，因为 18:9 和 16:9 的分割线高度不一样
-//				float minSX = sx2 <= 0 ? sx : Math.min(sx, sx2);
-//				float maxSX = sx2 <= 0 ? sx : Math.max(sx, sx2);
+        float minSX = sx2 <= 0 ? sx : Math.min(sx, sx2);
+        float maxSX = sx2 <= 0 ? sx : Math.max(sx, sx2);
         sy = sy > 0 ? sy : ch + sy;  // 转为正数
 
         float minSY = sy2 <= 0 ? sy : Math.min(sy, sy2);
         float maxSY = sy2 <= 0 ? minSY : Math.max(sy, sy2);
 
         float rx, ry;
-//				if (x <= minSX) {  //靠左
-//					rx = ratio*x;
-//				}
-//				else if (x >= maxSX) {  //靠右
-//					rx = ratio*x;  //可以简化 windowWidth/1f - ratio*(ww - x);
-//				}
-//				else {  //居中
-////					float mid = (maxSX + minSX)/2f;
-//					rx = ratio*x;  //可以简化 windowWidth*mid/ww - ratio*(mid - x);
-//				}
+        if (x <= minSX) {  //靠左
+          rx = ratio*x;
+        }
+        else if (x >= maxSX) {  //靠右
+//          rx = ratio*x;  //可以简化 windowWidth/1f - ratio*(ww - x);
+          rx = contentWidth*1f + ratio*(x < 0 ? x : - (cw - x));
+        }
+        else {  //居中
+//		  float mid = (maxSX + minSX)/2f;
+//          rx = ratio*x;  //可以简化 windowWidth*mid/ww - ratio*(mid - x);
 
-        // 进一步简化上面的，横向是所有都一致
-        rx = ratio*x;
+          float mid = (maxSX + minSX)/2f;
+          rx = contentWidth*mid/cw + ratio*(x < 0 ? x : - (mid - x));
+        }
+
+        // 不一定这样 // 进一步简化上面的，横向是所有都一致
+//        rx = ratio*x + contentView.getX();
 
         if (y >= 0 && y <= minSY) {  //靠上
           ry = ratio*y;
         }
         else if (y < 0 || y >= maxSY) {  //靠下
-          ry = contentHeight/1f + ratio*(y < 0 ? y : - (ch - y));
+          ry = contentHeight*1f + ratio*(y < 0 ? y : - (ch - y));
         }
         else {  //居中
           float mid = (maxSY + minSY)/2f;
           ry = contentHeight*mid/ch + ratio*(y < 0 ? y : - (mid - y));
         }
+
+        rx += contentView.getX();
+        ry += contentView.getY();
 
         event = MotionEvent.obtain(
           obj.getLongValue("downTime"),
