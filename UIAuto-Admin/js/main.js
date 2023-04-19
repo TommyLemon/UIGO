@@ -2885,7 +2885,7 @@
             + '\nAPIJSON 英文文档: https://github.com/ruoranw/APIJSONdocs '
             + '\nAPIJSON 官方网站: https://github.com/APIJSON/apijson.org '
             + '\nAPIJSON -Java版: https://github.com/Tencent/APIJSON '
-            + '\nAPIJSON - Go 版: https://gitee.com/tiangao/apijson-go '
+            + '\nAPIJSON - Go 版: https://github.com/glennliao/apijson-go '
             + '\nAPIJSON - C# 版: https://github.com/liaozb/APIJSON.NET '
             + '\nAPIJSON - PHP版: https://github.com/xianglong111/APIJSON-php '
             + '\nAPIJSON -Node版: https://github.com/kevinaskin/apijson-node '
