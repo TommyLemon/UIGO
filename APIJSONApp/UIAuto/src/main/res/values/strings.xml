@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="ui">零代码 UI 测试</string>
+    <string name="local">本地列表</string>
+    <string name="remote">共享列表</string>
+    <string name="record">录制</string>
+    <string name="replay">回放</string>
+    <string name="recording">录制中</string>
+    <string name="replaying">回放中</string>
+    <string name="name">名称：</string>
+    <string name="please_firstly_record_or_replay">请先录制或回放</string>
+    <string name="finished_because_of_no_step">没有操作步骤，已结束</string>
+    <string name="replay_finished">回放结束</string>
+    <string name="remains_step_needs_uploading">还有没上传完的步骤！</string>
+</resources>

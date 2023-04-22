@@ -1,0 +1,13 @@
+<uiauto.FloatBallView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/ivUIAutoSplitY"
+    android:minWidth="12dp"
+    android:minHeight="12dp"
+    android:layout_width="36dp"
+    android:layout_height="36dp"
+    android:padding="6dp"
+    android:layout_centerInParent="true"
+    android:background="@drawable/oval_alpha_with_stroke"
+    android:scaleType="centerInside"
+    />

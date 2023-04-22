@@ -1,0 +1,32 @@
+apply plugin: 'com.android.application'
+
+//apply plugin: 'kotlin-android'
+//apply plugin: 'kotlin-android-extensions'
+
+android {
+    compileSdkVersion 29
+    buildToolsVersion '29.0.0'
+    defaultConfig {
+        minSdkVersion 26
+        targetSdkVersion 29
+        versionCode 1
+        versionName "1.0"
+        applicationId "apijson.demo.client"
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+    productFlavors {
+    }
+}
+
+dependencies {
+    api fileTree(dir: 'libs', include: ['*.jar'])
+    testImplementation 'junit:junit:4.12'
+//    api "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
+    api project(':QRCodeLibrary')
+    api project(':ZBLibrary')
+}
