@@ -26,16 +26,24 @@ import android.graphics.PorterDuff.Mode;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
 import android.graphics.RectF;
+import android.graphics.drawable.Drawable;
 import android.view.View;
 import android.widget.ImageView;
 
-import com.nostra13.universalimageloader.core.DisplayImageOptions;
-import com.nostra13.universalimageloader.core.ImageLoader;
-import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
-import com.nostra13.universalimageloader.core.assist.FailReason;
-import com.nostra13.universalimageloader.core.assist.QueueProcessingType;
-import com.nostra13.universalimageloader.core.display.RoundedBitmapDisplayer;
-import com.nostra13.universalimageloader.core.listener.ImageLoadingListener;
+//import androidx.annotation.Nullable;
+
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.DataSource;
+import com.bumptech.glide.load.engine.GlideException;
+import com.bumptech.glide.request.RequestListener;
+import com.bumptech.glide.request.target.Target;
+//import com.nostra13.universalimageloader.core.DisplayImageOptions;
+//import com.nostra13.universalimageloader.core.ImageLoader;
+//import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
+//import com.nostra13.universalimageloader.core.assist.FailReason;
+//import com.nostra13.universalimageloader.core.assist.QueueProcessingType;
+//import com.nostra13.universalimageloader.core.display.RoundedBitmapDisplayer;
+//import com.nostra13.universalimageloader.core.listener.ImageLoadingListener;
 
 /**图片加载工具类
  * @author Lemon
@@ -44,7 +52,7 @@ import com.nostra13.universalimageloader.core.listener.ImageLoadingListener;
 public class ImageLoaderUtil {
 	private static final String TAG = "ImageLoaderUtil";
 
-	private static ImageLoader imageLoader;
+//	private static ImageLoader imageLoader;
 	/**初始化方法
 	 * @must 使用其它方法前必须调用，建议在自定义Application的onCreate方法中调用
 	 * @param context
@@ -54,27 +62,27 @@ public class ImageLoaderUtil {
 			Log.e(TAG, "\n\n\n\n\n !!!!!!  <<<<<< init  context == null >> return; >>>>>>>> \n\n\n\n");
 			return;
 		}
-		imageLoader = ImageLoader.getInstance();
-		ImageLoaderConfiguration config = new ImageLoaderConfiguration.Builder(context)
-		.defaultDisplayImageOptions(getOption(0))
-		// .threadPoolSize(5)
-		// //.threadPriority(Thread.MIN_PRIORITY + 3)
-		.tasksProcessingOrder(QueueProcessingType.LIFO)
-		// .discCacheSize((int)(Runtime.getRuntime().maxMemory()/2))
-		// .discCache(new UnlimitedDiscCache(getCachePath()))
-		// .memoryCacheSize(2 * 1024 * 1024)
-		// .memoryCacheExtraOptions(147, 147)
-		// .writeDebugLogs()
-		// .httpConnectTimeout(5000)
-		// .httpReadTimeout(20000)
-		.diskCacheExtraOptions(ScreenUtil.getScreenWidth(context), ScreenUtil.getScreenHeight(context), null)
-		.threadPriority(Thread.NORM_PRIORITY - 2)
-		.denyCacheImageMultipleSizesInMemory()
-		.diskCacheSize(50 * 1024 * 1024) // 50 Mb
-		// .displayer(new RoundedBitmapDisplayer(5))
-		.build();
-
-		imageLoader.init(config);
+//		imageLoader = ImageLoader.getInstance();
+//		ImageLoaderConfiguration config = new ImageLoaderConfiguration.Builder(context)
+//		.defaultDisplayImageOptions(getOption(0))
+//		// .threadPoolSize(5)
+//		// //.threadPriority(Thread.MIN_PRIORITY + 3)
+//		.tasksProcessingOrder(QueueProcessingType.LIFO)
+//		// .discCacheSize((int)(Runtime.getRuntime().maxMemory()/2))
+//		// .discCache(new UnlimitedDiscCache(getCachePath()))
+//		// .memoryCacheSize(2 * 1024 * 1024)
+//		// .memoryCacheExtraOptions(147, 147)
+//		// .writeDebugLogs()
+//		// .httpConnectTimeout(5000)
+//		// .httpReadTimeout(20000)
+//		.diskCacheExtraOptions(ScreenUtil.getScreenWidth(context), ScreenUtil.getScreenHeight(context), null)
+//		.threadPriority(Thread.NORM_PRIORITY - 2)
+//		.denyCacheImageMultipleSizesInMemory()
+//		.diskCacheSize(50 * 1024 * 1024) // 50 Mb
+//		// .displayer(new RoundedBitmapDisplayer(5))
+//		.build();
+//
+//		imageLoader.init(config);
 	}
 
 
@@ -106,32 +114,58 @@ public class ImageLoaderUtil {
 
 		uri = getCorrectUri(uri);
 
-		//新的加载图片
-		imageLoader.displayImage(uri, iv, new ImageLoadingListener() {
-			@Override
-			public void onLoadingStarted(String imageUri, View arg1) {
-			}
-			@Override
-			public void onLoadingFailed(String imageUri, View arg1, FailReason arg2) {
-			}
-			@Override
-			public void onLoadingComplete(String imageUri, View arg1, Bitmap loadedImage) {
-				switch (type) {
-				case TYPE_OVAL:
-					iv.setImageBitmap(toRoundCorner(loadedImage, loadedImage.getWidth()/2));
-					break;
-				case TYPE_ROUND_CORNER:
-					iv.setImageBitmap(toRoundCorner(loadedImage, 10));
-					break;
-				default:
-					iv.setImageBitmap(loadedImage);
-					break;
-				}
-			}
-			@Override
-			public void onLoadingCancelled(String imageUri, View arg1) {
-			}
-		});
+		Glide.with(iv.getContext()).load(uri)
+//				.listener(new RequestListener<Drawable>() {
+//			@Override
+//			public boolean onLoadFailed(@Nullable GlideException e, Object model, Target<Drawable> target, boolean isFirstResource) {
+//				return false;
+//			}
+//
+//			@Override
+//			public boolean onResourceReady(Drawable resource, Object model, Target<Drawable> target, DataSource dataSource, boolean isFirstResource) {
+//				resource.
+//				switch (type) {
+//				case TYPE_OVAL:
+//					iv.setImageBitmap(toRoundCorner(loadedImage, loadedImage.getWidth()/2));
+//					break;
+//				case TYPE_ROUND_CORNER:
+//					iv.setImageBitmap(toRoundCorner(loadedImage, 10));
+//					break;
+//				default:
+//					iv.setImageBitmap(loadedImage);
+//					break;
+//				}
+//				return false;
+//			}
+//		})
+				.into(iv);
+
+//		//新的加载图片
+//		imageLoader.displayImage(uri, iv, new ImageLoadingListener() {
+//			@Override
+//			public void onLoadingStarted(String imageUri, View arg1) {
+//			}
+//			@Override
+//			public void onLoadingFailed(String imageUri, View arg1, FailReason arg2) {
+//			}
+//			@Override
+//			public void onLoadingComplete(String imageUri, View arg1, Bitmap loadedImage) {
+//				switch (type) {
+//				case TYPE_OVAL:
+//					iv.setImageBitmap(toRoundCorner(loadedImage, loadedImage.getWidth()/2));
+//					break;
+//				case TYPE_ROUND_CORNER:
+//					iv.setImageBitmap(toRoundCorner(loadedImage, 10));
+//					break;
+//				default:
+//					iv.setImageBitmap(loadedImage);
+//					break;
+//				}
+//			}
+//			@Override
+//			public void onLoadingCancelled(String imageUri, View arg1) {
+//			}
+//		});
 
 	}
 
@@ -159,41 +193,41 @@ public class ImageLoaderUtil {
 	}
 
 
-	/**获取配置
-	 * @param cornerRadiusSize
-	 * @return
-	 */
-	private static DisplayImageOptions getOption(int cornerRadiusSize) {
-		return getOption(cornerRadiusSize, cornerRadiusSize <= 0
-				? R.drawable.square_alpha : R.drawable.oval_alpha);
-	}
-	/**获取配置
-	 * @param cornerRadiusSize
-	 * @param defaultImageResId
-	 * @return
-	 */
-	@SuppressWarnings("deprecation")
-	private static DisplayImageOptions getOption(int cornerRadiusSize, int defaultImageResId) {
-		Options options0 = new Options();
-		options0.inPreferredConfig = Bitmap.Config.RGB_565;
-
-		DisplayImageOptions.Builder builder = new DisplayImageOptions.Builder();
-		if(defaultImageResId > 0) {
-			try {
-				builder.showImageForEmptyUri(defaultImageResId)
-				.showImageOnLoading(defaultImageResId)
-				.showImageOnFail(defaultImageResId);
-			} catch (Exception e) {
-				Log.e(TAG, "getOption  try {builder.showImageForEmptyUri(defaultImageResId) ..." +
-						" >> } catch (Exception e) { \n" + e.getMessage());
-			}
-		}
-		if (cornerRadiusSize > 0) {
-			builder.displayer(new RoundedBitmapDisplayer(cornerRadiusSize));
-		}
-
-		return builder.cacheInMemory(true).cacheOnDisc(true).decodingOptions(options0).build();
-	}
+//	/**获取配置
+//	 * @param cornerRadiusSize
+//	 * @return
+//	 */
+//	private static DisplayImageOptions getOption(int cornerRadiusSize) {
+//		return getOption(cornerRadiusSize, cornerRadiusSize <= 0
+//				? R.drawable.square_alpha : R.drawable.oval_alpha);
+//	}
+//	/**获取配置
+//	 * @param cornerRadiusSize
+//	 * @param defaultImageResId
+//	 * @return
+//	 */
+//	@SuppressWarnings("deprecation")
+//	private static DisplayImageOptions getOption(int cornerRadiusSize, int defaultImageResId) {
+//		Options options0 = new Options();
+//		options0.inPreferredConfig = Bitmap.Config.RGB_565;
+//
+//		DisplayImageOptions.Builder builder = new DisplayImageOptions.Builder();
+//		if(defaultImageResId > 0) {
+//			try {
+//				builder.showImageForEmptyUri(defaultImageResId)
+//				.showImageOnLoading(defaultImageResId)
+//				.showImageOnFail(defaultImageResId);
+//			} catch (Exception e) {
+//				Log.e(TAG, "getOption  try {builder.showImageForEmptyUri(defaultImageResId) ..." +
+//						" >> } catch (Exception e) { \n" + e.getMessage());
+//			}
+//		}
+//		if (cornerRadiusSize > 0) {
+//			builder.displayer(new RoundedBitmapDisplayer(cornerRadiusSize));
+//		}
+//
+//		return builder.cacheInMemory(true).cacheOnDisc(true).decodingOptions(options0).build();
+//	}
 
 	/**获取小图url或path
 	 * path不加URL_SUFFIX_SMALL
