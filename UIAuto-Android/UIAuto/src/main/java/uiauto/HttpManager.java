@@ -12,7 +12,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.*/
 
-package apijson.demo;
+package uiauto;
 
 import android.app.Activity;
 import android.content.Context;
@@ -37,7 +37,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import apijson.demo.application.UIAutoApp;
 import zuo.biao.apijson.StringUtil;
 
 /**HTTP请求管理类

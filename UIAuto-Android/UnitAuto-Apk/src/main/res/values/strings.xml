@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <string name="unit">自动单元测试</string>
+    <string name="unit">零代码单元测试</string>
     <string name="start">启动</string>
     <string name="stop">停止</string>
     <string name="port">端口：</string>

@@ -1,4 +1,4 @@
-/*Copyright ©2016 TommyLemon(https://github.com/TommyLemon)
+/*Copyright ©2020 TommyLemon(https://github.com/TommyLemon/UIAuto)
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.*/
 
-package apijson.demo.application;
+package uiauto;
 
 import android.app.Activity;
 import android.app.Application;
@@ -71,12 +71,6 @@ import java.text.SimpleDateFormat;
 import java.util.LinkedList;
 import java.util.List;
 
-import apijson.demo.InputUtil;
-import apijson.demo.R;
-import apijson.demo.StringUtil;
-import apijson.demo.ui.UIAutoActivity;
-import apijson.demo.ui.UIAutoListActivity;
-import apijson.demo.view.FloatBallView;
 import unitauto.apk.UnitAutoApp;
 import zuo.biao.apijson.NotNull;
 
@@ -98,6 +92,12 @@ public class UIAutoApp extends Application {
   public static UIAutoApp getInstance() {
     return instance;
   }
+
+  private static Application APP;
+  public static Application getApp() {
+    return APP;
+  }
+
 
   private static final SimpleDateFormat TIME_FORMAT = new SimpleDateFormat("mm:ss");
 
@@ -306,16 +306,16 @@ public class UIAutoApp extends Application {
   @Override
   public void onCreate() {
     super.onCreate();
-    init();
+    instance = this;
+    init(this);
   }
 
-  public void init() {
-    instance = this;
-
-    UnitAutoApp.init(this);
+  public void init(Application app) {
+    APP = app;
+    UnitAutoApp.init(app);
     Log.d(TAG, "项目启动 >>>>>>>>>>>>>>>>>>>> \n\n");
 
-    parentDirectory = getExternalFilesDir(Environment.DIRECTORY_PICTURES); // new File(screenshotDirPath);
+    parentDirectory = app.getExternalFilesDir(Environment.DIRECTORY_PICTURES); // new File(screenshotDirPath);
     if (parentDirectory.exists() == false) {
       try {
         parentDirectory.mkdir();
@@ -876,7 +876,7 @@ public class UIAutoApp extends Application {
     // tvControllerCount.setOnClickListener(new View.OnClickListener() {
     //     @Override
     //     public void onClick(View v) {
-    //         startActivity(UIAutoListActivity.createIntent(getInstance(), flowId));
+    //         startActivity(UIAutoListActivity.createIntent(getApp(), flowId));
     //     }
     // });
 
@@ -890,7 +890,7 @@ public class UIAutoApp extends Application {
     // tvControllerTime.setOnClickListener(new View.OnClickListener() {
     // @Override
     //     public void onClick(View v) {
-    //         startActivity(UIAutoListActivity.createIntent(getInstance(), true));
+    //         startActivity(UIAutoListActivity.createIntent(getApp(), true));
     //     }
     // });
 
@@ -994,18 +994,6 @@ public class UIAutoApp extends Application {
     return inflater;
   }
 
-  /**获取应用名
-   * @return
-   */
-  public String getAppName() {
-    return getResources().getString(R.string.app_name);
-  }
-  /**获取应用版本名(显示给用户看的)
-   * @return
-   */
-  public String getAppVersion() {
-    return getResources().getString(R.string.app_version);
-  }
 
   private List<Activity> activityList = new LinkedList<>();
 
@@ -1426,10 +1414,10 @@ public class UIAutoApp extends Application {
               mainHandler.post(new Runnable() {
                 @Override
                 public void run() {
-                  //                startActivity(UIAutoListActivity.createIntent(DemoApplication.getInstance(), flowId));  // eventList == null ? null : eventList.toJSONString()));
-//                startActivityForResult(UIAutoListActivity.createIntent(DemoApplication.getInstance(), eventList == null ? null : eventList.toJSONString()), REQUEST_UI_AUTO_LIST);
+                  //                startActivity(UIAutoListActivity.createIntent(DemoApplication.getApp(), flowId));  // eventList == null ? null : eventList.toJSONString()));
+//                startActivityForResult(UIAutoListActivity.createIntent(DemoApplication.getApp(), eventList == null ? null : eventList.toJSONString()), REQUEST_UI_AUTO_LIST);
                   count = 0;
-                  startActivity(UIAutoListActivity.createIntent(getInstance(), cacheKey));
+                  startActivity(UIAutoListActivity.createIntent(getApp(), cacheKey));
                 }
               });
             }
@@ -1639,7 +1627,7 @@ public class UIAutoApp extends Application {
 
     if (firstTime <= 0) {
       currentTime = 0;
-      Toast.makeText(getInstance(), R.string.finished_because_of_no_step, Toast.LENGTH_SHORT).show();
+      Toast.makeText(getApp(), R.string.finished_because_of_no_step, Toast.LENGTH_SHORT).show();
       tvControllerPlay.setText("replay");
       showCoverAndSplit(true, false);
     }

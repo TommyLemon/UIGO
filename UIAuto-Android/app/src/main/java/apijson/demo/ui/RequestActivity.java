@@ -34,15 +34,16 @@ import com.alibaba.fastjson.JSONObject;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 
-import apijson.demo.HttpManager;
-import apijson.demo.HttpManager.OnHttpResponseListener;
+import uiauto.HttpManager;
+import uiauto.HttpManager.OnHttpResponseListener;
 import apijson.demo.R;
 import apijson.demo.RequestUtil;
-import apijson.demo.StringUtil;
+import uiauto.StringUtil;
 import apijson.demo.model.BaseModel;
 import apijson.demo.model.Moment;
 import apijson.demo.model.Privacy;
 import apijson.demo.model.User;
+import uiauto.UIAutoBaseActivity;
 import zuo.biao.apijson.JSON;
 import zuo.biao.apijson.JSONResponse;
 

@@ -19,7 +19,7 @@ import com.alibaba.fastjson.JSONObject;
 
 import java.util.Set;
 
-import apijson.demo.StringUtil;
+import uiauto.StringUtil;
 import zuo.biao.apijson.JSONRequest;
 import zuo.biao.apijson.JSONResponse;
 

@@ -1,2 +1,3 @@
 include ':UnitAuto-Apk'
+include ':UIAuto'
 include ':app'

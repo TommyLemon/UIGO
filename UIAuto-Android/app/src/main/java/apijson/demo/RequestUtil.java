@@ -19,11 +19,11 @@ import android.content.Context;
 import java.util.ArrayList;
 import java.util.List;
 
-import apijson.demo.application.UIAutoApp;
 import apijson.demo.model.Comment;
 import apijson.demo.model.Moment;
 import apijson.demo.model.Privacy;
 import apijson.demo.model.User;
+import uiauto.UIAutoApp;
 import zuo.biao.apijson.JSONObject;
 import zuo.biao.apijson.JSONRequest;
 

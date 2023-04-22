@@ -31,7 +31,8 @@ import android.widget.Toast;
 import apijson.demo.CodeUtil;
 import apijson.demo.R;
 import apijson.demo.RequestUtil;
-import apijson.demo.StringUtil;
+import uiauto.StringUtil;
+import uiauto.UIAutoBaseActivity;
 import zuo.biao.apijson.JSON;
 
 /**自动生成代码

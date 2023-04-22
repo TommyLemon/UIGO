@@ -31,7 +31,9 @@ import com.alibaba.fastjson.JSONObject;
 
 import apijson.demo.R;
 import apijson.demo.RequestUtil;
-import apijson.demo.StringUtil;
+import uiauto.StringUtil;
+import uiauto.UIAutoActivity;
+import uiauto.UIAutoBaseActivity;
 import unitauto.apk.UnitAutoActivity;
 import zuo.biao.apijson.JSON;
 

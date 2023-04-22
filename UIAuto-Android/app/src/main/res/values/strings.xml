@@ -24,17 +24,5 @@
     <string name="request_error">可能出现了一些问题，可以按照以下步骤解决：\n\n1.检查网络连接\n\n2.检查url是否为一个可用的IPV4地址\n\n3.长按[ %1$s ]按钮用浏览器发送请求\n\n4.查看目标服务器上的log\n\n5.再试一次</string>
     <string name="apijson_slogan">APIJSON,&#160;let&#160;interfaces&#160;go&#160;to&#160;hell!</string>
     <string name="apijson_info">APIJSON&#160;is&#160;a&#160;JSON&#160;Transmission&#160;Structure&#160;Protocol&#8230;</string>
-    <string name="ui">自动 UI 测试</string>
-    <string name="local">本地列表</string>
-    <string name="remote">共享列表</string>
-    <string name="record">录制</string>
-    <string name="replay">回放</string>
-    <string name="recording">录制中</string>
-    <string name="replaying">回放中</string>
-    <string name="name">名称：</string>
-    <string name="please_firstly_record_or_replay">请先录制或回放</string>
-    <string name="finished_because_of_no_step">没有操作步骤，已结束</string>
-    <string name="replay_finished">回放结束</string>
-    <string name="remains_step_needs_uploading">还有没上传完的步骤！</string>
 
 </resources>

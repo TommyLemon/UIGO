@@ -12,8 +12,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.*/
 
-
-package apijson.demo;
+package uiauto;
 
 import android.content.ClipData;
 import android.content.ClipboardManager;
@@ -31,17 +30,17 @@ public class StringUtil extends zuo.biao.apijson.StringUtil {
 		if (tv == null || tv.getText() == null) {
 			return "";
 		}
-		return getString(tv.getText().toString());
+		return StringUtil.getString(tv.getText().toString());
 	}
 	public static String getTrimedString(TextView tv) {
-		return getTrimedString(getString(tv));
+		return StringUtil.getTrimedString(getString(tv));
 	}
 	public static String getNoBlankString(TextView tv) {
-		return getNoBlankString(getString(tv));
+		return StringUtil.getNoBlankString(getString(tv));
 	}
 
 	public static boolean isNotEmpty(TextView tv, boolean trim) {
-		return isNotEmpty(getString(tv), trim);
+		return StringUtil.isNotEmpty(getString(tv), trim);
 	}
 
 	/**

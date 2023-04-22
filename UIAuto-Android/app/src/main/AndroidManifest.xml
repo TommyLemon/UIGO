@@ -7,7 +7,7 @@
 
     <uses-sdk
         android:minSdkVersion="15"
-        android:targetSdkVersion="21" />
+        android:targetSdkVersion="29" />
 
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
     <uses-permission android:name="android.permission.INTERNET" />
@@ -17,7 +17,7 @@
 
 
     <application
-        android:name="apijson.demo.application.UIAutoApp"
+        android:name="apijson.demo.application.DemoApplication"
         android:allowBackup="true"
         android:icon="@drawable/ic_launcher"
         android:label="@string/app_name"
@@ -53,7 +53,7 @@
             android:screenOrientation="userLandscape"
             />
         <activity
-            android:name="apijson.demo.ui.UIAutoActivity"
+            android:name="uiauto.UIAutoActivity"
             android:label="@string/ui"
             android:windowSoftInputMode="adjustPan"
             android:configChanges="orientation|screenSize"
@@ -61,7 +61,7 @@
             android:theme="@style/Window"
             />
         <activity
-            android:name="apijson.demo.ui.UIAutoListActivity"
+            android:name="uiauto.UIAutoListActivity"
             android:label="@string/ui"
             android:windowSoftInputMode="adjustPan"
             android:screenOrientation="portrait"

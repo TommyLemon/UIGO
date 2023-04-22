@@ -1,4 +1,4 @@
-/*Copyright ©2016 TommyLemon(https://github.com/TommyLemon)
+/*Copyright ©2020 TommyLemon(https://github.com/TommyLemon)
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.*/
 
-package apijson.demo.ui;
+package uiauto;
 
 import android.app.Activity;
 import android.content.Context;
@@ -40,11 +40,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import apijson.demo.HttpManager;
-import apijson.demo.InputUtil;
-import apijson.demo.R;
-import apijson.demo.StringUtil;
-import apijson.demo.application.UIAutoApp;
 import zuo.biao.apijson.JSON;
 import zuo.biao.apijson.JSONRequest;
 import zuo.biao.apijson.JSONResponse;

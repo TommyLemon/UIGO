@@ -25,11 +25,6 @@ android {
 
 dependencies {
     api fileTree(dir: 'libs', include: ['*.jar'])
-    api 'com.android.support:recyclerview-v7:27.1.1'
-    api 'com.squareup.okhttp:okhttp:2.1.0'
-    api 'com.alibaba:fastjson:1.2.61'
-    api 'com.github.APIJSON:apijson-orm:3.9.0'
-    api 'com.github.yhaolpz:FloatWindow:1.0.9'
-//    api 'com.github.TommyLemon:UnitAuto:2.7.2'
-    api project(':UnitAuto-Apk')
+    //    api 'com.github.TommyLemon:UIAuto:1.0.0'
+    api project(':UIAuto')
 }

@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-
     <string name="request">Request</string>
     <string name="post">POST</string>
     <string name="delete">DELETE</string>
@@ -22,16 +21,4 @@
     <string name="request_error">There may be something wrong,you can follow by the steps:\n\n1.Check your internet connection\n\n2.Check the url whether it\'s an available ipv4 address\n\n3.Long click the [ %1$s ] button to open the request by web browser\n\n4.Check logs outputed on the target server\n\n5.Try again</string>
     <string name="apijson_slogan">APIJSON,&#160;let&#160;interfaces&#160;go&#160;to&#160;hell!</string>
     <string name="apijson_info">APIJSON&#160;is&#160;a&#160;JSON&#160;Transmission&#160;Structure&#160;Protocol&#8230;</string>
-    <string name="ui">UI Test</string>
-    <string name="local">Local</string>
-    <string name="remote">Remote</string>
-    <string name="record">record</string>
-    <string name="replay">replay</string>
-    <string name="recording">recording</string>
-    <string name="replaying">replaying</string>
-    <string name="name">Name:</string>
-    <string name="please_firstly_record_or_replay">please firstly record or replay</string>
-    <string name="finished_because_of_no_step">Finished because of no step</string>
-    <string name="replay_finished">Replay finished</string>
-    <string name="remains_step_needs_uploading">Here remains step needs uploading!</string>
 </resources>
