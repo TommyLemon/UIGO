@@ -318,11 +318,9 @@ public class UIAutoApp extends Application {
 
 
 
-  @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN_MR1)
   public void onUIAutoActivityCreate() {
     onUIAutoActivityCreate(getCurrentActivity());
   }
-  @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN_MR1)
   public void onUIAutoActivityCreate(@NonNull Activity activity) {
     onUIAutoWindowCreate(activity, activity.getWindow());
   }

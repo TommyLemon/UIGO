@@ -14,6 +14,7 @@ limitations under the License.*/
 
 package uiauto;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.Application;
 import android.content.Context;
@@ -24,7 +25,6 @@ import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.Matrix;
 import android.graphics.Point;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
@@ -32,7 +32,6 @@ import android.os.Looper;
 import android.os.Message;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.support.annotation.RequiresApi;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.RecyclerView;
 import android.util.DisplayMetrics;
@@ -104,8 +103,8 @@ public class UIAutoApp extends Application {
   private final Handler mainHandler = new Handler(Looper.getMainLooper());
 
   private boolean isReplay = false;
+  @SuppressLint("HandlerLeak")
   private final Handler handler = new Handler() {
-    @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN)
     @Override
     public void handleMessage(Message msg) {
       super.handleMessage(msg);
@@ -331,11 +330,9 @@ public class UIAutoApp extends Application {
     return getSharedPreferences(TAG, Context.MODE_PRIVATE);
   }
 
-  @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN_MR1)
   public void onUIAutoActivityCreate() {
     onUIAutoActivityCreate(getCurrentActivity());
   }
-  @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN_MR1)
   public void onUIAutoActivityCreate(@NonNull Activity activity) {
     window = activity.getWindow();
 
@@ -459,7 +456,6 @@ public class UIAutoApp extends Application {
         return windowCallback.onSearchRequested();
       }
 
-      @RequiresApi(api = Build.VERSION_CODES.M)
       @Override
       public boolean onSearchRequested(SearchEvent searchEvent) {
         return windowCallback.onSearchRequested(searchEvent);
@@ -471,7 +467,6 @@ public class UIAutoApp extends Application {
         return windowCallback.onWindowStartingActionMode(callback);
       }
 
-      @RequiresApi(api = Build.VERSION_CODES.M)
       @Nullable
       @Override
       public ActionMode onWindowStartingActionMode(ActionMode.Callback callback, int type) {
@@ -516,7 +511,6 @@ public class UIAutoApp extends Application {
 
   }
 
-  @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN_MR1)
   private void updateScreenWindowContentSize() {
     DisplayMetrics dm = getResources().getDisplayMetrics();
     DENSITY = dm.density;
@@ -585,7 +579,6 @@ public class UIAutoApp extends Application {
         Log.v(TAG, "onActivitySaveInstanceState  activity = " + activity.getClass().getName());
       }
 
-      @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN_MR1)
       @Override
       public void onActivityResumed(Activity activity) {
         Log.v(TAG, "onActivityResumed  activity = " + activity.getClass().getName());
@@ -1044,7 +1037,6 @@ public class UIAutoApp extends Application {
 
 
   private int lastOrientation;
-  @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN_MR1)
   @Override
   public void onConfigurationChanged(Configuration newConfig) {
     super.onConfigurationChanged(newConfig);
