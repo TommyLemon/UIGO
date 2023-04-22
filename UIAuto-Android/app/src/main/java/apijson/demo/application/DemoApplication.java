@@ -16,7 +16,9 @@ limitations under the License.*/
 package apijson.demo.application;
 
 import android.app.Application;
+import android.support.annotation.NonNull;
 
+import apijson.demo.BuildConfig;
 import apijson.demo.R;
 import uiauto.UIAutoApp;
 
@@ -27,14 +29,30 @@ import uiauto.UIAutoApp;
  * @see #init(Application)
  */
 public class DemoApplication extends UIAutoApp {
-	private static final String TAG = "UnitAutoApp";
+	private static final String TAG = "DemoApplication";
 
 	// 暂时以继承方式实现，后续改为支持静态调用（需要把 UIAutoApp 成员变量全改为 static）
-//	@Override
-//	public void onCreate() {
-//		super.onCreate();
+	@Override
+	public void onCreate() {
+		super.onCreate();
 //		UIAutoApp.init(this);
-//	}
+		Thread.UncaughtExceptionHandler handler = Thread.currentThread().getUncaughtExceptionHandler();
+		Thread.currentThread().setUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
+			@Override
+			public void uncaughtException(@NonNull Thread t, @NonNull Throwable e) {
+				if (BuildConfig.DEBUG) {
+					if (handler != null) {
+						handler.uncaughtException(t, e);
+					} else {
+						t.stop(e);
+					}
+				} else {
+					e.printStackTrace();
+					// TODO 上传到 Bugly 等日志平台
+				}
+			}
+		});
+	}
 
 	/**获取应用名
 	 * @return

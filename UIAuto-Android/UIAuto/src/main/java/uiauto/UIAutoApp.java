@@ -78,7 +78,7 @@ import zuo.biao.apijson.NotNull;
  * @author Lemon
  */
 public class UIAutoApp extends Application {
-  public static final String TAG = "DemoApplication";
+  public static final String TAG = "UIAutoApp";
 
   private static final String SPLIT_X = "SPLIT_X";
   private static final String SPLIT_Y = "SPLIT_Y";
