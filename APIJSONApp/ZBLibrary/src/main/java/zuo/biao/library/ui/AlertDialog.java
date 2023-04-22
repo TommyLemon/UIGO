@@ -14,8 +14,11 @@ limitations under the License.*/
 
 package zuo.biao.library.ui;
 
+import uiauto.UIAutoApp;
 import zuo.biao.library.R;
 import zuo.biao.library.util.StringUtil;
+
+import android.app.Activity;
 import android.app.Dialog;
 import android.content.Context;
 import android.os.Bundle;
@@ -44,7 +47,7 @@ public class AlertDialog extends Dialog implements android.view.View.OnClickList
 
 
 	@SuppressWarnings("unused")
-	private Context context;
+	private Activity context;
 	private String title; 
 	private String message; 
 	private String strPositive;
@@ -56,7 +59,7 @@ public class AlertDialog extends Dialog implements android.view.View.OnClickList
 	/** 
 	 * 带监听器参数的构造函数 
 	 */  
-	public AlertDialog(Context context, String title, String message, boolean showNegativeButton,
+	public AlertDialog(Activity context, String title, String message, boolean showNegativeButton,
 			int requestCode, OnDialogButtonClickListener listener) {
 		super(context, R.style.MyDialog);
 
@@ -67,7 +70,7 @@ public class AlertDialog extends Dialog implements android.view.View.OnClickList
 		this.requestCode = requestCode;
 		this.listener = listener;  
 	}
-	public AlertDialog(Context context, String title, String message, boolean showNegativeButton,
+	public AlertDialog(Activity context, String title, String message, boolean showNegativeButton,
 			String strPositive, int requestCode, OnDialogButtonClickListener listener) {
 		super(context, R.style.MyDialog);
 
@@ -79,7 +82,7 @@ public class AlertDialog extends Dialog implements android.view.View.OnClickList
 		this.requestCode = requestCode;
 		this.listener = listener;  
 	}
-	public AlertDialog(Context context, String title, String message, 
+	public AlertDialog(Activity context, String title, String message,
 			String strPositive, String strNegative, int requestCode, OnDialogButtonClickListener listener) {
 		super(context, R.style.MyDialog);
 
@@ -138,5 +141,16 @@ public class AlertDialog extends Dialog implements android.view.View.OnClickList
 		dismiss();
 	}
 
+	@Override
+	public void show() {
+		super.show();
+		UIAutoApp.getInstance().onUIAutoWindowCreate(this, getWindow());
+	}
+
+	@Override
+	public void dismiss() {
+		super.dismiss();
+		UIAutoApp.getInstance().onUIAutoWindowDestroy(this, getWindow());
+	}
 }
 

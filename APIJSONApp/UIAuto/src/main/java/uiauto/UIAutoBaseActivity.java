@@ -34,7 +34,7 @@ public abstract class UIAutoBaseActivity extends Activity {
 
 	@Override
 	public boolean dispatchKeyEvent(KeyEvent event) {
-		UIAutoApp.getInstance().addInputEvent(event, this);
+		UIAutoApp.getInstance().addInputEvent(event, this, this);
 		return super.dispatchKeyEvent(event);
 	}
 

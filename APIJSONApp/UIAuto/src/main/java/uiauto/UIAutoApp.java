@@ -16,6 +16,7 @@ package uiauto;
 
 import android.app.Activity;
 import android.app.Application;
+import android.app.Dialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -35,6 +36,7 @@ import android.support.annotation.Nullable;
 import android.support.annotation.RequiresApi;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.RecyclerView;
+import android.text.method.KeyListener;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.ActionMode;
@@ -223,12 +225,11 @@ public class UIAutoApp extends Application {
           // step --;
           handleMessage(msg);
 
-          dispatchEventToCurrentActivity(curNode.item, false);
+          dispatchEventToCurrentWindow(curNode.item, false);
         }
         else {
           output(null, curNode, activity);
-
-          dispatchEventToCurrentActivity(curNode.item, false);
+          dispatchEventToCurrentWindow(curNode.item, false);
 
           sendMessageDelayed(
             msg, (nextNode == null ? 0 : (nextItem == null || curItem == null
@@ -315,14 +316,19 @@ public class UIAutoApp extends Application {
     return getSharedPreferences(TAG, Context.MODE_PRIVATE);
   }
 
+
+
   @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN_MR1)
   public void onUIAutoActivityCreate() {
     onUIAutoActivityCreate(getCurrentActivity());
   }
   @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN_MR1)
   public void onUIAutoActivityCreate(@NonNull Activity activity) {
-    window = activity.getWindow();
+    onUIAutoWindowCreate(activity, activity.getWindow());
+  }
 
+  public void onUIAutoWindowCreate(@NonNull Window.Callback callback, @NonNull Window window) {
+    this.window = window;
     //反而让 vFloatCover 与底部差一个导航栏高度 window.addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
     decorView = window.getDecorView(); // activity.findViewById(android.R.id.content);  // decorView = window.getContentView();
     decorView.post(new Runnable() {
@@ -345,28 +351,28 @@ public class UIAutoApp extends Application {
       @Override
       public boolean dispatchKeyEvent(KeyEvent event) {
 //				dispatchEventToCurrentActivity(event);
-        addInputEvent(event, activity);
+        addInputEvent(event, callback, activity);
         return windowCallback.dispatchKeyEvent(event);
       }
 
       @Override
       public boolean dispatchKeyShortcutEvent(KeyEvent event) {
 //				dispatchEventToCurrentActivity(event);
-        addInputEvent(event, activity);
+        addInputEvent(event, callback, activity);
         return windowCallback.dispatchKeyShortcutEvent(event);
       }
 
       @Override
       public boolean dispatchTouchEvent(MotionEvent event) {
 //				dispatchEventToCurrentActivity(event);
-        addInputEvent(event, activity);
+        addInputEvent(event, callback, activity);
         return windowCallback.dispatchTouchEvent(event);
       }
 
       @Override
       public boolean dispatchTrackballEvent(MotionEvent event) {
 //				dispatchEventToCurrentActivity(event);
-        addInputEvent(event, activity);
+        addInputEvent(event, callback, activity);
         return windowCallback.dispatchTrackballEvent(event);
       }
 
@@ -465,11 +471,13 @@ public class UIAutoApp extends Application {
       @Override
       public void onActionModeStarted(ActionMode mode) {
         windowCallback.onActionModeStarted(mode);
+        window.addFlags(WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH);
       }
 
       @Override
       public void onActionModeFinished(ActionMode mode) {
         windowCallback.onActionModeFinished(mode);
+        window.clearFlags(WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH);
       }
     });
 
@@ -500,6 +508,7 @@ public class UIAutoApp extends Application {
 
   }
 
+
   @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN_MR1)
   private void updateScreenWindowContentSize() {
     DisplayMetrics dm = getResources().getDisplayMetrics();
@@ -510,7 +519,9 @@ public class UIAutoApp extends Application {
     // windowManager.getDefaultDisplay().getRealSize(point);
 
     activity = getCurrentActivity();
-    window = activity.getWindow();
+    if (window == null) { // 可能是弹窗的
+      window = activity.getWindow();
+    }
 
     DisplayMetrics metric = new DisplayMetrics();
     Display display = activity.getWindowManager().getDefaultDisplay();
@@ -568,13 +579,13 @@ public class UIAutoApp extends Application {
       @Override
       public void onActivityStarted(Activity activity) {
         Log.v(TAG, "onActivityStarted  activity = " + activity.getClass().getName());
-        onUIEvent(InputUtil.UI_ACTION_START, activity);
+        onUIEvent(InputUtil.UI_ACTION_START, activity, activity);
       }
 
       @Override
       public void onActivityStopped(Activity activity) {
         Log.v(TAG, "onActivityStopped  activity = " + activity.getClass().getName());
-        onUIEvent(InputUtil.UI_ACTION_STOP, activity);
+        onUIEvent(InputUtil.UI_ACTION_STOP, activity, activity);
       }
 
       @Override
@@ -591,14 +602,14 @@ public class UIAutoApp extends Application {
         if (isShowing) {
           onUIAutoActivityCreate(activity);
         }
-        onUIEvent(InputUtil.UI_ACTION_RESUME, activity);
+        onUIEvent(InputUtil.UI_ACTION_RESUME, activity, activity);
       }
 
       @Override
       public void onActivityPaused(Activity activity) {
         Log.v(TAG, "onActivityPaused  activity = " + activity.getClass().getName());
         // setCurrentActivity(activityList.isEmpty() ? null : activityList.get(activityList.size() - 1));
-        onUIEvent(InputUtil.UI_ACTION_PAUSE, activity);
+        onUIEvent(InputUtil.UI_ACTION_PAUSE, activity, activity);
       }
 
       @Override
@@ -606,14 +617,14 @@ public class UIAutoApp extends Application {
         Log.v(TAG, "onActivityCreated  activity = " + activity.getClass().getName());
         activityList.add(activity);
         //TODO 按键、键盘监听拦截和转发
-        onUIEvent(InputUtil.UI_ACTION_CREATE, activity);
+        onUIEvent(InputUtil.UI_ACTION_CREATE, activity, activity);
       }
 
       @Override
       public void onActivityDestroyed(Activity activity) {
         Log.v(TAG, "onActivityDestroyed  activity = " + activity.getClass().getName());
         activityList.remove(activity);
-        onUIEvent(InputUtil.UI_ACTION_DESTROY, activity);
+        onUIEvent(InputUtil.UI_ACTION_DESTROY, activity, activity);
       }
 
     });
@@ -967,7 +978,19 @@ public class UIAutoApp extends Application {
   }
 
 
-  public void onUIAutoActivityDestroy(Activity activity) {
+  public void onUIAutoWindowDestroy(Window.Callback callback, Window window) {
+    if (activity == null) {
+      activity = getCurrentActivity();
+    }
+    if (activity == null && callback instanceof Dialog) {
+      activity = ((Dialog) callback).getOwnerActivity();
+      setCurrentActivity(activity);
+    }
+    this.window = activity == null ? null : activity.getWindow();
+  }
+
+
+  public void onUIAutoActivityDestroy(Window.Callback callback, Activity activity) {
     cache.edit()
       .remove(SPLIT_X)
       // .putInt(SPLIT_X, Math.round(vSplitX.getX() + vSplitX.getWidth()/2 - windowWidth))
@@ -976,6 +999,9 @@ public class UIAutoApp extends Application {
       // .putInt(SPLIT_Y, Math.round(vSplitY.getY() + vSplitY.getHeight()/2 - windowHeight))
       .putInt(SPLIT_Y, Math.round(floatSplitY.getY() + vSplitY.getHeight()/2 - windowHeight))
       .apply();
+
+    Window w = activity == null ? null : activity.getWindow();
+    onUIAutoWindowDestroy(w == null ? null : w.getCallback(), w);
   }
 
   private LayoutInflater inflater;
@@ -1529,13 +1555,37 @@ public class UIAutoApp extends Application {
     // return rectangle.top;
   }
 
-  public boolean dispatchEventToCurrentActivity(InputEvent ie, boolean record) {
+
+  public boolean dispatchEventToCurrentWindow(InputEvent ie, boolean record) {
     if (ie == null) {
       return false;
     }
 
-    activity = getCurrentActivity();
-    if (activity != null) {
+//    activity = getCurrentActivity();
+//    if (activity != null) {
+//      if (ie instanceof MotionEvent) {
+//        MotionEvent event = (MotionEvent) ie;
+////        int windowX = getWindowX(activity);
+////        int windowY = getWindowY(activity) + statusHeight;
+////
+////        if (windowX > 0 || windowY > 0) {
+////          event = MotionEvent.obtain(event);
+////          event.offsetLocation(windowX, windowY);
+////        }
+//
+//        try {
+//          activity.dispatchTouchEvent(event);
+//        } catch (Throwable e) {  // java.lang.IllegalArgumentException: tagerIndex out of range
+//          e.printStackTrace();
+//        }
+//      }
+//      else if (ie instanceof KeyEvent) {
+//        KeyEvent event = (KeyEvent) ie;
+//        activity.dispatchKeyEvent(event);
+//      }
+//    }
+
+    if (window != null) {
       if (ie instanceof MotionEvent) {
         MotionEvent event = (MotionEvent) ie;
 //        int windowX = getWindowX(activity);
@@ -1547,22 +1597,23 @@ public class UIAutoApp extends Application {
 //        }
 
         try {
-          activity.dispatchTouchEvent(event);
+          window.superDispatchTouchEvent(event);
         } catch (Throwable e) {  // java.lang.IllegalArgumentException: tagerIndex out of range
           e.printStackTrace();
         }
       }
       else if (ie instanceof KeyEvent) {
         KeyEvent event = (KeyEvent) ie;
-        activity.dispatchKeyEvent(event);
+//        activity.dispatchKeyEvent(event);
+        window.superDispatchKeyEvent(event);
       }
     }
 
     if (record) {
-      addInputEvent(ie, activity);
+      addInputEvent(ie, window == null ? null : window.getCallback(), activity);
     }
 
-    return activity != null;
+    return window != null;
   }
 
 
@@ -1913,13 +1964,13 @@ public class UIAutoApp extends Application {
     }, delayMillis);
   }
 
-  public void onUIEvent(int action, Activity activity) {
-    onUIEvent(action, activity, null);
+  public void onUIEvent(int action, Window.Callback callback, Activity activity) {
+    onUIEvent(action, callback, activity, null);
   }
-  public void onUIEvent(int action, Fragment fragment) {
-    onUIEvent(action, null, fragment);
+  public void onUIEvent(int action, Window.Callback callback, Fragment fragment) {
+    onUIEvent(action, callback, null, fragment);
   }
-  public void onUIEvent(int action, Activity activity, Fragment fragment) {
+  public void onUIEvent(int action, Window.Callback callback, Activity activity, Fragment fragment) {
     if (activity != null && activity.isFinishing() == false
             && activity.isDestroyed() == false && activity.getWindow() != null) {
       window = activity.getWindow();
@@ -1947,7 +1998,7 @@ public class UIAutoApp extends Application {
       }
     }
     else {
-      JSONObject obj = newEvent(activity, fragment);
+      JSONObject obj = newEvent(callback, activity, fragment);
       obj.put("type", InputUtil.EVENT_TYPE_UI);
       obj.put("action", action);
       obj.put("disable", true);  //总是导致停止后续动作，尤其是返回键相关的事件  action != InputUtil.UI_ACTION_RESUME);
@@ -2127,14 +2178,14 @@ public class UIAutoApp extends Application {
   }
 
 
-  public JSONObject addInputEvent(@NotNull InputEvent ie, @NotNull Activity activity) {
-    return addInputEvent(ie, activity, null);
+  public JSONObject addInputEvent(@NotNull InputEvent ie, @NotNull Window.Callback callback, @NotNull Activity activity) {
+    return addInputEvent(ie, callback, activity, null);
   }
-  public JSONObject addInputEvent(@NotNull InputEvent ie, @NotNull Fragment fragment) {
-    return addInputEvent(ie, null, fragment);
+  public JSONObject addInputEvent(@NotNull InputEvent ie, @NotNull Window.Callback callback, @NotNull Fragment fragment) {
+    return addInputEvent(ie, callback, null, fragment);
   }
 
-  public JSONObject addInputEvent(@NotNull InputEvent ie, Activity activity, Fragment fragment) {
+  public JSONObject addInputEvent(@NotNull InputEvent ie, @NotNull Window.Callback callback, Activity activity, Fragment fragment) {
     if (isSplitShowing == false || vSplitX == null || vSplitY == null || isReplay) {
       Log.e(TAG, "addInputEvent  isSplitShowing == false || vSplitX == null || vSplitY == null >> return null;");
       return null;
@@ -2144,7 +2195,7 @@ public class UIAutoApp extends Application {
       activity = fragment.getActivity();
     }
 
-    JSONObject obj = newEvent(activity, fragment);
+    JSONObject obj = newEvent(callback, activity, fragment);
 
     int type = 0;
     int action = 0;
@@ -2196,6 +2247,16 @@ public class UIAutoApp extends Application {
       float rx = x - windowX - decorX;
       float ry = y - windowY - decorY - statusHeight;
 
+      if (callback instanceof Dialog) {
+        Dialog dialog = (Dialog) callback;
+      }
+
+      View decorView = window.getDecorView();
+      float dx = decorView.getX();
+      float dy = decorView.getY();
+      float dw = decorView.getWidth();
+      float dh = decorView.getHeight();
+
       // 只在回放前一处处理逻辑
       isSplit2Showing = floatBall2 != null && floatBall2.isShowing();
 //      float minX = (isSplit2Showing ? Math.min(floatBall.getX(), floatBall2.getX()) : floatBall.getX()) - splitRadius;
@@ -2205,8 +2266,8 @@ public class UIAutoApp extends Application {
       float maxY = (isSplit2Showing ? Math.max(floatBall.getY(), floatBall2.getY()) : floatBall.getY()) + splitRadius;
 //      float avgY = (minY + maxY)/2;
 
-      obj.put("x", rx < maxX ? rx : rx - decorWidth); // Math.round(x - windowX - decorX - (x < avgX ? 0 : decorWidth)));
-      obj.put("y", ry < maxY ? ry : ry - decorHeight + statusHeight); // Math.round(y - windowY - decorY - (y < avgY ? 0 : decorHeight)));
+      obj.put("x", rx < maxX ? rx : rx - dw + dx); // Math.round(x - windowX - decorX - (x < avgX ? 0 : decorWidth)));
+      obj.put("y", ry < maxY ? ry : ry - dh + dy + statusHeight); // Math.round(y - windowY - decorY - (y < avgY ? 0 : decorHeight)));
       obj.put("rawX", event.getRawX());
       obj.put("rawY", event.getRawY());
       obj.put("size", event.getSize());
@@ -2304,25 +2365,26 @@ public class UIAutoApp extends Application {
     return eventList;
   }
 
-  public JSONObject newEvent(@NotNull Activity activity) {
-    return newEvent(activity, null);
+  public JSONObject newEvent(@NotNull Window.Callback callback, @NotNull Activity activity) {
+    return newEvent(callback, activity, null);
   }
-  public JSONObject newEvent(@NotNull Fragment fragment) {
-    return newEvent(null, fragment);
+  public JSONObject newEvent(@NotNull Window.Callback callback, @NotNull Fragment fragment) {
+    return newEvent(callback, null, fragment);
   }
-  public JSONObject newEvent(Activity activity, Fragment fragment) {
+  public JSONObject newEvent(@NotNull Window.Callback callback, Activity activity, Fragment fragment) {
     if (activity == null && fragment != null) {
       activity = fragment.getActivity();
     }
     return newEvent(
-      activity == null ? Configuration.ORIENTATION_PORTRAIT : activity.getResources().getConfiguration().orientation,
-      activity == null ? null : activity.getClass().getName()
-      , fragment == null ? null : fragment.getClass().getName()
+            activity == null ? Configuration.ORIENTATION_PORTRAIT : activity.getResources().getConfiguration().orientation,
+            callback,
+            activity == null ? null : activity.getClass().getName()
+            , fragment == null ? null : fragment.getClass().getName()
     );
   }
 
   private long lastId = 0;
-  public JSONObject newEvent(int orientation, String activity, String fragment) {
+  public JSONObject newEvent(int orientation, @NotNull Window.Callback callback, String activity, String fragment) {
     decorX = decorView == null ? 0 : decorView.getX();
     decorY = decorView == null ? 0 : decorView.getY();
     decorWidth = decorView == null ? windowWidth : decorView.getWidth();
