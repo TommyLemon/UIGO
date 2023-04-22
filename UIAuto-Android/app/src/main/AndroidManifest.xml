@@ -17,7 +17,7 @@
 
 
     <application
-        android:name="apijson.demo.application.DemoApplication"
+        android:name="apijson.demo.application.UIAutoApp"
         android:allowBackup="true"
         android:icon="@drawable/ic_launcher"
         android:label="@string/app_name"

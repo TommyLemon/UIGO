@@ -37,7 +37,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import apijson.demo.application.DemoApplication;
+import apijson.demo.application.UIAutoApp;
 import zuo.biao.apijson.StringUtil;
 
 /**HTTP请求管理类
@@ -70,7 +70,7 @@ public class HttpManager {
 
     public synchronized static HttpManager getInstance() {
         if (instance == null) {
-            instance = new HttpManager(DemoApplication.getInstance());
+            instance = new HttpManager(UIAutoApp.getInstance());
         }
         return instance;
     }
@@ -172,10 +172,10 @@ public class HttpManager {
 
                     httpRequestString = toHttpJSONString(httpRequest == null ? null : httpRequest.headers().toString(), request);
 
-                    DemoApplication.getInstance().post(new Runnable() {
+                    UIAutoApp.getInstance().post(new Runnable() {
                         @Override
                         public void run() {
-                            DemoApplication.getInstance().onHTTPEvent(
+                            UIAutoApp.getInstance().onHTTPEvent(
                                     InputUtil.HTTP_ACTION_REQUEST, "JSON"
                                     , url_, httpRequestString, null
                                     , getActivity(listener), getFragment(listener)
@@ -202,10 +202,10 @@ public class HttpManager {
                 super.onPostExecute(e);
                 listener.onHttpResponse(0, responseBody, e);
 
-                DemoApplication.getInstance().post(new Runnable() {
+                UIAutoApp.getInstance().post(new Runnable() {
                     @Override
                     public void run() {
-                        DemoApplication.getInstance().onHTTPEvent(
+                        UIAutoApp.getInstance().onHTTPEvent(
                                 InputUtil.HTTP_ACTION_RESPONSE, e == null ? ("" + responseCode) : e.getClass().getSimpleName()
                                 , url_, httpRequestString, toHttpJSONString(responseHeaders == null ? null : responseHeaders.toString(), responseBody)
                                 , getActivity(listener), getFragment(listener)

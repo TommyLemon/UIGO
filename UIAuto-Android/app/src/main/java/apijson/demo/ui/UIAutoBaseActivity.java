@@ -17,7 +17,7 @@ package apijson.demo.ui;
 import android.app.Activity;
 import android.view.KeyEvent;
 
-import apijson.demo.application.DemoApplication;
+import apijson.demo.application.UIAutoApp;
 
 /**Activity 基类
  * @author Lemon
@@ -36,7 +36,7 @@ public abstract class UIAutoBaseActivity extends Activity {
 
 	@Override
 	public boolean dispatchKeyEvent(KeyEvent event) {
-		DemoApplication.getInstance().addInputEvent(event, this);
+		UIAutoApp.getInstance().addInputEvent(event, this);
 		return super.dispatchKeyEvent(event);
 	}
 

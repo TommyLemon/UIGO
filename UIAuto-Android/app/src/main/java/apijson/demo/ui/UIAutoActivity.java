@@ -28,7 +28,7 @@ import android.widget.Toast;
 import com.alibaba.fastjson.JSONArray;
 
 import apijson.demo.R;
-import apijson.demo.application.DemoApplication;
+import apijson.demo.application.UIAutoApp;
 
 
 /**自动 UI 测试，需要用 UIAuto 发请求到这个设备
@@ -153,7 +153,7 @@ public class UIAutoActivity extends Activity {
 
         if (eventList != null && eventList.isEmpty() == false) { //TODO 回放操作
 //            replay(eventList);
-            startActivity(UIAutoListActivity.createIntent(DemoApplication.getInstance(), eventList == null ? null : eventList.toJSONString()));
+            startActivity(UIAutoListActivity.createIntent(UIAutoApp.getInstance(), eventList == null ? null : eventList.toJSONString()));
 //            return;
         }
 
@@ -374,8 +374,8 @@ public class UIAutoActivity extends Activity {
 //        showCover(true, context);
 //        finish();
 
-        DemoApplication.getInstance().onUIAutoActivityCreate(this);
-        DemoApplication.getInstance().prepareRecord();
+        UIAutoApp.getInstance().onUIAutoActivityCreate(this);
+        UIAutoApp.getInstance().prepareRecord();
         finish();
     }
 

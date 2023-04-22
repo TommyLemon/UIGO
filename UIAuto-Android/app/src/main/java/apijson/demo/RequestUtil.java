@@ -19,7 +19,7 @@ import android.content.Context;
 import java.util.ArrayList;
 import java.util.List;
 
-import apijson.demo.application.DemoApplication;
+import apijson.demo.application.UIAutoApp;
 import apijson.demo.model.Comment;
 import apijson.demo.model.Moment;
 import apijson.demo.model.Privacy;
@@ -34,7 +34,7 @@ public class RequestUtil {
 
 	private static Context context;
 	static {
-		context = DemoApplication.getInstance();
+		context = UIAutoApp.getInstance();
 	}
 
 	public static final long DEFAULT_MOMENT_ID = 15;

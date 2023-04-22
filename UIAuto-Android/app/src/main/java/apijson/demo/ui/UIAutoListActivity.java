@@ -44,7 +44,7 @@ import apijson.demo.HttpManager;
 import apijson.demo.InputUtil;
 import apijson.demo.R;
 import apijson.demo.StringUtil;
-import apijson.demo.application.DemoApplication;
+import apijson.demo.application.UIAutoApp;
 import zuo.biao.apijson.JSON;
 import zuo.biao.apijson.JSONRequest;
 import zuo.biao.apijson.JSONResponse;
@@ -121,7 +121,7 @@ public class UIAutoListActivity extends Activity implements HttpManager.OnHttpRe
         setContentView(R.layout.ui_auto_list_activity);
 
         context = this;
-        cache = DemoApplication.getInstance().getSharedPreferences();
+        cache = UIAutoApp.getInstance().getSharedPreferences();
 
         isLocal = getIntent().getBooleanExtra(INTENT_IS_LOCAL, isLocal);
         flowId = getIntent().getLongExtra(INTENT_FLOW_ID, flowId);
@@ -548,8 +548,8 @@ public class UIAutoListActivity extends Activity implements HttpManager.OnHttpRe
         new Handler().postDelayed(new Runnable() {
             @Override
             public void run() {
-              DemoApplication.getInstance().onUIAutoActivityCreate();
-              DemoApplication.getInstance().prepareReplay(eventList);
+              UIAutoApp.getInstance().onUIAutoActivityCreate();
+              UIAutoApp.getInstance().prepareReplay(eventList);
             }
         }, 1000);
     }

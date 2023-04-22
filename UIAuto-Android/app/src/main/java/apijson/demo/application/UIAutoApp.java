@@ -83,7 +83,7 @@ import zuo.biao.apijson.NotNull;
 /**Application
  * @author Lemon
  */
-public class DemoApplication extends Application {
+public class UIAutoApp extends Application {
   public static final String TAG = "DemoApplication";
 
   private static final String SPLIT_X = "SPLIT_X";
@@ -94,8 +94,8 @@ public class DemoApplication extends Application {
   private static float DENSITY = Resources.getSystem().getDisplayMetrics().density;
 
 
-  private static DemoApplication instance;
-  public static DemoApplication getInstance() {
+  private static UIAutoApp instance;
+  public static UIAutoApp getInstance() {
     return instance;
   }
 
@@ -306,6 +306,10 @@ public class DemoApplication extends Application {
   @Override
   public void onCreate() {
     super.onCreate();
+    init();
+  }
+
+  public void init() {
     instance = this;
 
     UnitAutoApp.init(this);
@@ -2015,7 +2019,7 @@ public class DemoApplication extends Application {
   public JSONArray getOutputList() {
     return outputList;
   }
-  public static List<Object> getOutputList(DemoApplication app, int limit, int offset) {
+  public static List<Object> getOutputList(UIAutoApp app, int limit, int offset) {
     JSONArray outputList = app.getOutputList();
     int size = outputList == null ? 0 : outputList.size();
     if (size <= 0) {
