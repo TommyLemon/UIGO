@@ -77,8 +77,8 @@ import apijson.demo.StringUtil;
 import apijson.demo.ui.UIAutoActivity;
 import apijson.demo.ui.UIAutoListActivity;
 import apijson.demo.view.FloatBallView;
-import unitauto.NotNull;
 import unitauto.apk.UnitAutoApp;
+import zuo.biao.apijson.NotNull;
 
 /**Application
  * @author Lemon
@@ -173,24 +173,30 @@ public class DemoApplication extends Application {
           }
         }
 
-        if (canRefreshUI && curNode.type == InputUtil.EVENT_TYPE_TOUCH) {
+        if (canRefreshUI && curNode.type == InputUtil.EVENT_TYPE_TOUCH && curNode.action == MotionEvent.ACTION_DOWN) {
           splitX = curNode.splitX;
           splitY = curNode.splitY;
-          if (floatBall != null && isSplitShowing) {
+          splitX2 = curNode.splitX2;
+          splitY2 = curNode.splitY2;
+//          if (isSplitShowing) { // && floatBall != null) {
             //居然怎么都不更新 vSplitX 和 vSplitY
             // floatBall.hide();
-            // floatBall.updateX(windowX + splitX - splitSize/2);
-            // floatBall.updateY(screenY + splitY - splitSize/2);
+            // floatBall.updateX(windowX + splitX - splitRadius);
+            // floatBall.updateY(screenY + splitY - splitRadius);
             // floatBall.show();
 
             //太卡  FIXME 改了之后还是这样吗？
-            if (floatBall.getX() != (curNode.splitX - splitSize/2 + windowWidth)
-              || floatBall.getY() != (curNode.splitY - splitSize/2 + windowHeight)) {
+//            if (floatBall.getX() != (curNode.splitX - splitRadius + windowWidth)
+//              || floatBall.getY() != (curNode.splitY - splitRadius + windowHeight)) {
               // FloatWindow.destroy("floatBall");
               // floatBall = null;
               floatBall = showSplit(isSplitShowing, splitX, splitY, "floatBall", vFloatBall, floatSplitX, floatSplitY);
-            }
-          }
+//            }
+
+//            if (isSplit2Showing) {
+              floatBall2 = showSplit(isSplit2Showing, splitX2, splitY2, "floatBall2", vFloatBall2, floatSplitX2, floatSplitY2);
+//            }
+//          }
         }
 
         // 分拆为下面两条，都放在 UI 操作后，减少延迟
@@ -250,15 +256,19 @@ public class DemoApplication extends Application {
   int screenHeight;
 
   Window window;
-  View contentView;
+  View decorView;
 
-  int windowWidth;
-  int windowHeight;
-  int windowX;
-  int windowY;
+  float windowWidth;
+  float windowHeight;
+  float windowX;
+  float windowY;
 
-  int contentWidth;
-  int contentHeight;
+  int statusResourceId;
+  int statusHeight;
+  float decorX;
+  float decorY;
+  float decorWidth;
+  float decorHeight;
 
   ViewGroup vFloatCover;
   View vFloatController;
@@ -279,9 +289,10 @@ public class DemoApplication extends Application {
   RecyclerView rvControllerTag;
 
   // 都取负数，表示相对于最右侧和最下方还差多少
-  private int splitX;
-  private int splitY;
-  private int splitSize;
+  private float splitX, splitX2;
+  private float splitY, splitY2;
+  private float splitSize;
+  private float splitRadius;
 
   @NotNull
   private JSONArray eventList = new JSONArray();
@@ -323,20 +334,21 @@ public class DemoApplication extends Application {
   @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN_MR1)
   public void onUIAutoActivityCreate(@NonNull Activity activity) {
     window = activity.getWindow();
+
     //反而让 vFloatCover 与底部差一个导航栏高度 window.addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
-    contentView = activity.findViewById(android.R.id.content);  // contentView = window.getContentView();
-    contentView.post(new Runnable() {
+    decorView = window.getDecorView(); // activity.findViewById(android.R.id.content);  // decorView = window.getContentView();
+    decorView.post(new Runnable() {
       @Override
       public void run() {
-        contentWidth = contentView.getWidth();
-        contentHeight = contentView.getHeight();
+        decorWidth = decorView.getWidth();
+        decorHeight = decorView.getHeight();
       }
     });
-    contentView.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+    decorView.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
       @Override
       public void onGlobalLayout() {
-        contentWidth = contentView.getWidth();
-        contentHeight = contentView.getHeight();
+        decorWidth = decorView.getWidth();
+        decorHeight = decorView.getHeight();
       }
     });
 
@@ -479,55 +491,24 @@ public class DemoApplication extends Application {
 
     splitX = cache.getInt(SPLIT_X, 0);
     splitY = cache.getInt(SPLIT_Y, 0);
-    splitSize = cache.getInt(SPLIT_HEIGHT, Math.round(dip2px(30)));
+    splitSize = cache.getInt(SPLIT_HEIGHT, Math.round(dip2px(36)));
+    splitRadius = splitSize/2;
 
-    if (splitX >= 0 || Math.abs(splitX) >= windowWidth) {
+    if (splitX >= 0 || Math.abs(splitX) >= windowWidth) { // decorWidth) {
       splitX = Math.round(- splitSize - dip2px(30));
     }
-    if (splitY >= 0 || Math.abs(splitY) >= windowHeight) {
+    if (splitY >= 0 || Math.abs(splitY) >= windowHeight) { // decorHeight) {
       splitY = Math.round(- splitSize - dip2px(30));
     }
 
-    // if (activity.getResources().getConfiguration().orientation != Configuration.ORIENTATION_LANDSCAPE) {
-    //   int sx = splitX;
-    //   splitX = splitY;
-    //   splitY = sx;
-    //
-    //   int wx = windowX;
-    //   windowX = windowY;
-    //   windowY = wx;
-    // }
-
-    // boolean isCoverShow = true;
-    // if (floatCover != null && floatCover.isShowing()) {
-    //   isCoverShow = true;
-    // }
-    //
-
-    FloatWindow.destroy("floatBall");
-    FloatWindow.destroy("floatBall2");
-    FloatWindow.destroy("floatCover");
-    FloatWindow.destroy("floatController");
+    splitX2 = 0;
+    splitY2 = 0;
+    isSplit2Showing = false;
 
     showCover(true);
     if (isSplitShowing) {
       floatBall = showSplit(isSplitShowing, splitX, splitY, "floatBall", vFloatBall, floatSplitX, floatSplitY);
     }
-
-
-    // FloatWindow.destroy("floatCover");
-    // FloatWindow.destroy("floatController");
-    // FloatWindow.destroy("floatBall");
-    // FloatWindow.destroy("floatBall2");
-    // // not attached to window manager  FloatWindow.destroy("floatSplitX");
-    // // not attached to window manager  FloatWindow.destroy("floatSplitY");
-    // // not attached to window manager  FloatWindow.destroy("floatSplitX2");
-    // // not attached to window manager  FloatWindow.destroy("floatSplitY2");
-    //
-    // showCoverAndSplit(true, isSplitShowing);
-    // if (isSplit2Showing) {
-    //   floatBall2 = showSplit(true, - floatBall.getX() - splitSize/2, - floatBall.getY() - splitSize, "floatBall2", vFloatBall2, floatSplitX2, floatSplitY2);
-    // }
 
   }
 
@@ -540,14 +521,17 @@ public class DemoApplication extends Application {
     // Point point = new Point();
     // windowManager.getDefaultDisplay().getRealSize(point);
 
+    activity = getCurrentActivity();
+    window = activity.getWindow();
+
     DisplayMetrics metric = new DisplayMetrics();
     Display display = activity.getWindowManager().getDefaultDisplay();
     display.getRealMetrics(metric);
 
     boolean isLand = activity.getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE;
     // 居然是相对屏幕方向的
-    screenWidth = isLand ? metric.widthPixels : metric.heightPixels; // 宽度（PX）
-    screenHeight = isLand ? metric.heightPixels : metric.widthPixels; // 高度（PX）
+    screenWidth = metric.widthPixels; // isLand ? metric.widthPixels : metric.heightPixels; // 宽度（PX）
+    screenHeight = metric.heightPixels; // isLand ? metric.heightPixels : metric.widthPixels; // 高度（PX）
 
     // 保持和 FloatWindow 内 Util.getScreenWidth, Util.getScreenHeight 一致
     WindowManager wm = (WindowManager) activity.getSystemService(Context.WINDOW_SERVICE);
@@ -557,16 +541,24 @@ public class DemoApplication extends Application {
     // 居然是绝对的，不是相对屏幕方向的
     windowWidth = point.x;
     windowHeight = point.y;
+    if (windowWidth <= 0) {
+      windowWidth = metric.widthPixels;
+    }
+    if (windowHeight <= 0) {
+      windowHeight = metric.heightPixels;
+    }
 
     windowX = getWindowX(activity);
     windowY = getWindowY(activity);
 
-    if (contentView == null) {
-      contentView = window.findViewById(android.R.id.content);
+    if (decorView == null) {
+      decorView = window.getDecorView(); // activity.findViewById(android.R.id.content);
     }
 
-    contentWidth = contentView == null ? windowWidth : contentView.getWidth();
-    contentHeight = contentView == null ? windowHeight : contentView.getHeight();
+    decorX = decorView == null ? 0 : decorView.getX();
+    decorY = decorView == null ? 0 : decorView.getY();
+    decorWidth = decorView == null ? windowWidth : decorView.getWidth();
+    decorHeight = decorView == null ? windowHeight : decorView.getHeight();
   }
 
   private void initUIAuto() {
@@ -627,6 +619,15 @@ public class DemoApplication extends Application {
 
 
     isShowing = false;
+
+    statusResourceId = getResources().getIdentifier("status_bar_height", "dimen", "android");
+    if (statusResourceId > 0) {
+      statusHeight = getResources().getDimensionPixelSize(statusResourceId);
+    }
+    if (statusHeight <= 0) {
+//      id = getResources().getIdentifier("status_bar_height", "dimen", "android");
+//      window.findViewById(R.id.)
+    }
 
     // vFloatCover = new FrameLayout(getInstance());
     // ViewGroup.LayoutParams lp = new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT);
@@ -847,7 +848,7 @@ public class DemoApplication extends Application {
         FloatWindow.destroy("floatBall2");
         floatBall2 = null;
         if (isSplit2Showing) {
-          floatBall2 = showSplit(true, - floatBall.getX() - splitSize/2, - floatBall.getY() - splitSize, "floatBall2", vFloatBall2, floatSplitX2, floatSplitY2);
+          floatBall2 = showSplit(true, - floatBall.getX() - splitRadius, - floatBall.getY() - splitSize, "floatBall2", vFloatBall2, floatSplitX2, floatSplitY2);
         }
       }
     });
@@ -952,6 +953,16 @@ public class DemoApplication extends Application {
     FloatWindow.destroy("floatController");
     FloatWindow.destroy("floatBall");
     FloatWindow.destroy("floatBall2");
+
+    try {
+      FloatWindow.destroy("floatSplitX");
+      FloatWindow.destroy("floatSplitY");
+      FloatWindow.destroy("floatSplitX2");
+      FloatWindow.destroy("floatSplitY2");
+    }
+    catch (Throwable e) {
+      e.printStackTrace();
+    }
   }
 
 
@@ -1040,66 +1051,48 @@ public class DemoApplication extends Application {
   }
 
 
+  private int lastOrientation;
   @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN_MR1)
   @Override
   public void onConfigurationChanged(Configuration newConfig) {
     super.onConfigurationChanged(newConfig);
+
+    if (newConfig == null || lastOrientation == newConfig.orientation) {
+      return;
+    }
+    lastOrientation = newConfig.orientation;
     updateScreenWindowContentSize();
 
-    if (isShowing) {
-//			int x = windowX;
-//			int y = windowY;
+    postDelayed(new Runnable() {
+      @Override
+      public void run() {
+        updateScreenWindowContentSize();
 
-      activity = getCurrentActivity();
-      windowX = getWindowX(activity);
-      windowY = getWindowY(activity);
+        if (isShowing) {
+//          FloatWindow.destroy("floatBall");
+//          FloatWindow.destroy("floatBall2");
+//          FloatWindow.destroy("floatCover");
+//          FloatWindow.destroy("floatController");
+//          try {
+//            FloatWindow.destroy("floatSplitX");
+//            FloatWindow.destroy("floatSplitY");
+//            FloatWindow.destroy("floatSplitX2");
+//            FloatWindow.destroy("floatSplitY2");
+//          }
+//          catch (Throwable e) {
+//            e.printStackTrace();
+//          }
 
-      int sx = splitX;
-      int sy = splitY;
-      if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE) {
-//				windowX = windowY;
-//				windowY = x;
-
-        splitX = splitY;
-        splitY = sx;
-      } else {
-//				windowY = windowX;
-//				windowX = y;
-
-        splitY = splitX;
-        splitX = sy;
+          showCover(true);
+          if (isSplitShowing) {
+            floatBall = showSplit(isSplitShowing, splitX, splitY, "floatBall", vFloatBall, floatSplitX, floatSplitY);
+            if (isSplit2Showing) {
+              floatBall2 = showSplit(isSplit2Showing, splitX2, splitY2, "floatBall2", vFloatBall2, floatSplitX2, floatSplitY);
+            }
+          }
+        }
       }
-
-      FloatWindow.destroy("floatCover");
-      FloatWindow.destroy("floatController");
-      FloatWindow.destroy("floatBall");
-      FloatWindow.destroy("floatBall2");
-
-      // FloatWindow.destroy("floatSplitX");
-      // FloatWindow.destroy("floatSplitY");
-      // FloatWindow.destroy("floatSplitX2");
-      // FloatWindow.destroy("floatSplitY2");
-
-      // if (vSplitX != null) {
-      //   vSplitX.setVisibility(View.GONE);
-      // }
-      // if (vSplitY != null) {
-      //   vSplitY.setVisibility(View.GONE);
-      // }
-      // if (vSplitX2 != null) {
-      //   vSplitX2.setVisibility(View.GONE);
-      // }
-      // if (vSplitY2 != null) {
-      //   vSplitY2.setVisibility(View.GONE);
-      // }
-
-      // showCoverAndSplit(true, isSplitShowing);
-
-      showCover(true);
-      if (isSplitShowing) {
-        floatBall = showSplit(isSplitShowing, splitX, splitY, "floatBall", vFloatBall, floatSplitX, floatSplitY);
-      }
-    }
+    }, 1000);
   }
 
   private void showCoverAndSplit(boolean showCover, boolean showSplit) {
@@ -1160,7 +1153,6 @@ public class DemoApplication extends Application {
 
       floatController = FloatWindow.get("floatController");
     }
-    floatController.show();
 
 
 
@@ -1224,6 +1216,29 @@ public class DemoApplication extends Application {
     }
     // floatSplitY2.show();
 
+
+    if (show) {
+      floatController.show();
+//      floatSplitX.show();
+//      floatSplitX2.show();
+//      floatSplitY.show();
+//      floatSplitY2.show();
+    } else {
+      floatController.hide();
+    }
+
+//    if (floatBall != null) {
+//      floatSplitX.updateX(floatBall.getX() - splitRadius);
+//      floatSplitY.updateY(floatBall.getY() - splitRadius);
+//    }
+//    if (floatBall2 != null) {
+//      floatSplitX2.updateX(floatBall2.getX() - splitRadius);
+//      floatSplitY2.updateY(floatBall2.getY() - splitRadius);
+//    }
+    floatSplitX.hide();
+    floatSplitX2.hide();
+    floatSplitY.hide();
+    floatSplitY2.hide();
   }
 
   private IFloatWindow showFloatView(boolean show, String tag, View view, int width, int height, int x, int y, int moveType) {
@@ -1258,7 +1273,7 @@ public class DemoApplication extends Application {
   }
 
   private boolean isSplitShowing, isSplit2Showing;
-  private IFloatWindow showSplit(boolean show, int splitX, int splitY, String ballName, FloatBallView vFloatBall, IFloatWindow floatSplitX_, IFloatWindow floatSplitY_) {
+  private IFloatWindow showSplit(boolean show, float splitX, float splitY, String ballName, FloatBallView vFloatBall, IFloatWindow floatSplitX_, IFloatWindow floatSplitY_) {
     // vSplitX.setVisibility(View.GONE);
     // vSplitY.setVisibility(View.GONE);
     // vSplitX2.setVisibility(View.GONE);
@@ -1276,11 +1291,17 @@ public class DemoApplication extends Application {
       if (ball != null) {
         ball.hide();
       }
+      if (floatSplitX_ != null && floatSplitX_.isShowing()) {
+        floatSplitX_.hide();
+      }
+      if (floatSplitY_ != null && floatSplitY_.isShowing()) {
+        floatSplitY_.hide();
+      }
       return ball;
     }
 
-    int x = splitX - splitSize/2 + windowWidth;
-    int y = splitY - splitSize/2 + windowHeight;
+    int x = Math.round(splitX - splitRadius + windowWidth); // 只有贴边才会自动处理 decorWidth); // 已被 FloatWindow 处理 windowX + decorX
+    int y = Math.round(splitY - splitRadius + windowHeight); // 只有贴边才会自动处理  decorHeight); // 已被 FloatWindow 处理 windowY + decorY
 
     if (ball == null) {
       vFloatBall.setExtraOnTouchListener(new View.OnTouchListener() {
@@ -1412,12 +1433,14 @@ public class DemoApplication extends Application {
         }
       });
 
+      int size = Math.round(splitSize);
+
       FloatWindow
         .with(getApplicationContext())
         .setTag(ballName)
         .setView(vFloatBall)
-        .setWidth(splitSize)                       //设置控件宽高
-        .setHeight(splitSize)
+        .setWidth(size)                       //设置控件宽高
+        .setHeight(size)
         .setX(x)                                   //设置控件初始位置
         .setY(y)
         .setMoveType(MoveType.active)
@@ -1425,13 +1448,13 @@ public class DemoApplication extends Application {
         .setViewStateListener(new ViewStateListener() {
           @Override
           public void onPositionUpdate(int x, int y) {
-            int splitX = x + splitSize/2;
-            int splitY = y + splitSize/2;
+            int splitX = x + Math.round(splitRadius);
+            int splitY = y + Math.round(splitRadius);
 
-            if (floatSplitX_ != null) {
+            if (floatSplitX_ != null && floatSplitX_.isShowing()) {
               floatSplitX_.updateX(splitX - dip2px(0.5f));
             }
-            if (floatSplitY_ != null) {
+            if (floatSplitY_ != null && floatSplitY_.isShowing()) {
               floatSplitY_.updateY(splitY - dip2px(0.5f));
             }
 
@@ -1450,10 +1473,10 @@ public class DemoApplication extends Application {
 
           @Override
           public void onHide() {
-            if (floatSplitX_ != null) {
+            if (floatSplitX_ != null && floatSplitX_.isShowing()) {
               floatSplitX_.hide();
             }
-            if (floatSplitY_ != null) {
+            if (floatSplitY_ != null && floatSplitY_.isShowing()) {
               floatSplitY_.hide();
             }
           }
@@ -1484,6 +1507,15 @@ public class DemoApplication extends Application {
     tvControllerX.setText(splitX + "\n" + (splitX/windowWidth) + "%");
     tvControllerY.setText(splitY + "\n" + (splitY/windowHeight) + "%");
 
+    if (floatSplitX_ != null && floatSplitX_.isShowing()) {
+      floatSplitX_.updateX(x + Math.round(splitRadius) - dip2px(0.5f));
+      floatSplitX_.hide();
+    }
+    if (floatSplitY_ != null && floatSplitY_.isShowing()) {
+      floatSplitY_.updateY(y + Math.round(splitRadius) - dip2px(0.5f));
+      floatSplitY_.hide();
+    }
+
     return ball;
   }
 
@@ -1492,19 +1524,19 @@ public class DemoApplication extends Application {
 
   public int getWindowX(Activity activity) {
     return 0;
-    // View contentView = activity.getWindow().getContentView();
+    // View decorView = activity.getWindow().getContentView();
     //
     // Rect rectangle = new Rect();
-    // contentView.getWindowVisibleDisplayFrame(rectangle);
+    // decorView.getWindowVisibleDisplayFrame(rectangle);
     // return rectangle.left;
   }
 
   public int getWindowY(Activity activity) {
     return 0;
-    // View contentView = activity.getWindow().getContentView();
+    // View decorView = activity.getWindow().getContentView();
     //
     // Rect rectangle = new Rect();
-    // contentView.getWindowVisibleDisplayFrame(rectangle);
+    // decorView.getWindowVisibleDisplayFrame(rectangle);
     // return rectangle.top;
   }
 
@@ -1517,12 +1549,14 @@ public class DemoApplication extends Application {
     if (activity != null) {
       if (ie instanceof MotionEvent) {
         MotionEvent event = (MotionEvent) ie;
-        int windowY = getWindowY(activity);
+//        int windowX = getWindowX(activity);
+//        int windowY = getWindowY(activity) + statusHeight;
+//
+//        if (windowX > 0 || windowY > 0) {
+//          event = MotionEvent.obtain(event);
+//          event.offsetLocation(windowX, windowY);
+//        }
 
-        if (windowY > 0) {
-          event = MotionEvent.obtain(event);
-          event.offsetLocation(0, windowY);
-        }
         try {
           activity.dispatchTouchEvent(event);
         } catch (Throwable e) {  // java.lang.IllegalArgumentException: tagerIndex out of range
@@ -1533,7 +1567,6 @@ public class DemoApplication extends Application {
         KeyEvent event = (KeyEvent) ie;
         activity.dispatchKeyEvent(event);
       }
-
     }
 
     if (record) {
@@ -1696,19 +1729,19 @@ public class DemoApplication extends Application {
         eventNode.orientation = obj.getIntValue("orientation");
 
         int layoutType = obj.getIntValue("layoutType");
-        float density = obj.getIntValue("density");
+        float density = obj.getFloatValue("density");
 
-        int ww = obj.getIntValue("windowWidth");
-        int wh = obj.getIntValue("windowHeight");
+        float ww = obj.getFloatValue("windowWidth");
+        float wh = obj.getFloatValue("windowHeight");
 
-        int cw = obj.getIntValue("contentWidth");
-        int ch = obj.getIntValue("contentHeight");
-
+        float sh = obj.getFloatValue("statusHeight");
+        float cw = obj.getFloatValue("decorWidth");
+        float ch = obj.getFloatValue("decorHeight") - sh;
         if (cw <= 100) {
           cw = ww;
         }
         if (ch <= 100) {
-          ch = wh;
+          ch = wh - sh;
         }
 
         float ratio = getScale(cw, ch, layoutType, density);
@@ -1723,64 +1756,64 @@ public class DemoApplication extends Application {
         float sy = obj.getFloatValue("splitY");
         float sy2 = obj.getFloatValue("splitY2");
 
-        if (sx == 0 || Math.abs(sx) >= cw) {
-          sx = Math.round(- splitSize - dip2px(30))/ratio;
+        if (sx == 0 || Math.abs(sx) > cw) {
+          sx = (sx < 0 ? 0 : cw)/ratio;
         }
         else if (sx > 0) {
-          sx -= cw;
+          sx -= ww;
         }
-        if (sy == 0 || Math.abs(sy) >= ch) {
-          sy = Math.round(- splitSize - dip2px(30))/ratio;
+        if (sy == 0 || Math.abs(sy) > ch) {
+          sy = (sy < 0 ? 0 : ch)/ratio;
         }
         else if (sy > 0) {
-          sy -= ch;
+          sy -= wh;
         }
 
         eventNode.splitX = Math.round(sx*ratio);
         eventNode.splitY = Math.round(sy*ratio);
+        eventNode.splitX2 = Math.round(sx2*ratio);
+        eventNode.splitY2 = Math.round(sy2*ratio);
 
         // float ratio = getScale(ww, ) //  1f*windowWidth/ww;  //始终以显示时宽度比例为准，不管是横屏还是竖屏   1f*Math.min(windowWidth, windowHeight)/Math.min(ww, wh);
 
-        // TODO 既然已经存了 上下 绝对坐标、屏幕像素 等完整信息，没必要用负值？负值保证稳定，因为 18:9 和 16:9 的分割线高度不一样
+        // 既然已经存了 上下 绝对坐标、屏幕像素 等完整信息，没必要用负值？负值保证稳定，因为 18:9 和 16:9 的分割线高度不一样
+        sx = sx > 0 ? sx : ww + sx; // 转为正数
         float minSX = sx2 <= 0 ? sx : Math.min(sx, sx2);
         float maxSX = sx2 <= 0 ? sx : Math.max(sx, sx2);
-        sy = sy > 0 ? sy : ch + sy;  // 转为正数
 
+        sy = sy > 0 ? sy : wh + sy; // 转为正数
         float minSY = sy2 <= 0 ? sy : Math.min(sy, sy2);
-        float maxSY = sy2 <= 0 ? minSY : Math.max(sy, sy2);
+        float maxSY = sy2 <= 0 ? sy : Math.max(sy, sy2);
 
-        float rx, ry;
+        float rx;
         if (x >= 0 && x <= minSX) {  //靠左
           rx = ratio*x;
         }
-        else if (x < 0 || x >= maxSX) {  //靠右
-//          rx = ratio*x;  //可以简化 windowWidth/1f - ratio*(ww - x);
-          rx = contentWidth*1f + ratio*(x < 0 ? x : - (cw - x));
+        else if (x < 0 || x >= maxSX) {  //靠右，例如列表项右侧标记已读、添加、删除、数量输入框等按钮
+          rx = decorWidth + ratio*(x < 0 ? x : x - cw);
         }
-        else {  //居中
-//		  float mid = (maxSX + minSX)/2f;
-//          rx = ratio*x;  //可以简化 windowWidth*mid/ww - ratio*(mid - x);
-
+        else {  //居中，一般是弹窗
           float mid = (maxSX + minSX)/2f;
-          rx = contentWidth*mid/cw + ratio*(x < 0 ? x : - (mid - x));
+//          rx = x < mid ? ratio*x : decorWidth*mid/cw + ratio*(x - maxSX); // 居中靠左/靠右，例如关闭按钮
+          rx = decorWidth*mid/cw + ratio*(x - mid); // 居中靠左/靠右，例如关闭按钮
         }
 
-        // 不一定这样 // 进一步简化上面的，横向是所有都一致
-//        rx = ratio*x + contentView.getX();
+        // 不一定这样，例如 小米 12 Pro 因为有摄像头挖孔所以横屏过来会默认不显示左侧摄像头占的宽度 // 进一步简化上面的，横向是所有都一致 rx = ratio*x + decorView.getX();
 
+        float ry;
         if (y >= 0 && y <= minSY) {  //靠上
           ry = ratio*y;
         }
-        else if (y < 0 || y >= maxSY) {  //靠下
-          ry = contentHeight*1f + ratio*(y < 0 ? y : - (ch - y));
+        else if (y < 0 || y >= maxSY) {  //靠下，例如底部 tab、菜单按钮、悬浮按钮等
+          ry = decorHeight - statusHeight + ratio*(y < 0 ? y : y - ch); // decorHeight + ratio*(y < 0 ? y : y - ch);
         }
-        else {  //居中
+        else {  //居中，一般是弹窗
           float mid = (maxSY + minSY)/2f;
-          ry = contentHeight*mid/ch + ratio*(y < 0 ? y : - (mid - y));
+          ry = (decorHeight - statusHeight)*mid/ch + ratio*(y - mid); // 居中靠上/靠下，例如 取消、确定 按钮
         }
 
-        rx += contentView.getX();
-        ry += contentView.getY();
+        rx += windowX + decorX;
+        ry += windowY + decorY + statusHeight;
 
         event = MotionEvent.obtain(
           obj.getLongValue("downTime"),
@@ -1823,6 +1856,8 @@ public class DemoApplication extends Application {
 
       eventNode.windowX = obj.getIntValue("windowX");
       eventNode.windowY = obj.getIntValue("windowY");
+      eventNode.decorX = obj.getFloatValue("decorX");
+      eventNode.decorY = obj.getFloatValue("decorY");
 
       eventNode.item = event;
 
@@ -1833,9 +1868,22 @@ public class DemoApplication extends Application {
     currentEventNode = firstEventNode;
   }
 
-  private float getScale(int ww, int wh, int layoutType, float density) {
-    int curWW = Math.min(contentWidth, contentHeight);
-    int targetWw = Math.min(ww, wh);
+  private float getScale(float ww, float wh, int layoutType, float density) {
+    if (decorWidth <= 0) {
+      if (windowWidth <= 0) {
+        windowWidth = screenWidth;
+      }
+      decorWidth = windowWidth;
+    }
+    if (windowHeight <= 0) {
+      if (windowHeight <= 0) {
+        windowHeight = screenHeight;
+      }
+      decorHeight = windowHeight;
+    }
+
+    float curWW = Math.min(decorWidth, decorHeight - statusHeight);
+    float targetWw = Math.min(ww, wh);
     if (curWW == targetWw || layoutType == InputUtil.LAYOUT_TYPE_ABSOLUTE) {  // 同宽像素或绝对位置
       return 1.0f;
     }
@@ -2031,10 +2079,10 @@ public class DemoApplication extends Application {
     FileOutputStream fos = null;
     String filePath = null;
     try {
-      synchronized (window) {  //必须，且只能是 Window，用 Activity 或 contentView 都不行 解决某些界面会报错 cannot find container of contentView
+      synchronized (window) {  //必须，且只能是 Window，用 Activity 或 decorView 都不行 解决某些界面会报错 cannot find container of decorView
         View decorView = window.getDecorView();
         decorView.setDrawingCacheEnabled(true);
-        // contentView.buildDrawingCache(true);
+        // decorView.buildDrawingCache(true);
         bitmap = decorView.getDrawingCache();
         int w = bitmap.getWidth();
         int h = bitmap.getHeight();
@@ -2154,10 +2202,24 @@ public class DemoApplication extends Application {
       obj.put("deviceId", event.getDeviceId());
       //虽然 KeyEvent 和 MotionEvent 都有，但都不在父类 InputEvent 中 >>>>>>>>>>>>>>>>>>
 
-      obj.put("x", Math.round(event.getX() < floatSplitX.getX() ? event.getX() : event.getX() - contentView.getX() - contentView.getWidth()));
-      obj.put("y", Math.round(event.getY() < floatSplitY.getY() ? event.getY() : event.getY() - contentView.getY() - contentView.getHeight()));
-      obj.put("rawX", Math.round(event.getRawX()));
-      obj.put("rawY", Math.round(event.getRawY()));
+      float x = event.getX();
+      float y = event.getY();
+      float rx = x - windowX - decorX;
+      float ry = y - windowY - decorY - statusHeight;
+
+      // 只在回放前一处处理逻辑
+      isSplit2Showing = floatBall2 != null && floatBall2.isShowing();
+//      float minX = (isSplit2Showing ? Math.min(floatBall.getX(), floatBall2.getX()) : floatBall.getX()) - splitRadius;
+      float maxX = (isSplit2Showing ? Math.max(floatBall.getX(), floatBall2.getX()) : floatBall.getX()) + splitRadius;
+//      float avgX = (minX + maxX)/2;
+//      float minY = (isSplit2Showing ? Math.min(floatBall.getY(), floatBall2.getY()) : floatBall.getY()) - splitRadius;
+      float maxY = (isSplit2Showing ? Math.max(floatBall.getY(), floatBall2.getY()) : floatBall.getY()) + splitRadius;
+//      float avgY = (minY + maxY)/2;
+
+      obj.put("x", rx < maxX ? rx : rx - decorWidth); // Math.round(x - windowX - decorX - (x < avgX ? 0 : decorWidth)));
+      obj.put("y", ry < maxY ? ry : ry - decorHeight + statusHeight); // Math.round(y - windowY - decorY - (y < avgY ? 0 : decorHeight)));
+      obj.put("rawX", event.getRawX());
+      obj.put("rawY", event.getRawY());
       obj.put("size", event.getSize());
       obj.put("pressure", event.getPressure());
       obj.put("xPrecision", event.getXPrecision());
@@ -2269,27 +2331,52 @@ public class DemoApplication extends Application {
       , fragment == null ? null : fragment.getClass().getName()
     );
   }
+
+  private long lastId = 0;
   public JSONObject newEvent(int orientation, String activity, String fragment) {
-    splitX = Math.round(floatSplitX.getX() + vSplitX.getWidth()/2 - contentView.getX() - contentView.getWidth());
-    splitY = Math.round(floatSplitY.getY() + vSplitY.getHeight()/2 - contentView.getY() - contentView.getHeight());
+    decorX = decorView == null ? 0 : decorView.getX();
+    decorY = decorView == null ? 0 : decorView.getY();
+    decorWidth = decorView == null ? windowWidth : decorView.getWidth();
+    decorHeight = decorView == null ? windowHeight : decorView.getHeight();
+
+    splitX = Math.round(floatBall.getX() + splitRadius - windowWidth); // decorWidth); // - decorX
+    splitY = Math.round(floatBall.getY() + splitRadius - windowHeight); // decorHeight); // - decorY
+
+    isSplit2Showing = floatBall2 != null && floatBall2.isShowing();
+    splitX2 = isSplit2Showing ? Math.round(floatBall2.getX() + splitRadius - windowWidth) : 0; // decorWidth) : 0; //  - decorX - decorWidth) : 0;
+    splitY2 = isSplit2Showing ? Math.round(floatBall2.getY() + splitRadius - windowHeight) : 0; // decorHeight) : 0; // - decorY - decorHeight) : 0;
+
+    long time = System.currentTimeMillis();
+    if (lastId < time) {
+      lastId = time;
+    } else {
+      lastId ++;
+    }
 
     JSONObject event = new JSONObject(true);
-    event.put("id", - System.currentTimeMillis());
+    event.put("id", - lastId);
     event.put("flowId", flowId);
     event.put("step", count);
-    event.put("time", System.currentTimeMillis());
+    event.put("time", time);
     event.put("orientation", orientation);
     event.put("splitX", splitX);
     event.put("splitY", splitY);
+    event.put("splitX2", splitX2);
+    event.put("splitY2", splitY2);
+    event.put("windowX", windowX);
+    event.put("windowY", windowY);
     event.put("windowWidth", windowWidth);
     event.put("windowHeight", windowHeight);
-    event.put("contentWidth", contentWidth);
-    event.put("contentHeight", contentHeight);
+    event.put("statusHeight", statusHeight);
+    event.put("decorX", decorX);
+    event.put("decorY", decorY);
+    event.put("decorWidth", decorWidth);
+    event.put("decorHeight", decorHeight);
     event.put("activity", activity);
     event.put("fragment", fragment);
 
     if (event.get("name") == null) {
-      String name = unitauto.StringUtil.isEmpty(fragment, true) ? activity : fragment;
+      String name = StringUtil.isEmpty(fragment, true) ? activity : fragment;
       int ind = name == null ? -1 : name.lastIndexOf(".");
       event.put("name", ind < 0 ? name : name.substring(ind + 1));
     }
@@ -2400,11 +2487,13 @@ public class DemoApplication extends Application {
     int type;
     int action;
     long time;
-    int splitX;
-    int splitY;
-    int splitSize;
-    int windowX;
-    int windowY;
+    float splitX, splitX2;
+    float splitY, splitY2;
+    float splitSize;
+    float windowX;
+    float windowY;
+    float decorX;
+    float decorY;
     int orientation;
     String activity;
     String fragment;
