@@ -92,11 +92,16 @@ public class UnitAutoActivity extends Activity implements HttpServerRequestCallb
     SharedPreferences cache;
 
     File parentDirectory;
+
+    protected int getLayoutResId() {
+        return R.layout.unit_auto_activity;
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         requestWindowFeature(Window.FEATURE_NO_TITLE);
-        setContentView(R.layout.unit_auto_activity);
+        setContentView(getLayoutResId());
         context = this;
         isAlive = true;
 
@@ -133,6 +138,7 @@ public class UnitAutoActivity extends Activity implements HttpServerRequestCallb
         }
 
     }
+
 
     @Override
     protected void onResume() {

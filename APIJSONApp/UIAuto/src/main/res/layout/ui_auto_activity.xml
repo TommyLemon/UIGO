@@ -1,88 +1,133 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout
+<LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/rlRoot"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="uiauto.UIAutoActivity">
+    android:orientation="vertical"
+    tools:context="uiauto.UIAutoActivity"
+    >
 
-
-    <RelativeLayout
-        android:descendantFocusability="blocksDescendants"
-        android:id="@+id/vDispatchTouch"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="#1000"
+        android:orientation="vertical"
+        android:layout_weight="1"
         >
 
         <ScrollView
-            android:id="@+id/svTouch"
             android:layout_width="match_parent"
-            android:layout_height="match_parent">
-            <TextView
-                android:id="@+id/tvTouch"
+            android:layout_height="match_parent"
+            android:layout_weight="1" >
+
+            <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:minHeight="30dp"
-                android:layout_alignParentRight="true"
-                android:text=""
-                />
+                android:layout_height="match_parent"
+                android:orientation="horizontal" >
+
+                <TextView
+                    android:id="@+id/tvUnitRequest"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:padding="2dp"
+                    android:layout_weight="1"
+                    android:background="@null"
+                    android:gravity="top|left"
+                    android:hint="request"
+                    android:textSize="14sp"
+                    android:textIsSelectable="true"
+                    />
+
+                <View
+                    android:layout_width="1dp"
+                    android:layout_height="match_parent"
+                    android:background="@android:color/white" />
+
+                <TextView
+                    android:id="@+id/tvUnitResponse"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:padding="2dp"
+                    android:layout_weight="2"
+                    android:background="@null"
+                    android:gravity="top|left"
+                    android:hint="response"
+                    android:textIsSelectable="true"
+                    android:textSize="14sp" />
+            </LinearLayout>
         </ScrollView>
 
-        <Button
-            android:id="@+id/btnButton"
-            android:layout_centerHorizontal="true"
-            android:layout_alignParentBottom="true"
-            android:layout_marginBottom="120dp"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="BUTTON"
-            android:onClick="onClick"
-            />
-
-        <TextView
-            android:id="@+id/tvButton"
-            android:layout_centerInParent="true"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="TextView"
-            android:padding="10dp"
-            android:textStyle="bold"
-            android:textColor="@android:color/white"
-            android:background="@android:color/darker_gray"
-            android:foreground="?android:attr/selectableItemBackgroundBorderless"
-            />
-
-
-    </RelativeLayout>
-
-    <LinearLayout
-        android:id="@+id/llTouch"
-        android:descendantFocusability="blocksDescendants"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="horizontal"
-        >
-
         <View
-            android:descendantFocusability="blocksDescendants"
-            android:id="@+id/vTouch"
-            android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:background="#2000"
-            />
-
-        <View
-            android:id="@+id/vTouch2"
-            android:layout_weight="1"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            />
-    </LinearLayout>
+            android:layout_height="1dp"
+            android:background="@android:color/white" />
 
+        <LinearLayout
+            android:layout_height="45dp"
+            android:layout_width="match_parent"
+            android:orientation="horizontal"
+            >
+
+            <Button
+                android:id="@+id/tvUnitOrient"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:onClick="orient"
+                android:text="@string/horizontal" />
+
+            <Button
+                android:id="@+id/tvUnitStop"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:text="@string/stop"
+                android:onClick="stop"
+                />
+
+            <TextView
+                android:id="@+id/tvUnitIP"
+                android:text="192.168.0.1:"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:singleLine="true"
+                android:onClick="ip"
+                android:ellipsize="middle"
+                android:textSize="16sp"
+                />
+
+            <EditText
+                android:id="@+id/etUnitPort"
+                android:hint="8080"
+                android:inputType="number"
+                android:maxLength="5"
+                android:minEms="2"
+                android:digits="1234567890"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:gravity="left|center_vertical"
+                android:enabled="true"
+                android:textSize="16sp"
+                />
+
+            <ProgressBar
+                android:id="@+id/pbUnit"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent" />
+
+            <Button
+                android:id="@+id/tvUnitStart"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:text="@string/start"
+                android:onClick="start"
+                />
+
+        </LinearLayout>
+
+    </LinearLayout>
 
     <View
         android:layout_width="match_parent"
@@ -98,7 +143,7 @@
         >
 
         <Button
-            android:id="@+id/tvUnitOrient"
+            android:id="@+id/tvUIRemote"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
@@ -107,7 +152,7 @@
             />
 
         <Button
-            android:id="@+id/tvUnitStop"
+            android:id="@+id/tvUILocal"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:onClick="toLocal"
@@ -116,7 +161,16 @@
             />
 
         <Button
-            android:id="@+id/tvUnitStart"
+            android:id="@+id/tvUIAdmin"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:text="@string/admin"
+            android:onClick="admin"
+            android:minWidth="60dp"
+            />
+
+        <Button
+            android:id="@+id/tvUIRecord"
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
             android:text="@string/record"
@@ -126,4 +180,4 @@
 
     </LinearLayout>
 
-</RelativeLayout>
+</LinearLayout>
