@@ -78,6 +78,12 @@ public abstract class BaseFragment extends Fragment implements FragmentPresenter
 		this.inflater = inflater;
 		this.container = container;
 
+		if (view != null) {
+			if (container == null || container.indexOfChild(view) < 0) {
+				container = (ViewGroup) view.getParent();
+			}
+			container.removeView(view);
+		}
 		return view;
 	}
 

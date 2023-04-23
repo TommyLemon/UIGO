@@ -95,6 +95,11 @@ public abstract class BaseBottomTabActivity extends BaseActivity {
 		}
 
 		Fragment fragment = fragments[position];
+		String tag = TAG + "-fragment-" + position;
+		if (fragment == null) {
+			fragment = fragmentManager.findFragmentByTag(tag);
+		}
+
 		if (currentPosition == position) {
 			if (fragment != null && fragment.isVisible()) {
 				Log.e(TAG, "selectFragment currentPosition == position" +
@@ -110,9 +115,14 @@ public abstract class BaseBottomTabActivity extends BaseActivity {
 
 		// 用全局的fragmentTransaction因为already committed 崩溃
 		FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
-		fragmentTransaction.hide(fragments[currentPosition]);
+		for (Fragment f : fragmentManager.getFragments()) {
+			if (f != null) {
+				fragmentTransaction.hide(f);
+			}
+		}
+
 		if (fragment.isAdded() == false) {
-			fragmentTransaction.add(getFragmentContainerResId(), fragment);
+			fragmentTransaction.add(getFragmentContainerResId(), fragment, tag);
 		}
 		FragmentTransaction ft = fragmentTransaction.show(fragment);
 		try { // cannot perform this action after savedInstance
@@ -120,7 +130,6 @@ public abstract class BaseBottomTabActivity extends BaseActivity {
 		} catch (Throwable e) {
 			e.printStackTrace();
 		}
-
 
 		//消耗资源很少，不像Fragment<<<<<<
 		setTabSelection(position);

@@ -184,25 +184,48 @@ public abstract class BaseTabFragment extends BaseFragment implements ViewPresen
 	 * @param position
 	 */
 	public void selectFragment(int position) {
+		Fragment fragment = fragments[position];
+		String tag = TAG + "-fragment-" + position;
+		if (fragment == null) {
+			fragment = fragmentManager.findFragmentByTag(tag);
+		}
+
 		if (currentPosition == position) {
-			if (needReload == false && fragments[position] != null && fragments[position].isVisible()) {
+			if (needReload == false && fragment != null && fragment.isVisible()) {
 				Log.w(TAG, "selectFragment currentPosition == position" +
-						" >> fragments[position] != null && fragments[position].isVisible()" +
+						" >> fragment != null && fragment.isVisible()" +
 						" >> return;	");
 				return;
 			}
 		}
-		if (needReload || fragments[position] == null) {
-			fragments[position] = getFragment(position);
+
+		FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
+		if (needReload) {
+			fragmentTransaction.remove(fragment);
+			fragment = null;
 		}
 
-		//全局的fragmentTransaction因为already committed 崩溃
-		FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
-		fragmentTransaction.hide(fragments[currentPosition]);
-		if (fragments[position].isAdded() == false) {
-			fragmentTransaction.add(R.id.flBaseTabFragmentContainer, fragments[position]);
+		if (fragment == null) {
+			fragment = fragments[position] = getFragment(position);
 		}
-		fragmentTransaction.show(fragments[position]).commit();
+
+		// 用全局的fragmentTransaction因为already committed 崩溃
+		for (Fragment f : fragmentManager.getFragments()) {
+			if (f != null) {
+				fragmentTransaction.hide(f);
+			}
+		}
+
+		if (fragment.isAdded() == false) {
+			fragmentTransaction.add(R.id.flBaseTabFragmentContainer, fragment, tag);
+		}
+		FragmentTransaction ft = fragmentTransaction.show(fragment);
+		try { // cannot perform this action after savedInstance
+			ft.commit();
+		} catch (Throwable e) {
+			e.printStackTrace();
+		}
+
 
 		this.currentPosition = position;
 	}
