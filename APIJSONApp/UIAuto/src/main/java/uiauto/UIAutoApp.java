@@ -14,6 +14,7 @@ limitations under the License.*/
 
 package uiauto;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.Application;
 import android.app.Dialog;
@@ -106,8 +107,8 @@ public class UIAutoApp extends Application {
   private final Handler mainHandler = new Handler(Looper.getMainLooper());
 
   private boolean isReplay = false;
+  @SuppressLint("HandlerLeak")
   private final Handler handler = new Handler() {
-    @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN)
     @Override
     public void handleMessage(Message msg) {
       super.handleMessage(msg);
@@ -256,6 +257,7 @@ public class UIAutoApp extends Application {
   int screenWidth;
   int screenHeight;
 
+  Window.Callback callback;
   Window window;
   View decorView;
 
@@ -326,7 +328,14 @@ public class UIAutoApp extends Application {
   }
 
   public void onUIAutoWindowCreate(@NonNull Window.Callback callback, @NonNull Window window) {
-    this.window = window;
+//    if (callback instanceof Dialog) {
+////      onUIAutoActivityDestroy(activity, activity);
+//    }
+//    if (this.window != null) {
+//      this.window.setCallback(this.callback);
+//    }
+//    onUIAutoWindowDestroy(this.callback, this.window);
+
     //反而让 vFloatCover 与底部差一个导航栏高度 window.addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
     decorView = window.getDecorView(); // activity.findViewById(android.R.id.content);  // decorView = window.getContentView();
     decorView.post(new Runnable() {
@@ -345,6 +354,9 @@ public class UIAutoApp extends Application {
     });
 
     Window.Callback windowCallback = window.getCallback();
+
+    this.window = window;
+    this.callback = windowCallback;
     window.setCallback(new Window.Callback() {
       @Override
       public boolean dispatchKeyEvent(KeyEvent event) {
@@ -980,11 +992,17 @@ public class UIAutoApp extends Application {
     if (activity == null) {
       activity = getCurrentActivity();
     }
-    if (activity == null && callback instanceof Dialog) {
-      activity = ((Dialog) callback).getOwnerActivity();
-      setCurrentActivity(activity);
+
+    if (callback instanceof Dialog) {
+      if (activity == null) {
+        activity = ((Dialog) callback).getOwnerActivity();
+        setCurrentActivity(activity);
+      }
+      onUIAutoActivityCreate(activity);
     }
-    this.window = activity == null ? null : activity.getWindow();
+    else {
+      this.window = activity == null ? null : activity.getWindow();
+    }
   }
 
 
@@ -998,8 +1016,7 @@ public class UIAutoApp extends Application {
       .putInt(SPLIT_Y, Math.round(floatSplitY.getY() + vSplitY.getHeight()/2 - windowHeight))
       .apply();
 
-    Window w = activity == null ? null : activity.getWindow();
-    onUIAutoWindowDestroy(w == null ? null : w.getCallback(), w);
+    onUIAutoWindowDestroy(callback, activity == null ? null : activity.getWindow());
   }
 
   private LayoutInflater inflater;
@@ -1583,7 +1600,7 @@ public class UIAutoApp extends Application {
 //      }
 //    }
 
-    if (window != null) {
+    if (callback != null) {
       if (ie instanceof MotionEvent) {
         MotionEvent event = (MotionEvent) ie;
 //        int windowX = getWindowX(activity);
@@ -1593,25 +1610,23 @@ public class UIAutoApp extends Application {
 //          event = MotionEvent.obtain(event);
 //          event.offsetLocation(windowX, windowY);
 //        }
-
         try {
-          window.superDispatchTouchEvent(event);
+          callback.dispatchTouchEvent(event);
         } catch (Throwable e) {  // java.lang.IllegalArgumentException: tagerIndex out of range
           e.printStackTrace();
         }
       }
       else if (ie instanceof KeyEvent) {
         KeyEvent event = (KeyEvent) ie;
-//        activity.dispatchKeyEvent(event);
-        window.superDispatchKeyEvent(event);
+        callback.dispatchKeyEvent(event);
       }
     }
 
     if (record) {
-      addInputEvent(ie, window == null ? null : window.getCallback(), activity);
+      addInputEvent(ie, callback, activity);
     }
 
-    return window != null;
+    return callback != null;
   }
 
 
