@@ -362,132 +362,154 @@ public class UIAutoApp extends Application {
       public boolean dispatchKeyEvent(KeyEvent event) {
 //				dispatchEventToCurrentActivity(event);
         addInputEvent(event, callback, activity);
-        return windowCallback.dispatchKeyEvent(event);
+        return windowCallback != null && windowCallback.dispatchKeyEvent(event);
       }
 
       @Override
       public boolean dispatchKeyShortcutEvent(KeyEvent event) {
 //				dispatchEventToCurrentActivity(event);
         addInputEvent(event, callback, activity);
-        return windowCallback.dispatchKeyShortcutEvent(event);
+        return windowCallback != null && windowCallback.dispatchKeyShortcutEvent(event);
       }
 
       @Override
       public boolean dispatchTouchEvent(MotionEvent event) {
 //				dispatchEventToCurrentActivity(event);
         addInputEvent(event, callback, activity);
-        return windowCallback.dispatchTouchEvent(event);
+        return windowCallback != null && windowCallback.dispatchTouchEvent(event);
       }
 
       @Override
       public boolean dispatchTrackballEvent(MotionEvent event) {
 //				dispatchEventToCurrentActivity(event);
         addInputEvent(event, callback, activity);
-        return windowCallback.dispatchTrackballEvent(event);
+        return windowCallback != null && windowCallback.dispatchTrackballEvent(event);
       }
 
       @Override
       public boolean dispatchGenericMotionEvent(MotionEvent event) {
 //				dispatchEventToCurrentActivity(event);
 // 和 dispatchTouchEvent 重复                addInputEvent(event, activity);
-        return windowCallback.dispatchGenericMotionEvent(event);
+        return windowCallback != null && windowCallback.dispatchGenericMotionEvent(event);
       }
 
       @Override
       public boolean dispatchPopulateAccessibilityEvent(AccessibilityEvent event) {
-        return windowCallback.dispatchPopulateAccessibilityEvent(event);
+        return windowCallback != null && windowCallback.dispatchPopulateAccessibilityEvent(event);
       }
 
       @Nullable
       @Override
       public View onCreatePanelView(int featureId) {
-        return windowCallback.onCreatePanelView(featureId);
+        return windowCallback == null ? null : windowCallback.onCreatePanelView(featureId);
       }
 
       @Override
       public boolean onCreatePanelMenu(int featureId, Menu menu) {
-        return windowCallback.onCreatePanelMenu(featureId, menu);
+        return windowCallback != null && windowCallback.onCreatePanelMenu(featureId, menu);
       }
 
       @Override
       public boolean onPreparePanel(int featureId, View view, Menu menu) {
-        return windowCallback.onPreparePanel(featureId, view, menu);
+        return windowCallback != null && windowCallback.onPreparePanel(featureId, view, menu);
       }
 
       @Override
       public boolean onMenuOpened(int featureId, Menu menu) {
-        return windowCallback.onMenuOpened(featureId, menu);
+        return windowCallback != null && windowCallback.onMenuOpened(featureId, menu);
       }
 
       @Override
       public boolean onMenuItemSelected(int featureId, MenuItem item) {
-        return windowCallback.onMenuItemSelected(featureId, item);
+        return windowCallback != null && windowCallback.onMenuItemSelected(featureId, item);
       }
 
       @Override
       public void onWindowAttributesChanged(WindowManager.LayoutParams attrs) {
+        if (windowCallback == null) {
+          return;
+        }
         windowCallback.onWindowAttributesChanged(attrs);
       }
 
       @Override
       public void onContentChanged() {
+        if (windowCallback == null) {
+          return;
+        }
         windowCallback.onContentChanged();
       }
 
       @Override
       public void onWindowFocusChanged(boolean hasFocus) {
+        if (windowCallback == null) {
+          return;
+        }
         windowCallback.onWindowFocusChanged(hasFocus);
       }
 
       @Override
       public void onAttachedToWindow() {
+        if (windowCallback == null) {
+          return;
+        }
         windowCallback.onAttachedToWindow();
       }
 
       @Override
       public void onDetachedFromWindow() {
+        if (windowCallback == null) {
+          return;
+        }
         windowCallback.onDetachedFromWindow();
       }
 
       @Override
       public void onPanelClosed(int featureId, Menu menu) {
+        if (windowCallback == null) {
+          return;
+        }
         windowCallback.onPanelClosed(featureId, menu);
       }
 
       @Override
       public boolean onSearchRequested() {
-        return windowCallback.onSearchRequested();
+        return windowCallback != null && windowCallback.onSearchRequested();
       }
 
       @RequiresApi(api = Build.VERSION_CODES.M)
       @Override
       public boolean onSearchRequested(SearchEvent searchEvent) {
-        return windowCallback.onSearchRequested(searchEvent);
+        return windowCallback != null && windowCallback.onSearchRequested(searchEvent);
       }
 
       @Nullable
       @Override
       public ActionMode onWindowStartingActionMode(ActionMode.Callback callback) {
-        return windowCallback.onWindowStartingActionMode(callback);
+        return windowCallback == null ? null : windowCallback.onWindowStartingActionMode(callback);
       }
 
       @RequiresApi(api = Build.VERSION_CODES.M)
       @Nullable
       @Override
       public ActionMode onWindowStartingActionMode(ActionMode.Callback callback, int type) {
-        return windowCallback.onWindowStartingActionMode(callback, type);
+        return windowCallback == null ? null : windowCallback.onWindowStartingActionMode(callback, type);
       }
 
       @Override
       public void onActionModeStarted(ActionMode mode) {
+        if (windowCallback == null) {
+          return;
+        }
         windowCallback.onActionModeStarted(mode);
-        window.addFlags(WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH);
       }
 
       @Override
       public void onActionModeFinished(ActionMode mode) {
+        if (windowCallback == null) {
+          return;
+        }
         windowCallback.onActionModeFinished(mode);
-        window.clearFlags(WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH);
       }
     });
 
