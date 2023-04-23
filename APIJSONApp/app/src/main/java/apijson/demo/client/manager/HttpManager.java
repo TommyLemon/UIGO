@@ -31,6 +31,7 @@ import org.json.JSONException;
 
 import uiauto.InputUtil;
 import uiauto.UIAutoApp;
+import zuo.biao.apijson.JSONRequest;
 import zuo.biao.apijson.StringUtil;
 import zuo.biao.library.manager.HttpManager.OnHttpResponseListener;
 import zuo.biao.library.util.Log;
@@ -102,6 +103,7 @@ public class HttpManager {
 	 */
 	public void post(final String url_, final com.alibaba.fastjson.JSONObject request
 			, final int requestCode, final OnHttpResponseListener listener) {
+		String tag = request == null ? null : request.getString(JSONRequest.KEY_TAG);
 		new AsyncTask<Void, Void, Exception>() {
 
 			String httpRequestString;
@@ -111,11 +113,9 @@ public class HttpManager {
 			Headers responseHeaders;
 			@Override
 			protected Exception doInBackground(Void... params) {
-
 				try {
 					String url = StringUtil.getNoBlankString(url_);
 					String token = getToken(url);
-
 
 					OkHttpClient client = getHttpClient(url);
 					if (client == null) {
@@ -136,7 +136,7 @@ public class HttpManager {
 						public void run() {
 							UIAutoApp.getInstance().onHTTPEvent(
 									InputUtil.HTTP_ACTION_REQUEST, "JSON"
-									, url_, httpRequestString, null
+									, url_ + (tag == null ? "" : "/" + tag), httpRequestString, null
 									, getActivity(listener), getFragment(listener)
 							);
 						}
@@ -166,7 +166,7 @@ public class HttpManager {
 					public void run() {
 						UIAutoApp.getInstance().onHTTPEvent(
 								InputUtil.HTTP_ACTION_RESPONSE, e == null ? ("" + responseCode) : e.getClass().getSimpleName()
-								, url_, httpRequestString, toHttpJSONString(responseHeaders == null ? null : responseHeaders.toString(), responseBody)
+								, url_ + (tag == null ? "" : "/" + tag), httpRequestString, toHttpJSONString(responseHeaders == null ? null : responseHeaders.toString(), responseBody)
 								, getActivity(listener), getFragment(listener)
 						);
 					}

@@ -233,10 +233,7 @@ public class UIAutoApp extends Application {
           dispatchEventToCurrentWindow(curNode.item, false);
 
           sendMessageDelayed(
-            msg, (nextNode == null ? 0 : (nextItem == null || curItem == null
-              ? (nextNode.time - curNode.time)
-              : (nextItem.getEventTime() - curItem.getEventTime())
-            ))  // 相邻执行事件时间差本身就包含了  + (lastTime <= 0 || firstTime <= 0 ? 10 : lastTime - firstTime)  // 补偿 disable 项跳过的等待时间
+            msg, nextNode == null ? 0 : nextItem.getEventTime() - curItem.getEventTime()  // 相邻执行事件时间差本身就包含了  + (lastTime <= 0 || firstTime <= 0 ? 10 : lastTime - firstTime)  // 补偿 disable 项跳过的等待时间
           );
         }
 
