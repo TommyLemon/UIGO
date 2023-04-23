@@ -15,6 +15,9 @@ limitations under the License.*/
 
 package apijson.demo.client.manager;
 
+import static uiauto.HttpManager.getResponse;
+import static uiauto.HttpManager.getResponseBody;
+
 import java.io.IOException;
 import java.net.CookieHandler;
 import java.net.URI;
@@ -26,16 +29,22 @@ import java.util.concurrent.TimeUnit;
 
 import org.json.JSONException;
 
+import uiauto.InputUtil;
+import uiauto.UIAutoApp;
 import zuo.biao.apijson.StringUtil;
 import zuo.biao.library.manager.HttpManager.OnHttpResponseListener;
 import zuo.biao.library.util.Log;
+
+import android.app.Activity;
 import android.content.Context;
 import android.os.AsyncTask;
+import android.support.v4.app.Fragment;
 import android.text.TextUtils;
 import apijson.demo.client.application.APIJSONApplication;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
+import com.squareup.okhttp.Headers;
 import com.squareup.okhttp.MediaType;
 import com.squareup.okhttp.OkHttpClient;
 import com.squareup.okhttp.Request;
@@ -95,28 +104,51 @@ public class HttpManager {
 			, final int requestCode, final OnHttpResponseListener listener) {
 		new AsyncTask<Void, Void, Exception>() {
 
-			String result;
+			String httpRequestString;
+
+			int responseCode;
+			String responseBody;
+			Headers responseHeaders;
 			@Override
 			protected Exception doInBackground(Void... params) {
 
 				try {
 					String url = StringUtil.getNoBlankString(url_);
+					String token = getToken(url);
+
 
 					OkHttpClient client = getHttpClient(url);
 					if (client == null) {
 						return new Exception(TAG + ".post  AsyncTask.doInBackground  client == null >> return;");
 					}
-					String body = JSON.toJSONString(request);
-					Log.d(TAG, "\n\n<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n post  url = " + url_ + "\n request = \n" + body);
-					
-					RequestBody requestBody = RequestBody.create(TYPE_JSON, body);
 
-					result = getResponseJson(client, new Request.Builder()
-							.addHeader(KEY_TOKEN, getToken(url)).url(StringUtil.getNoBlankString(url))
-							.post(requestBody).build());
-					Log.d(TAG, "\n post  result = \n" + result + "\n >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n\n");
+					String reqStr = JSON.toJSONString(request);
+					RequestBody requestBody = RequestBody.create(TYPE_JSON, reqStr);
+
+					Request httpRequest = new Request.Builder()
+							.addHeader(KEY_TOKEN, token).url(url)
+							.post(requestBody).build();
+
+					httpRequestString = toHttpJSONString(httpRequest == null ? null : httpRequest.headers().toString(), reqStr);
+
+					UIAutoApp.getInstance().post(new Runnable() {
+						@Override
+						public void run() {
+							UIAutoApp.getInstance().onHTTPEvent(
+									InputUtil.HTTP_ACTION_REQUEST, "JSON"
+									, url_, httpRequestString, null
+									, getActivity(listener), getFragment(listener)
+							);
+						}
+					});
+
+					Response httpResponse = getResponse(client, httpRequest);
+					responseBody = getResponseBody(httpResponse);
+					responseCode = httpResponse.code();
+					responseHeaders = httpResponse.headers();
+
 				} catch (Exception e) {
-					Log.e(TAG, "post  AsyncTask.doInBackground  try {  result = getResponseJson(..." +
+					android.util.Log.e(TAG, "post  AsyncTask.doInBackground  try {  result = getResponseJson(..." +
 							"} catch (Exception e) {\n" + e.getMessage());
 					return e;
 				}
@@ -125,14 +157,46 @@ public class HttpManager {
 			}
 
 			@Override
-			protected void onPostExecute(Exception exception) {
-				super.onPostExecute(exception);
-				listener.onHttpResponse(requestCode, result, exception);
+			protected void onPostExecute(Exception e) {
+				super.onPostExecute(e);
+				listener.onHttpResponse(requestCode, responseBody, e);
+
+				UIAutoApp.getInstance().post(new Runnable() {
+					@Override
+					public void run() {
+						UIAutoApp.getInstance().onHTTPEvent(
+								InputUtil.HTTP_ACTION_RESPONSE, e == null ? ("" + responseCode) : e.getClass().getSimpleName()
+								, url_, httpRequestString, toHttpJSONString(responseHeaders == null ? null : responseHeaders.toString(), responseBody)
+								, getActivity(listener), getFragment(listener)
+						);
+					}
+				});
 			}
+
 
 		}.execute();
 	}
 
+	private String toHttpJSONString(String headers, String body) {
+		return headers + "Content: \n" + body;
+	}
+
+	private Activity getActivity(OnHttpResponseListener listener) {
+		if (listener instanceof Activity) {
+			return  (Activity)listener;
+		}
+
+		if (listener instanceof Fragment) {
+			Fragment fragment = (Fragment) listener;
+			return fragment.getActivity();
+		}
+
+		return null;
+	}
+
+	private Fragment getFragment(OnHttpResponseListener listener) {
+		return listener instanceof Fragment ? (Fragment)listener : null;
+	}
 
 	//httpGet/httpPost 内调用方法 <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
