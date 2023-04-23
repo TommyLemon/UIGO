@@ -62,7 +62,7 @@
                 android:paddingBottom="5dp"
                 android:text="This is a content..." />
 
-            <apijson.demo.client.view.EmptyEventGridView
+            <apijson.demo.view.EmptyEventGridView
                 android:id="@+id/gvMomentView"
                 style="@style/wrap_wrap"
                 android:focusable="false"
@@ -123,7 +123,7 @@
                         android:scaleType="fitXY"
                         android:src="@drawable/praise" />
 
-                    <apijson.demo.client.view.PraiseTextView
+                    <apijson.demo.view.PraiseTextView
                         android:id="@+id/tvMomentViewPraise"
                         style="@style/text_small_blue"
                         android:background="@drawable/bg_item_to_alpha"

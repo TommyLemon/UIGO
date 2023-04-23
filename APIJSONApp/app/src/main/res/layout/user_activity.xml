@@ -21,16 +21,16 @@
         <LinearLayout style="@style/ll_vertical_match_match" >
 
             <!-- 这些方式也可<<<<<<<<<<<<<<<<<<< -->
-            <!-- <apijson.demo.client.view.BaseViewLayout -->
+            <!-- <apijson.demo.view.BaseViewLayout -->
             <!-- android:id="@+id/bvlUser" -->
             <!-- style="@style/match_wrap" > -->
-            <!-- </apijson.demo.client.view.BaseViewLayout> -->
+            <!-- </apijson.demo.view.BaseViewLayout> -->
 
 
-            <!-- <apijson.demo.client.view.UserViewLayout -->
+            <!-- <apijson.demo.view.UserViewLayout -->
             <!-- android:id="@+id/uvlUser" -->
             <!-- style="@style/match_wrap" > -->
-            <!-- </apijson.demo.client.view.UserViewLayout> -->
+            <!-- </apijson.demo.view.UserViewLayout> -->
             <!-- 这些方式也可>>>>>>>>>>>>>>>>>>> -->
 
             <LinearLayout

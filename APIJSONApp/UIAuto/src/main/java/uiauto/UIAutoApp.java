@@ -2106,6 +2106,8 @@ public class UIAutoApp extends Application {
       return;
     }
 
+    Window window = this.window != null ? this.window : (activity == null ? null : activity.getWindow());
+
     new Thread(new Runnable() {
       @Override
       public void run() { //TODO 截屏等记录下来
@@ -2128,7 +2130,6 @@ public class UIAutoApp extends Application {
         if (eventNode.disable == false) {
           obj.put("time", System.currentTimeMillis());  // TODO 如果有录屏，则不需要截屏，只需要记录时间点
 
-          Window window = activity == null ? null : activity.getWindow();
           if (window != null && (eventNode.item == null || eventNode.action == MotionEvent.ACTION_DOWN)) {
             // TODO 同步或用协程来上传图片
             obj.put("screenshotUrl", screenshot(directory == null || directory.exists() == false ? parentDirectory : directory, window, inputId, toInputId, eventNode.orientation));

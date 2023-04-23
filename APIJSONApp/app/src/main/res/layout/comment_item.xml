@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<apijson.demo.client.view.CommentTextView xmlns:android="http://schemas.android.com/apk/res/android"
+<apijson.demo.view.CommentTextView xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/tvmomentViewCommentItemContent"
     style="@style/text_small_black"
     android:layout_width="match_parent"

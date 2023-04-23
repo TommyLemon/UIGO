@@ -11,7 +11,7 @@ android {
         targetSdkVersion 29
         versionCode 1
         versionName "1.0"
-        applicationId "apijson.demo.client"
+        applicationId "apijson.demo"
     }
     buildTypes {
         release {
