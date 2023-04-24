@@ -748,6 +748,8 @@ public class UIAutoApp extends Application {
         activityList.add(activity);
         //TODO 按键、键盘监听拦截和转发
         onUIEvent(InputUtil.UI_ACTION_CREATE, activity, activity);
+
+        onUIAutoFragmentCreate(activity);
       }
 
       @Override
@@ -1070,6 +1072,95 @@ public class UIAutoApp extends Application {
 
   }
 
+  private void onUIAutoFragmentCreate(Activity activity) {
+    if (activity instanceof FragmentActivity) {
+      FragmentActivity fa = (FragmentActivity) activity;
+      FragmentManager sfm = fa.getSupportFragmentManager();
+
+      Boolean watched = fragmentWatchedMap.get(sfm);
+      if (watched == null || watched == false) {
+        fragmentWatchedMap.put(sfm, true);
+
+        sfm.registerFragmentLifecycleCallbacks(new FragmentManager.FragmentLifecycleCallbacks() {
+          @Override
+          public void onFragmentPreAttached(FragmentManager fm, Fragment f, Context context) {
+            super.onFragmentPreAttached(fm, f, context);
+          }
+
+          @Override
+          public void onFragmentAttached(FragmentManager fm, Fragment f, Context context) {
+            super.onFragmentAttached(fm, f, context);
+          }
+
+          @Override
+          public void onFragmentPreCreated(FragmentManager fm, Fragment f, Bundle savedInstanceState) {
+            super.onFragmentPreCreated(fm, f, savedInstanceState);
+          }
+
+          @Override
+          public void onFragmentCreated(FragmentManager fm, Fragment f, Bundle savedInstanceState) {
+            super.onFragmentCreated(fm, f, savedInstanceState);
+          }
+
+          @Override
+          public void onFragmentActivityCreated(FragmentManager fm, Fragment f, Bundle savedInstanceState) {
+            super.onFragmentActivityCreated(fm, f, savedInstanceState);
+          }
+
+          @Override
+          public void onFragmentViewCreated(FragmentManager fm, Fragment f, View v, Bundle savedInstanceState) {
+            super.onFragmentViewCreated(fm, f, v, savedInstanceState);
+          }
+
+          @Override
+          public void onFragmentStarted(FragmentManager fm, Fragment f) {
+            super.onFragmentStarted(fm, f);
+          }
+
+          @Override
+          public void onFragmentResumed(FragmentManager fm, Fragment f) {
+            super.onFragmentResumed(fm, f);
+            setCurrentFragment(f);
+          }
+
+          @Override
+          public void onFragmentPaused(FragmentManager fm, Fragment f) {
+            super.onFragmentPaused(fm, f);
+            setCurrentFragment(null);
+          }
+
+          @Override
+          public void onFragmentStopped(FragmentManager fm, Fragment f) {
+            super.onFragmentStopped(fm, f);
+          }
+
+          @Override
+          public void onFragmentSaveInstanceState(FragmentManager fm, Fragment f, Bundle outState) {
+            super.onFragmentSaveInstanceState(fm, f, outState);
+          }
+
+          @Override
+          public void onFragmentViewDestroyed(FragmentManager fm, Fragment f) {
+            super.onFragmentViewDestroyed(fm, f);
+          }
+
+          @Override
+          public void onFragmentDestroyed(FragmentManager fm, Fragment f) {
+            super.onFragmentDestroyed(fm, f);
+          }
+
+          @Override
+          public void onFragmentDetached(FragmentManager fm, Fragment f) {
+            super.onFragmentDetached(fm, f);
+          }
+        }, true);
+      }
+
+      // TODO deprecated     android.app.FragmentManager fm = fa.getFragmentManager();
+    }
+
+  }
+
   public void onClickPlay() {
     isSplitShowing = ! isSplitShowing;
     tvControllerPlay.setText(isReplay ? (isSplitShowing ? R.string.replaying : R.string.replay) : (isSplitShowing ? R.string.recording : R.string.record));
@@ -1167,22 +1258,29 @@ public class UIAutoApp extends Application {
 
   private List<Activity> activityList = new LinkedList<>();
 
-  private WeakReference<Activity> sCurrentActivityWeakRef;
+  private WeakReference<Activity> currentActivityWeakRef;
   public Activity getCurrentActivity() {
-    Activity currentActivity = null;
-    if (sCurrentActivityWeakRef != null) {
-      currentActivity = sCurrentActivityWeakRef.get();
-    }
-    return currentActivity;
+    return currentActivityWeakRef == null ? null : currentActivityWeakRef.get();
   }
 
   public void setCurrentActivity(Activity activity) {
     this.activity = activity;
-    if (sCurrentActivityWeakRef == null || ! activity.equals(sCurrentActivityWeakRef.get())) {
-      sCurrentActivityWeakRef = new WeakReference<>(activity);
+    if (currentActivityWeakRef == null || ! activity.equals(currentActivityWeakRef.get())) {
+      currentActivityWeakRef = new WeakReference<>(activity);
     }
 
     UnitAutoApp.setCurrentActivity(activity);
+  }
+
+  private WeakReference<Fragment> currentFragmentWeakRef;
+  public Fragment getCurrentFragment() {
+    return currentFragmentWeakRef == null ? null : currentFragmentWeakRef.get();
+  }
+  public void setCurrentFragment(Fragment fragment) {
+    this.fragment = fragment;
+    if (fragment != null && (currentFragmentWeakRef == null || ! fragment.equals(currentFragmentWeakRef.get()))) {
+      currentFragmentWeakRef = new WeakReference<>(fragment);
+    }
   }
 
 
@@ -2250,14 +2348,22 @@ public class UIAutoApp extends Application {
     if (isReplay) {
       output(null, currentEventNode, activity);
 
-      if (currentEventNode != null && currentEventNode.type == InputUtil.EVENT_TYPE_HTTP && currentEventNode.action == action
-        && (url != null && url.equals(currentEventNode.url))
-        && (currentEventNode.activity == null || currentEventNode.activity.equals(activity == null ? null : activity.getClass().getName()))
-        && (currentEventNode.fragment == null || currentEventNode.fragment.equals(fragment == null ? null : fragment.getClass().getName()))
-      ) {
-        Message msg = handler.obtainMessage();
-        msg.obj = currentEventNode == null ? null : currentEventNode.next;
-        handler.sendMessageDelayed(msg, 500);
+      List<Node<InputEvent>> list = waitMap.get(url);
+      if (list != null && list.isEmpty() == false) { // && list.contains()) {
+        list.remove(0);
+      }
+      if (list == null || list.isEmpty()) {
+        waitMap.remove(url);
+
+        // if (currentEventNode != null // && currentEventNode.type == InputUtil.EVENT_TYPE_HTTP && currentEventNode.action == action
+//        && (url != null && url.equals(currentEventNode.url))
+        if (currentEventNode == null || ((Objects.equals(currentEventNode.activity, activity == null ? null : activity.getClass().getName()))
+                && (Objects.equals(currentEventNode.fragment, fragment == null ? null : fragment.getClass().getName())))
+        ) {
+          Message msg = handler.obtainMessage();
+          msg.obj = currentEventNode == null ? null : currentEventNode.next;
+          handler.sendMessageDelayed(msg, 500);
+        }
       }
     }
     else {
@@ -2697,6 +2803,8 @@ public class UIAutoApp extends Application {
     tvControllerPlay.setText("replay");
     tvControllerCount.setText(step + "/" + allStep);
     tvControllerTime.setText("0:00");
+
+    waitMap = new HashMap<>();
 
     new Thread(new Runnable() {
       @Override
