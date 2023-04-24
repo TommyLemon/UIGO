@@ -1548,30 +1548,7 @@ public class UIAutoApp extends Application {
                 //     }
                 // }
 
-                cache.edit().remove(cacheKey).putString(cacheKey, JSON.toJSONString(allList, new PropertyFilter() {
-                  @Override
-                  public boolean apply(Object object, String name, Object value) {
-                    if (value == null) {
-                      return true;
-                    }
-
-                    if (value instanceof Context
-                            || value instanceof Fragment
-                            || value instanceof android.app.Fragment
-                            || value instanceof Annotation  // Android 客户端中 fastjon 怎么都不支持 Annotation
-                            || value instanceof WindowManager
-                            || value instanceof PowerManager
-                            || value instanceof View
-                            || value instanceof ViewParent
-                            || value instanceof Drawable
-                            || value instanceof Bitmap
-                    ) {
-                      return false;
-                    }
-
-                    return Modifier.isPublic(value.getClass().getModifiers());
-                  }
-                })).commit();
+                cache.edit().remove(cacheKey).putString(cacheKey, toJSONString(allList)).commit();
               }
 
               mainHandler.post(new Runnable() {
@@ -1672,6 +1649,33 @@ public class UIAutoApp extends Application {
     }
 
     return ball;
+  }
+
+  public static String toJSONString(Object obj) {
+    return JSON.toJSONString(obj, new PropertyFilter() {
+      @Override
+      public boolean apply(Object object, String name, Object value) {
+        if (value == null) {
+          return true;
+        }
+
+        if (value instanceof Context
+                || value instanceof Fragment
+                || value instanceof android.app.Fragment
+                || value instanceof Annotation  // Android 客户端中 fastjon 怎么都不支持 Annotation
+                || value instanceof WindowManager
+                || value instanceof PowerManager
+                || value instanceof View
+                || value instanceof ViewParent
+                || value instanceof Drawable
+                || value instanceof Bitmap
+        ) {
+          return false;
+        }
+
+        return Modifier.isPublic(value.getClass().getModifiers());
+      }
+    });
   }
 
   public static final DecimalFormat DECIMAL_FORMAT = new DecimalFormat("0.0");
