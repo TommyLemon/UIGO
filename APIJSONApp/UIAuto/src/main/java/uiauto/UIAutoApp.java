@@ -26,18 +26,21 @@ import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.Matrix;
 import android.graphics.Point;
+import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
+import android.os.PowerManager;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.annotation.RequiresApi;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.RecyclerView;
-import android.text.method.KeyListener;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.ActionMode;
@@ -51,16 +54,19 @@ import android.view.MotionEvent;
 import android.view.SearchEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewParent;
 import android.view.ViewTreeObserver;
 import android.view.Window;
 import android.view.WindowManager;
 import android.view.accessibility.AccessibilityEvent;
+import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson.serializer.PropertyFilter;
 import com.yhao.floatwindow.FloatWindow;
 import com.yhao.floatwindow.IFloatWindow;
 import com.yhao.floatwindow.MoveType;
@@ -68,11 +74,15 @@ import com.yhao.floatwindow.ViewStateListener;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.lang.annotation.Annotation;
 import java.lang.ref.WeakReference;
+import java.lang.reflect.Modifier;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 import unitauto.apk.UnitAutoApp;
 import zuo.biao.apijson.NotNull;
@@ -350,6 +360,8 @@ public class UIAutoApp extends Application {
       }
     });
 
+    addTextChangedListener(decorView);
+
     Window.Callback windowCallback = window.getCallback();
 
     this.window = window;
@@ -535,6 +547,66 @@ public class UIAutoApp extends Application {
       floatBall = showSplit(isSplitShowing, splitX, splitY, "floatBall", vFloatBall, floatSplitX, floatSplitY);
     }
 
+  }
+
+  private Map<EditText, Boolean> editTextWatchedMap = new HashMap<>();
+  public void addTextChangedListener(View view) {
+    if (view instanceof EditText) {
+      EditText et = (EditText) view;
+      Boolean watched = editTextWatchedMap.get(et);
+      if (watched == null || watched == false) {
+        editTextWatchedMap.put(et, true);
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+          et.addOnUnhandledKeyEventListener(new View.OnUnhandledKeyEventListener() {
+            @Override
+            public boolean onUnhandledKeyEvent(View v, KeyEvent event) {
+              return false;
+            }
+          });
+        }
+
+        et.addTextChangedListener(new TextWatcher() {
+          @Override
+          public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+            if (isSplitShowing == false || isReplay) {
+              return;
+            }
+
+            InputEvent ie = new EditTextEvent(KeyEvent.ACTION_UP, 0, et, EditTextEvent.WHEN_BEFORE, StringUtil.getString(et.getText()), s, start, count, after);
+            addInputEvent(ie, callback, activity);
+          }
+
+          @Override
+          public void onTextChanged(CharSequence s, int start, int before, int count) {
+            if (isSplitShowing == false || isReplay) {
+              return;
+            }
+
+            InputEvent ie = new EditTextEvent(KeyEvent.ACTION_UP, 0, et, EditTextEvent.WHEN_ON, StringUtil.getString(et.getText()), s, start, count);
+            addInputEvent(ie, callback, activity);
+          }
+
+          @Override
+          public void afterTextChanged(Editable s) {
+            if (isSplitShowing == false || isReplay) {
+              return;
+            }
+
+            InputEvent ie = new EditTextEvent(KeyEvent.ACTION_UP, 0, et, EditTextEvent.WHEN_AFTER, StringUtil.getString(et.getText()), s);
+            addInputEvent(ie, callback, activity);
+          }
+        });
+      }
+    }
+
+    if (view instanceof ViewGroup) {
+      ViewGroup vg = (ViewGroup) view;
+      for (int i = 0; i < vg.getChildCount(); i++) {
+        View cv = vg.getChildAt(i);
+        addTextChangedListener(cv);
+      }
+    }
   }
 
 
@@ -732,7 +804,18 @@ public class UIAutoApp extends Application {
           name = " " + item.getString("format") + "\n" + item.getString("url");
         }
         else if (type == InputUtil.EVENT_TYPE_KEY) {
-          name = "\n" + InputUtil.getKeyCodeName( item.getIntValue("keyCode"));
+          if (item.getBooleanValue("edit")) {
+            action = "EDIT " + EditTextEvent.getWhenName(item.getIntValue("when"));
+            String s = StringUtil.getString(item.getString("text"));
+            int l = s.length();
+            if (l > 20) {
+              int m = l/2;
+              s = s.substring(0, 7) + "..." + s.substring(m - 3, m + 3) + "..." + s.substring(l - 7);
+            }
+            name = "\n" + s;
+          } else {
+            name = "\n" + InputUtil.getKeyCodeName(item.getIntValue("keyCode"));
+          }
         }
         else {
           name = "\n[" + item.getIntValue("x") + ", " + item.getIntValue("y") + "]";
@@ -1465,7 +1548,30 @@ public class UIAutoApp extends Application {
                 //     }
                 // }
 
-                cache.edit().remove(cacheKey).putString(cacheKey, JSON.toJSONString(allList)).commit();
+                cache.edit().remove(cacheKey).putString(cacheKey, JSON.toJSONString(allList, new PropertyFilter() {
+                  @Override
+                  public boolean apply(Object object, String name, Object value) {
+                    if (value == null) {
+                      return true;
+                    }
+
+                    if (value instanceof Context
+                            || value instanceof Fragment
+                            || value instanceof android.app.Fragment
+                            || value instanceof Annotation  // Android 客户端中 fastjon 怎么都不支持 Annotation
+                            || value instanceof WindowManager
+                            || value instanceof PowerManager
+                            || value instanceof View
+                            || value instanceof ViewParent
+                            || value instanceof Drawable
+                            || value instanceof Bitmap
+                    ) {
+                      return false;
+                    }
+
+                    return Modifier.isPublic(value.getClass().getModifiers());
+                  }
+                })).commit();
               }
 
               mainHandler.post(new Runnable() {
@@ -1636,8 +1742,26 @@ public class UIAutoApp extends Application {
         }
       }
       else if (ie instanceof KeyEvent) {
-        KeyEvent event = (KeyEvent) ie;
-        callback.dispatchKeyEvent(event);
+        if (ie instanceof EditTextEvent) {
+          EditTextEvent ete = (EditTextEvent) ie;
+          if (ete.getWhen() == EditTextEvent.WHEN_ON) {
+            EditText target = ete.getTarget();
+            if (target == null) {
+// TODO             target = findViewByTouchPoint()
+            } else {
+              String text = StringUtil.getString(target.getText());
+              int l = text.length();
+              if (target.hasFocus() == false) {
+                target.requestFocus();
+              }
+              target.setSelection(Math.min(l, Math.max(0, ete.getStart())), Math.min(l, Math.max(0, ete.getStart() + ete.getCount())));
+              target.setText(ete.getText());
+            }
+          }
+        } else {
+          KeyEvent event = (KeyEvent) ie;
+          callback.dispatchKeyEvent(event);
+        }
       }
     }
 
@@ -1746,35 +1870,57 @@ public class UIAutoApp extends Application {
 
       InputEvent event;
       if (type == InputUtil.EVENT_TYPE_KEY) {
-        /**
-         public KeyEvent(long downTime, long eventTime, int action,
-         int code, int repeat, int metaState,
-         int deviceId, int scancode, int flags, int source) {
-         mDownTime = downTime;
-         mEventTime = eventTime;
-         mAction = action;
-         mKeyCode = code;
-         mRepeatCount = repeat;
-         mMetaState = metaState;
-         mDeviceId = deviceId;
-         mScanCode = scancode;
-         mFlags = flags;
-         mSource = source;
-         mDisplayId = INVALID_DISPLAY;
-         }
-         */
-        event = new KeyEvent(
-          obj.getLongValue("downTime"),
-          obj.getLongValue("eventTime"),
-          obj.getIntValue("action"),
-          obj.getIntValue("keyCode"),
-          obj.getIntValue("repeatCount"),
-          obj.getIntValue("metaState"),
-          obj.getIntValue("deviceId"),
-          obj.getIntValue("scanCode"),
-          obj.getIntValue("flags"),
-          obj.getIntValue("source")
-        );
+        if (obj.getBooleanValue("edit")) {
+          event = new EditTextEvent(
+                  obj.getLongValue("downTime"),
+                  obj.getLongValue("eventTime"),
+                  obj.getIntValue("action"),
+                  obj.getIntValue("keyCode"),
+                  obj.getIntValue("repeatCount"),
+                  obj.getIntValue("metaState"),
+                  obj.getIntValue("deviceId"),
+                  obj.getIntValue("scanCode"),
+                  obj.getIntValue("flags"),
+                  obj.getIntValue("source"),
+                  activity.findViewById(obj.getIntValue("targetId")),
+                  obj.getIntValue("when"),
+                  obj.getString("text"),
+                  obj.getString("s"),
+                  obj.getIntValue("start"),
+                  obj.getIntValue("count"),
+                  obj.getIntValue("after")
+          );
+        } else {
+          /**
+           public KeyEvent(long downTime, long eventTime, int action,
+           int code, int repeat, int metaState,
+           int deviceId, int scancode, int flags, int source) {
+           mDownTime = downTime;
+           mEventTime = eventTime;
+           mAction = action;
+           mKeyCode = code;
+           mRepeatCount = repeat;
+           mMetaState = metaState;
+           mDeviceId = deviceId;
+           mScanCode = scancode;
+           mFlags = flags;
+           mSource = source;
+           mDisplayId = INVALID_DISPLAY;
+           }
+           */
+          event = new KeyEvent(
+                  obj.getLongValue("downTime"),
+                  obj.getLongValue("eventTime"),
+                  obj.getIntValue("action"),
+                  obj.getIntValue("keyCode"),
+                  obj.getIntValue("repeatCount"),
+                  obj.getIntValue("metaState"),
+                  obj.getIntValue("deviceId"),
+                  obj.getIntValue("scanCode"),
+                  obj.getIntValue("flags"),
+                  obj.getIntValue("source")
+          );
+        }
       }
       else if (type == InputUtil.EVENT_TYPE_TOUCH) {
         /**
@@ -2181,7 +2327,7 @@ public class UIAutoApp extends Application {
       fos = new FileOutputStream(filePath);
       bitmap.compress(Bitmap.CompressFormat.PNG, 100, fos);
 
-      filePath = directory.getName() + "/" + file.getName();  // 返回相对路径
+      return file.getAbsolutePath(); // filePath = directory.getName() + "/" + file.getName();  // 返回相对路径
     }
     catch (Throwable e) {
       Log.e(TAG, "screenshot 截屏异常：" + e.toString());
@@ -2257,6 +2403,19 @@ public class UIAutoApp extends Application {
       //通过 mMetaState 获取的 obj.put("modifiers", event.getModifiers());
       //通过 mKeyCode 获取的 obj.put("displayLabel", event.getDisplayLabel());
       //通过 mMetaState 获取的 obj.put("unicodeChar", event.getUnicodeChar());
+      if (ie instanceof EditTextEvent) {
+        EditTextEvent mke = (EditTextEvent) ie;
+        obj.put("disable", mke.getWhen() != EditTextEvent.WHEN_ON);
+        obj.put("edit", true);
+        obj.put("target", mke.getTarget());
+        obj.put("targetId", mke.getTargetId());
+        obj.put("when", mke.getWhen());
+        obj.put("s", mke.getS());
+        obj.put("text", mke.getText());
+        obj.put("start", mke.getStart());
+        obj.put("count", mke.getCount());
+        obj.put("after", mke.getAfter());
+      }
     }
     else if (ie instanceof MotionEvent) {
       MotionEvent event = (MotionEvent) ie;

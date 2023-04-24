@@ -259,9 +259,15 @@ public class UIAutoListActivity extends Activity implements HttpManager.OnHttpRe
                                 );
                             }
                             else if (type == InputUtil.EVENT_TYPE_KEY) {
-                                list.add("[" + state + "]  " + new Date(obj.getLongValue("time")).toLocaleString() + "    " + InputUtil.getKeyActionName(action)
-                                        + "\nrepeatCount: " + obj.getString("repeatCount") + ", scanCode: " + InputUtil.getScanCodeName(obj.getIntValue("scanCode")) + "         " + InputUtil.getKeyCodeName(obj.getIntValue("keyCode"))
-                                );
+                                if (obj.getBooleanValue("edit")) {
+                                    list.add("[" + state + "]  " + new Date(obj.getLongValue("time")).toLocaleString() + "   EDIT " + EditTextEvent.getWhenName(obj.getIntValue("when"))
+                                            + "\nrepeatCount: " + obj.getString("text")
+                                    );
+                                } else {
+                                    list.add("[" + state + "]  " + new Date(obj.getLongValue("time")).toLocaleString() + "    " + InputUtil.getKeyActionName(action)
+                                            + "\nrepeatCount: " + obj.getString("repeatCount") + ", scanCode: " + InputUtil.getScanCodeName(obj.getIntValue("scanCode")) + "         " + InputUtil.getKeyCodeName(obj.getIntValue("keyCode"))
+                                    );
+                                }
                             }
                             else if (type == InputUtil.EVENT_TYPE_UI) {
                                 String fragment = obj.getString("fragment");
