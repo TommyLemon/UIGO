@@ -396,28 +396,28 @@ public class UIAutoApp extends Application {
       @Override
       public boolean dispatchKeyEvent(KeyEvent event) {
 //				dispatchEventToCurrentActivity(event);
-        addInputEvent(event, callback, activity);
+        addInputEvent(event, callback, activity, fragment);
         return windowCallback != null && windowCallback.dispatchKeyEvent(event);
       }
 
       @Override
       public boolean dispatchKeyShortcutEvent(KeyEvent event) {
 //				dispatchEventToCurrentActivity(event);
-        addInputEvent(event, callback, activity);
+        addInputEvent(event, callback, activity, fragment);
         return windowCallback != null && windowCallback.dispatchKeyShortcutEvent(event);
       }
 
       @Override
       public boolean dispatchTouchEvent(MotionEvent event) {
 //				dispatchEventToCurrentActivity(event);
-        addInputEvent(event, callback, activity);
+        addInputEvent(event, callback, activity, fragment);
         return windowCallback != null && windowCallback.dispatchTouchEvent(event);
       }
 
       @Override
       public boolean dispatchTrackballEvent(MotionEvent event) {
 //				dispatchEventToCurrentActivity(event);
-        addInputEvent(event, callback, activity);
+        addInputEvent(event, callback, activity, fragment);
         return windowCallback != null && windowCallback.dispatchTrackballEvent(event);
       }
 
@@ -601,7 +601,7 @@ public class UIAutoApp extends Application {
 
             InputEvent ie = new EditTextEvent(KeyEvent.ACTION_UP, 0, et, EditTextEvent.WHEN_BEFORE
                     , StringUtil.getString(et.getText()), et.getSelectionStart(), et.getSelectionEnd(), s, start, count, after);
-            addInputEvent(ie, callback, activity);
+            addInputEvent(ie, callback, activity, fragment);
           }
 
           @Override
@@ -612,7 +612,7 @@ public class UIAutoApp extends Application {
 
             InputEvent ie = new EditTextEvent(KeyEvent.ACTION_UP, 0, et, EditTextEvent.WHEN_ON
                     , StringUtil.getString(et.getText()), et.getSelectionStart(), et.getSelectionEnd(), s, start, count);
-            addInputEvent(ie, callback, activity);
+            addInputEvent(ie, callback, activity, fragment);
           }
 
           @Override
@@ -623,7 +623,7 @@ public class UIAutoApp extends Application {
 
             InputEvent ie = new EditTextEvent(KeyEvent.ACTION_UP, 0, et, EditTextEvent.WHEN_AFTER
                     , StringUtil.getString(et.getText()), et.getSelectionStart(), et.getSelectionEnd(),s);
-            addInputEvent(ie, callback, activity);
+            addInputEvent(ie, callback, activity, fragment);
           }
         });
       }
@@ -1085,21 +1085,29 @@ public class UIAutoApp extends Application {
           @Override
           public void onFragmentPreAttached(FragmentManager fm, Fragment f, Context context) {
             super.onFragmentPreAttached(fm, f, context);
+            Log.v(TAG, "onFragmentPreAttached  fragment = " + f.getClass().getName());
+            onUIEvent(InputUtil.UI_ACTION_PREATTACH, f.getActivity(), f);
           }
 
           @Override
           public void onFragmentAttached(FragmentManager fm, Fragment f, Context context) {
             super.onFragmentAttached(fm, f, context);
+            Log.v(TAG, "onFragmentAttached  fragment = " + f.getClass().getName());
+            onUIEvent(InputUtil.UI_ACTION_ATTACH, f.getActivity(), f);
           }
 
           @Override
           public void onFragmentPreCreated(FragmentManager fm, Fragment f, Bundle savedInstanceState) {
             super.onFragmentPreCreated(fm, f, savedInstanceState);
+            Log.v(TAG, "onFragmentPreCreated  fragment = " + f.getClass().getName());
+            onUIEvent(InputUtil.UI_ACTION_PRECREATE, f.getActivity(), f);
           }
 
           @Override
           public void onFragmentCreated(FragmentManager fm, Fragment f, Bundle savedInstanceState) {
             super.onFragmentCreated(fm, f, savedInstanceState);
+            Log.v(TAG, "onFragmentCreated  fragment = " + f.getClass().getName());
+            onUIEvent(InputUtil.UI_ACTION_CREATE, f.getActivity(), f);
           }
 
           @Override
@@ -1110,28 +1118,38 @@ public class UIAutoApp extends Application {
           @Override
           public void onFragmentViewCreated(FragmentManager fm, Fragment f, View v, Bundle savedInstanceState) {
             super.onFragmentViewCreated(fm, f, v, savedInstanceState);
+            Log.v(TAG, "onFragmentViewCreated  fragment = " + f.getClass().getName());
+            onUIEvent(InputUtil.UI_ACTION_CREATE_VIEW, f.getActivity(), f);
           }
 
           @Override
           public void onFragmentStarted(FragmentManager fm, Fragment f) {
             super.onFragmentStarted(fm, f);
+            Log.v(TAG, "onFragmentStarted  fragment = " + f.getClass().getName());
+            onUIEvent(InputUtil.UI_ACTION_START, f.getActivity(), f);
           }
 
           @Override
           public void onFragmentResumed(FragmentManager fm, Fragment f) {
             super.onFragmentResumed(fm, f);
             setCurrentFragment(f);
+            Log.v(TAG, "onFragmentResumed  fragment = " + f.getClass().getName());
+            onUIEvent(InputUtil.UI_ACTION_RESUME, f.getActivity(), f);
           }
 
           @Override
           public void onFragmentPaused(FragmentManager fm, Fragment f) {
             super.onFragmentPaused(fm, f);
+            Log.v(TAG, "onFragmentPaused  fragment = " + f.getClass().getName());
+            onUIEvent(InputUtil.UI_ACTION_PAUSE, f.getActivity(), f);
             setCurrentFragment(null);
           }
 
           @Override
           public void onFragmentStopped(FragmentManager fm, Fragment f) {
             super.onFragmentStopped(fm, f);
+            Log.v(TAG, "onFragmentStopped  fragment = " + f.getClass().getName());
+            onUIEvent(InputUtil.UI_ACTION_STOP, f.getActivity(), f);
           }
 
           @Override
@@ -1142,16 +1160,22 @@ public class UIAutoApp extends Application {
           @Override
           public void onFragmentViewDestroyed(FragmentManager fm, Fragment f) {
             super.onFragmentViewDestroyed(fm, f);
+            Log.v(TAG, "onFragmentViewDestroyed  fragment = " + f.getClass().getName());
+            onUIEvent(InputUtil.UI_ACTION_DESTROY_VIEW, f.getActivity(), f);
           }
 
           @Override
           public void onFragmentDestroyed(FragmentManager fm, Fragment f) {
             super.onFragmentDestroyed(fm, f);
+            Log.v(TAG, "onFragmentDestroyed  fragment = " + f.getClass().getName());
+            onUIEvent(InputUtil.UI_ACTION_DESTROY, f.getActivity(), f);
           }
 
           @Override
           public void onFragmentDetached(FragmentManager fm, Fragment f) {
             super.onFragmentDetached(fm, f);
+            Log.v(TAG, "onFragmentDetached  fragment = " + f.getClass().getName());
+            onUIEvent(InputUtil.UI_ACTION_DETACH, f.getActivity(), f);
           }
         }, true);
       }
@@ -1287,22 +1311,22 @@ public class UIAutoApp extends Application {
 
 
 
-  public boolean onTouchEvent(@NotNull MotionEvent event, @NotNull Activity activity) {
-    return onTouchEvent(event, activity, null);
-  }
-  public boolean onTouchEvent(@NotNull MotionEvent event, @NotNull Fragment fragment) {
-    return onTouchEvent(event, fragment.getActivity(), fragment);
-  }
+//  public boolean onTouchEvent(@NotNull MotionEvent event, @NotNull Activity activity) {
+//    return onTouchEvent(event, activity, null);
+//  }
+//  public boolean onTouchEvent(@NotNull MotionEvent event, @NotNull Fragment fragment) {
+//    return onTouchEvent(event, fragment.getActivity(), fragment);
+//  }
   public boolean onTouchEvent(@NotNull MotionEvent event, @NotNull Activity activity, Fragment fragment) {
-    addInputEvent(event, activity, fragment);
+    addInputEvent(event, activity, activity, fragment);
     return true;
   }
   public boolean onKeyDown(int keyCode, @NotNull KeyEvent event, @NotNull Activity activity, Fragment fragment) {
-    addInputEvent(event, activity, fragment);
+    addInputEvent(event, activity, activity, fragment);
     return true;
   }
   public boolean onKeyUp(int keyCode, @NotNull KeyEvent event, @NotNull Activity activity, Fragment fragment) {
-    addInputEvent(event, activity, fragment);
+    addInputEvent(event, activity, activity, fragment);
     return true;
   }
 
@@ -1908,7 +1932,7 @@ public class UIAutoApp extends Application {
     }
 
     if (record) {
-      addInputEvent(ie, callback, activity);
+      addInputEvent(ie, callback, activity, fragment);
     }
 
     return callback != null;
@@ -2316,7 +2340,7 @@ public class UIAutoApp extends Application {
       ) {
         Message msg = handler.obtainMessage();
         msg.obj = currentEventNode == null ? null : currentEventNode.next;
-        handler.sendMessageDelayed(msg, 500);
+        handler.sendMessageDelayed(msg, 1500);
       }
     }
     else {
@@ -2329,12 +2353,12 @@ public class UIAutoApp extends Application {
     }
   }
 
-  public void onHTTPEvent(int action, String format, String url, String request, String response, Activity activity) {
-    onHTTPEvent(action, format, url, request, response, activity, null);
-  }
-  public void onHTTPEvent(int action, String format, String url, String request, String response, Fragment fragment) {
-    onHTTPEvent(action, format, url, request, response, null, fragment);
-  }
+//  public void onHTTPEvent(int action, String format, String url, String request, String response, Activity activity) {
+//    onHTTPEvent(action, format, url, request, response, activity, null);
+//  }
+//  public void onHTTPEvent(int action, String format, String url, String request, String response, Fragment fragment) {
+//    onHTTPEvent(action, format, url, request, response, null, fragment);
+//  }
   public void onHTTPEvent(int action, String format, String url, String request, String response, Activity activity, Fragment fragment) {
     if (isSplitShowing == false) {
       Log.e(TAG, "onHTTPEvent  isSplitShowing == false >> return null;");
@@ -2511,12 +2535,12 @@ public class UIAutoApp extends Application {
   }
 
 
-  public JSONObject addInputEvent(@NotNull InputEvent ie, @NotNull Window.Callback callback, @NotNull Activity activity) {
-    return addInputEvent(ie, callback, activity, null);
-  }
-  public JSONObject addInputEvent(@NotNull InputEvent ie, @NotNull Window.Callback callback, @NotNull Fragment fragment) {
-    return addInputEvent(ie, callback, null, fragment);
-  }
+//  public JSONObject addInputEvent(@NotNull InputEvent ie, @NotNull Window.Callback callback, @NotNull Activity activity) {
+//    return addInputEvent(ie, callback, activity, null);
+//  }
+//  public JSONObject addInputEvent(@NotNull InputEvent ie, @NotNull Window.Callback callback, @NotNull Fragment fragment) {
+//    return addInputEvent(ie, callback, null, fragment);
+//  }
 
   public JSONObject addInputEvent(@NotNull InputEvent ie, @NotNull Window.Callback callback, Activity activity, Fragment fragment) {
     if (isSplitShowing == false || vSplitX == null || vSplitY == null || isReplay) {
