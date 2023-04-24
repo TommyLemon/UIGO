@@ -129,7 +129,6 @@ public class TestRequestAndResponseJava {
             {   // User[] <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                 JSONRequest userItem2 = new JSONRequest();
 
-
                 {   // User <<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                     JSONRequest user = new JSONRequest();
                     user.put("id{}@", "[]/Moment/praiseUserIdList");
@@ -344,6 +343,9 @@ public class TestRequestAndResponseJava {
 
     public static void smartResponse(String resultJson) {
         JSONObject response = JSON.parseObject(resultJson);
+        if (response == null) {
+            return;
+        }
 
         {   // [] <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
             JSONArray list = response.getJSONArray("[]");
