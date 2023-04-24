@@ -38,6 +38,9 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.annotation.RequiresApi;
 import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentActivity;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.SupportActivity;
 import android.support.v7.widget.RecyclerView;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -67,6 +70,7 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.serializer.PropertyFilter;
+import com.koushikdutta.async.http.Multimap;
 import com.yhao.floatwindow.FloatWindow;
 import com.yhao.floatwindow.IFloatWindow;
 import com.yhao.floatwindow.MoveType;
@@ -79,10 +83,12 @@ import java.lang.ref.WeakReference;
 import java.lang.reflect.Modifier;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import unitauto.apk.UnitAutoApp;
 import zuo.biao.apijson.NotNull;
@@ -116,6 +122,8 @@ public class UIAutoApp extends Application {
 
   private final Handler mainHandler = new Handler(Looper.getMainLooper());
 
+  private Map<String, List<Node<InputEvent>>> waitMap = new HashMap<>();
+
   private boolean isReplay = false;
   @SuppressLint("HandlerLeak")
   private final Handler handler = new Handler() {
@@ -135,17 +143,31 @@ public class UIAutoApp extends Application {
 
         //根据递归链表来实现，能精准地实现两个事件之间的间隔，不受处理时间不一致，甚至卡顿等影响。还能及时终止
         Node<InputEvent> curNode = (Node<InputEvent>) msg.obj;
-        while (curNode != null && curNode.disable) {
-          currentEventNode = curNode = curNode.next;
-          step ++;
+        while (curNode != null && (curNode.disable || curNode.item == null)) {
+          if (curNode.disable == false && (Objects.equals(curNode.activity, activity == null ? null : activity.getClass().getName()))
+                  && (Objects.equals(curNode.fragment, fragment == null ? null : fragment.getClass().getName()))) {
+            List<Node<InputEvent>> list = waitMap.get(curNode.url);
+            if (list == null) {
+              list = new ArrayList<>();
+            }
+            list.add(curNode);
+            waitMap.put(curNode.url, list);
+          }
+
+          if (waitMap.isEmpty() == false) {
+            currentEventNode = curNode = curNode.next;
+            step ++;
+          }
 
           // if (curNode != null && curNode.item != null) {
           //   output(null, curNode, activity);
           // }
         }
 
-        currentEventNode = curNode;
-        step ++;
+//        if (waitMap.isEmpty()) {
+          currentEventNode = curNode;
+          step ++;
+//        }
 
         // output(null, curNode, activity);
 
@@ -162,13 +184,14 @@ public class UIAutoApp extends Application {
           showCoverAndSplit(true, false);
           isSplitShowing = false;
           isSplit2Showing = false;
+          waitMap = new HashMap<>();
           return;
         }
 
 
         InputEvent curItem = curNode.item;
         //暂停，等待时机
-        if (curItem == null) { // curNode.type == InputUtil.EVENT_TYPE_UI || curNode.type == InputUtil.EVENT_TYPE_HTTP) {
+        if (curItem == null || waitMap.isEmpty() == false) { // curNode.type == InputUtil.EVENT_TYPE_UI || curNode.type == InputUtil.EVENT_TYPE_HTTP) {
           return;
         }
 
@@ -261,6 +284,7 @@ public class UIAutoApp extends Application {
 
 
   private Activity activity;
+  private Fragment fragment;
   int screenWidth;
   int screenHeight;
 
@@ -330,6 +354,8 @@ public class UIAutoApp extends Application {
   public void onUIAutoActivityCreate() {
     onUIAutoActivityCreate(getCurrentActivity());
   }
+
+  private Map<FragmentManager, Boolean> fragmentWatchedMap = new HashMap<>();
   public void onUIAutoActivityCreate(@NonNull Activity activity) {
     onUIAutoWindowCreate(activity, activity.getWindow());
   }
@@ -573,7 +599,8 @@ public class UIAutoApp extends Application {
               return;
             }
 
-            InputEvent ie = new EditTextEvent(KeyEvent.ACTION_UP, 0, et, EditTextEvent.WHEN_BEFORE, StringUtil.getString(et.getText()), s, start, count, after);
+            InputEvent ie = new EditTextEvent(KeyEvent.ACTION_UP, 0, et, EditTextEvent.WHEN_BEFORE
+                    , StringUtil.getString(et.getText()), et.getSelectionStart(), et.getSelectionEnd(), s, start, count, after);
             addInputEvent(ie, callback, activity);
           }
 
@@ -583,7 +610,8 @@ public class UIAutoApp extends Application {
               return;
             }
 
-            InputEvent ie = new EditTextEvent(KeyEvent.ACTION_UP, 0, et, EditTextEvent.WHEN_ON, StringUtil.getString(et.getText()), s, start, count);
+            InputEvent ie = new EditTextEvent(KeyEvent.ACTION_UP, 0, et, EditTextEvent.WHEN_ON
+                    , StringUtil.getString(et.getText()), et.getSelectionStart(), et.getSelectionEnd(), s, start, count);
             addInputEvent(ie, callback, activity);
           }
 
@@ -593,7 +621,8 @@ public class UIAutoApp extends Application {
               return;
             }
 
-            InputEvent ie = new EditTextEvent(KeyEvent.ACTION_UP, 0, et, EditTextEvent.WHEN_AFTER, StringUtil.getString(et.getText()), s);
+            InputEvent ie = new EditTextEvent(KeyEvent.ACTION_UP, 0, et, EditTextEvent.WHEN_AFTER
+                    , StringUtil.getString(et.getText()), et.getSelectionStart(), et.getSelectionEnd(),s);
             addInputEvent(ie, callback, activity);
           }
         });
@@ -805,7 +834,8 @@ public class UIAutoApp extends Application {
         }
         else if (type == InputUtil.EVENT_TYPE_KEY) {
           if (item.getBooleanValue("edit")) {
-            action = "EDIT " + EditTextEvent.getWhenName(item.getIntValue("when"));
+            action = "EDIT " + EditTextEvent.getWhenName(item.getIntValue("when"))
+                    + " [" + item.getIntValue("selectStart") + ", " + item.getIntValue("selectEnd") + "]";
             String s = StringUtil.getString(item.getString("text"));
             int l = s.length();
             if (l > 20) {
@@ -1753,13 +1783,23 @@ public class UIAutoApp extends Application {
             if (target == null) {
 // TODO             target = findViewByTouchPoint()
             } else {
-              String text = StringUtil.getString(target.getText());
-              int l = text.length();
               if (target.hasFocus() == false) {
                 target.requestFocus();
               }
-              target.setSelection(Math.min(l, Math.max(0, ete.getStart())), Math.min(l, Math.max(0, ete.getStart() + ete.getCount())));
+
+              String text = StringUtil.getString(target.getText());
+              int l = text.length();
+              int start = Math.min(l, Math.max(0, ete.getSelectStart()));
+              int end = Math.min(l, Math.max(0, ete.getSelectEnd()));
+              target.setSelection(start, end);
+
               target.setText(ete.getText());
+
+              String text2 = StringUtil.getString(target.getText());
+              int l2 = text2.length();
+              int start2 = Math.min(l2, Math.max(0, ete.getSelectStart()));
+              int end2 = Math.min(l2, Math.max(0, ete.getSelectEnd()));
+              target.setSelection(start2, end2);
             }
           }
         } else {
@@ -1889,6 +1929,8 @@ public class UIAutoApp extends Application {
                   activity.findViewById(obj.getIntValue("targetId")),
                   obj.getIntValue("when"),
                   obj.getString("text"),
+                  obj.getIntValue("selectStart"),
+                  obj.getIntValue("selectEnd"),
                   obj.getString("s"),
                   obj.getIntValue("start"),
                   obj.getIntValue("count"),
@@ -2409,7 +2451,7 @@ public class UIAutoApp extends Application {
       //通过 mMetaState 获取的 obj.put("unicodeChar", event.getUnicodeChar());
       if (ie instanceof EditTextEvent) {
         EditTextEvent mke = (EditTextEvent) ie;
-        obj.put("disable", mke.getWhen() != EditTextEvent.WHEN_ON);
+//        obj.put("disable", mke.getWhen() != EditTextEvent.WHEN_ON);
         obj.put("edit", true);
         obj.put("target", mke.getTarget());
         obj.put("targetId", mke.getTargetId());

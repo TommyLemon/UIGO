@@ -30,6 +30,16 @@ public class EditTextEvent extends KeyEvent {
         return text;
     }
 
+    int selectStart;
+    public int getSelectStart() {
+        return selectStart;
+    }
+
+    int selectEnd;
+    public int getSelectEnd() {
+        return selectEnd;
+    }
+
     public EditText getTarget() {
         if (target == null || target.isAttachedToWindow() == false) {
             target = UIAutoApp.getInstance().getCurrentActivity().findViewById(targetId);
@@ -111,44 +121,46 @@ public class EditTextEvent extends KeyEvent {
         super(origEvent);
     }
 
-    public EditTextEvent(int action, int code, EditText target, int when, String text, CharSequence s) {
+    public EditTextEvent(int action, int code, EditText target, int when, String text, int selectStart, int selectEnd, CharSequence s) {
         super(System.currentTimeMillis(), System.currentTimeMillis(), action, code, 0);
-        init(target, when, text, s);
+        init(target, when, text, selectStart, selectEnd, s);
     }
-    public EditTextEvent(int action, int code, EditText target, int when, String text, CharSequence s, int start, int count) {
+    public EditTextEvent(int action, int code, EditText target, int when, String text, int selectStart, int selectEnd, CharSequence s, int start, int count) {
         super(System.currentTimeMillis(), System.currentTimeMillis(), action, code, 0);
-        init(target, when, text, s, start, count);
+        init(target, when, text, selectStart, selectEnd, s, start, count);
     }
-    public EditTextEvent(int action, int code, EditText target, int when, String text, CharSequence s, int start, int count, int after) {
+    public EditTextEvent(int action, int code, EditText target, int when, String text, int selectStart, int selectEnd, CharSequence s, int start, int count, int after) {
         super(System.currentTimeMillis(), System.currentTimeMillis(), action, code, 0);
-        init(target, when, text, s, start, count, after);
+        init(target, when, text, selectStart, selectEnd, s, start, count, after);
     }
     public EditTextEvent(long downTime, long eventTime, int action, int code, int repeat
-            , EditText target, int when, String text, CharSequence s, int start, int count, int after) {
+            , EditText target, int when, String text, int selectStart, int selectEnd, CharSequence s, int start, int count, int after) {
         super(downTime, eventTime, action, code, repeat);
-        init(target, when, text, s, start, count, after);
+        init(target, when, text, selectStart, selectEnd, s, start, count, after);
     }
     public EditTextEvent(
             long downTime, long eventTime, int action
             , int code, int repeat, int metaState
             , int deviceId, int scancode, int flags, int source
-            , EditText target, int when, String text, CharSequence s, int start, int count, int after
+            , EditText target, int when, String text, int selectStart, int selectEnd, CharSequence s, int start, int count, int after
     ) {
         super(downTime, eventTime, action, code, repeat, metaState, deviceId, scancode, flags, source);
-        init(target, when, text, s, start, count, after);
+        init(target, when, text, selectStart, selectEnd, s, start, count, after);
     }
 
-    public void init(EditText target, int when, String text, CharSequence s) {
-        init(target, when, text, s, 0, 0, 0);
+    public void init(EditText target, int when, String text, int selectStart, int selectEnd, CharSequence s) {
+        init(target, when, text, selectStart, selectEnd, s, 0, 0, 0);
     }
-    public void init(EditText target, int when, String text, CharSequence s, int start, int count) {
-        init(target, when, text, s, start, count, 0);
+    public void init(EditText target, int when, String text, int selectStart, int selectEnd, CharSequence s, int start, int count) {
+        init(target, when, text, selectStart, selectEnd, s, start, count, 0);
     }
-    public void init(EditText target, int when, String text, CharSequence s, int start, int count, int after) {
+    public void init(EditText target, int when, String text, int selectStart, int selectEnd, CharSequence s, int start, int count, int after) {
         this.target = target;
         this.targetId = target.getId();
-        this.text = text;
         this.when = when;
+        this.text = text;
+        this.selectStart = selectStart;
+        this.selectEnd = selectEnd;
         this.s = s;
         this.start = start;
         this.count = count;
