@@ -2485,10 +2485,12 @@ public class UIAutoApp extends Application {
       Log.e(TAG, "screenshot 截屏异常：" + e.toString());
     }
     finally {
-      try {
-        bitmap.recycle();
-      } catch (Throwable e) {
-        e.printStackTrace();
+      if (bitmap != null) {
+        try {
+          bitmap.recycle();
+        } catch (Throwable e) {
+          e.printStackTrace();
+        }
       }
 
       if (fos != null) {

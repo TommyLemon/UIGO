@@ -19,18 +19,15 @@ public class TestRequestAndResponseJava {
     public static Map<String, Object> request() {
         Map<String, Object> request = new LinkedHashMap<>();
 
-
         {   // [] <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
             Map<String, Object> item = new LinkedHashMap<>();
             item.put("count", 5);
             item.put("page", 0);
             item.put("join", "</User/id@");
 
-
             {   // Moment <<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                 Map<String, Object> moment = new LinkedHashMap<>();
                 moment.put("@order", "date+");
-
 
                 {   // userId{} <<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                     List<Object> userIdIn = new ArrayList<>();
@@ -44,7 +41,6 @@ public class TestRequestAndResponseJava {
                 item.put("Moment", moment);
             }   // Moment >>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-
             {   // User <<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                 Map<String, Object> user = new LinkedHashMap<>();
                 user.put("id@", "/Moment/userId");
@@ -52,7 +48,6 @@ public class TestRequestAndResponseJava {
 
                 item.put("User", user);
             }   // User >>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-
 
             {   // User[] <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                 Map<String, Object> userItem2 = new LinkedHashMap<>();
@@ -70,12 +65,10 @@ public class TestRequestAndResponseJava {
                 item.put("User[]", userItem2);
             }   // User[] >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-
             {   // [] <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                 Map<String, Object> item2 = new LinkedHashMap<>();
                 item2.put("count", 6);
                 item2.put("join", "</User/id@");
-
 
                 {   // Comment <<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                     Map<String, Object> comment = new LinkedHashMap<>();
@@ -84,7 +77,6 @@ public class TestRequestAndResponseJava {
 
                     item2.put("Comment", comment);
                 }   // Comment >>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-
 
                 {   // User <<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                     Map<String, Object> user = new LinkedHashMap<>();
@@ -107,14 +99,11 @@ public class TestRequestAndResponseJava {
     public static Map<String, Object> smartRequest() {
         JSONRequest request = new JSONRequest();
 
-
         {   // [] <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
             JSONRequest item = new JSONRequest();
 
-
             {   // Moment <<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                 JSONRequest moment = new JSONRequest();
-
 
                 {   // userId{} <<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                     JSONArray userIdIn = new JSONArray();
@@ -130,14 +119,12 @@ public class TestRequestAndResponseJava {
                 item.put("Moment", moment);
             }   // Moment >>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-
             {   // User <<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                 JSONRequest user = new JSONRequest();
                 user.put("id@", "/Moment/userId");
                 user.setColumn("id,name,head");
                 item.put("User", user);
             }   // User >>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-
 
             {   // User[] <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                 JSONRequest userItem2 = new JSONRequest();
@@ -154,10 +141,8 @@ public class TestRequestAndResponseJava {
                 item.putAll(userItem2.toArray(10, 0, "User"));
             }   // User[] >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-
             {   // [] <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                 JSONRequest item2 = new JSONRequest();
-
 
                 {   // Comment <<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                     JSONRequest comment = new JSONRequest();
@@ -166,7 +151,6 @@ public class TestRequestAndResponseJava {
 
                     item2.put("Comment", comment);
                 }   // Comment >>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-
 
                 {   // User <<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                     JSONRequest user = new JSONRequest();
@@ -189,9 +173,10 @@ public class TestRequestAndResponseJava {
 
 
     public static void response(String resultJson) {
-
         JSONObject response = JSON.parseObject(resultJson);
-
+        if (response == null) {
+            return;
+        }
 
         {   // list <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
             JSONArray list = response.getJSONArray("list");
@@ -207,7 +192,6 @@ public class TestRequestAndResponseJava {
                 }
                 System.out.println("\nitem = list[" + i + "] = \n" + item + "\n\n");
                 // TODO 你的代码
-
 
                 {   // moment <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                     JSONObject moment = item.getJSONObject("moment");
@@ -242,7 +226,6 @@ public class TestRequestAndResponseJava {
                         }
                     }   //praiseUserIdList >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-
                     {   // pictureList <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                         JSONArray pictureList3 = moment.getJSONArray("pictureList");
                         if (pictureList3 == null) {
@@ -257,12 +240,10 @@ public class TestRequestAndResponseJava {
                             }
                             System.out.println("\nitem3 = pictureList3[" + i3 + "] = \n" + item3 + "\n\n");
                             // TODO 你的代码
-
                         }
                     }   //pictureList >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
                 }   //moment >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-
 
                 {   // user <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                     JSONObject user = item.getJSONObject("user");
@@ -277,7 +258,6 @@ public class TestRequestAndResponseJava {
                     String head = user.getString("head");
                     System.out.println("user.head = " + head);
                 }   //user >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-
 
                 {   // userList <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                     JSONArray userList2 = item.getJSONArray("userList");
@@ -301,7 +281,6 @@ public class TestRequestAndResponseJava {
                     }
                 }   //userList >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-
                 {   // list <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                     JSONArray list2 = item.getJSONArray("list");
                     if (list2 == null) {
@@ -316,7 +295,6 @@ public class TestRequestAndResponseJava {
                         }
                         System.out.println("\nitem2 = list2[" + i2 + "] = \n" + item2 + "\n\n");
                         // TODO 你的代码
-
 
                         {   // comment <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                             JSONObject comment = item2.getJSONObject("comment");
@@ -337,7 +315,6 @@ public class TestRequestAndResponseJava {
                             String content = comment.getString("content");
                             System.out.println("comment.content = " + content);
                         }   //comment >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-
 
                         {   // user <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                             JSONObject user = item2.getJSONObject("user");
@@ -368,7 +345,6 @@ public class TestRequestAndResponseJava {
     public static void smartResponse(String resultJson) {
         JSONObject response = JSON.parseObject(resultJson);
 
-
         {   // [] <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
             JSONArray list = response.getJSONArray("[]");
             if (list == null) {
@@ -383,7 +359,6 @@ public class TestRequestAndResponseJava {
                 }
                 System.out.println("\nitem = list[" + i + "] = \n" + item + "\n\n");
                 // TODO 你的代码
-
 
                 {   // Moment <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                     Moment moment = item.getObject("Moment", Moment.class);
@@ -418,7 +393,6 @@ public class TestRequestAndResponseJava {
                         }
                     }   //praiseUserIdList >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-
                     {   // pictureList <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                         List<String> pictureList3 = moment.getPictureList();
                         if (pictureList3 == null) {
@@ -439,7 +413,6 @@ public class TestRequestAndResponseJava {
 
                 }   //Moment >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-
                 {   // User <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                     User user = item.getObject("User", User.class);
                     if (user == null) {
@@ -453,7 +426,6 @@ public class TestRequestAndResponseJava {
                     String head = user.getHead();
                     System.out.println("user.head = " + head);
                 }   //User >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-
 
                 {   // User[] <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                     List<User> userList2 = JSON.parseArray(item.getString("User[]"), User.class);
@@ -477,7 +449,6 @@ public class TestRequestAndResponseJava {
                     }
                 }   //User[] >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-
                 {   // [] <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                     JSONArray list2 = item.getJSONArray("[]");
                     if (list2 == null) {
@@ -492,7 +463,6 @@ public class TestRequestAndResponseJava {
                         }
                         System.out.println("\nitem2 = list2[" + i2 + "] = \n" + item2 + "\n\n");
                         // TODO 你的代码
-
 
                         {   // Comment <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                             Comment comment = item2.getObject("Comment", Comment.class);
@@ -513,7 +483,6 @@ public class TestRequestAndResponseJava {
                             String content = comment.getContent();
                             System.out.println("comment.content = " + content);
                         }   //Comment >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-
 
                         {   // User <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                             User user = item2.getObject("User", User.class);
