@@ -1,7 +1,7 @@
 package uiauto;
 
-import android.text.Editable;
 import android.view.KeyEvent;
+import android.view.View;
 import android.widget.EditText;
 
 public class EditTextEvent extends KeyEvent {
@@ -41,8 +41,12 @@ public class EditTextEvent extends KeyEvent {
     }
 
     public EditText getTarget() {
+        UIAutoApp app = UIAutoApp.getInstance();
         if (target == null || target.isAttachedToWindow() == false) {
-            target = UIAutoApp.getInstance().getCurrentActivity().findViewById(targetId);
+            target = app.findView(targetId);
+        }
+        if (target == null) {
+            target = app.findViewByFocus(app.getCurrentDecorView(), EditText.class);
         }
         return target;
     }
@@ -156,7 +160,7 @@ public class EditTextEvent extends KeyEvent {
     }
     public void init(EditText target, int when, String text, int selectStart, int selectEnd, CharSequence s, int start, int count, int after) {
         this.target = target;
-        this.targetId = target.getId();
+        this.targetId = target == null ? View.NO_ID : target.getId();
         this.when = when;
         this.text = text;
         this.selectStart = selectStart;

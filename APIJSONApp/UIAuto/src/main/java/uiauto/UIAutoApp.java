@@ -34,6 +34,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 import android.os.PowerManager;
+import android.support.annotation.IdRes;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.annotation.RequiresApi;
@@ -869,6 +870,28 @@ public class UIAutoApp extends Application {
 
             item.put("disable", ! disable);
             onBindViewHolder(holder, position);
+          }
+        });
+
+        holder.itemView.setOnLongClickListener(new View.OnLongClickListener() {
+          @Override
+          public boolean onLongClick(View v) {
+            int index = position + 1;
+            Node<InputEvent> curNode = firstEventNode;
+            for (int i = 0; i < index; i++) {
+              if (curNode == null) {
+                break;
+              }
+
+              curNode = curNode.next;
+            }
+
+            currentEventNode = curNode;
+            step = index;
+
+            tvControllerCount.setText(step + "/" + allStep);
+            onEventChange(step - 1, curNode == null ? 0 : curNode.type);  // move 时刷新容易卡顿
+            return true;
           }
         });
       }
@@ -1921,6 +1944,10 @@ public class UIAutoApp extends Application {
               int l2 = text2.length();
               int start2 = Math.min(l2, Math.max(0, ete.getSelectStart()));
               int end2 = Math.min(l2, Math.max(0, ete.getSelectEnd()));
+              if (end2 <= 0) {
+                start2 = end2 = l2;
+              }
+
               target.setSelection(start2, end2);
             }
           }
@@ -2650,7 +2677,46 @@ public class UIAutoApp extends Application {
 
     return addEvent(obj, type != InputUtil.EVENT_TYPE_TOUCH || action != MotionEvent.ACTION_MOVE);
   }
-  public <V extends View> V findViewByTouchPoint(View view, float x, float y, boolean onlyFocusable) {
+
+
+  public Window getCurrentWindow() {
+    if (window == null) {
+      window = getCurrentActivity().getWindow();
+    }
+    return window;
+  }
+
+  public View getCurrentDecorView() {
+    if (decorView == null) {
+      decorView = getCurrentWindow().getDecorView();
+    }
+    return decorView;
+  }
+
+  public <V extends View> V findView(@IdRes int id) {
+    return getCurrentWindow().findViewById(id);
+  }
+
+  public <V extends View> V findViewByFocus(View view, Class<V> clazz) {
+    if (view == null) {
+      return null;
+    }
+
+    if (view instanceof ViewGroup) {
+      ViewGroup vg = (ViewGroup) view;
+
+      for (int i = vg.getChildCount() - 1; i >= 0; i--) {
+        View v = findViewByFocus(vg.getChildAt(i), clazz);
+        if (v != null) {
+          return (V) v;
+        }
+      }
+    }
+
+    return view.hasFocus() && (clazz == null || clazz.isAssignableFrom(view.getClass())) ? (V) view : null;
+  }
+
+  public <V extends View> V findViewByPoint(View view, Class<V> clazz, float x, float y, boolean onlyFocusable) {
     if (view == null || x < view.getX() || x > view.getX() + view.getWidth()
             || y < view.getY() || y > view.getY() + view.getHeight()) {
       return null;
@@ -2660,14 +2726,16 @@ public class UIAutoApp extends Application {
       ViewGroup vg = (ViewGroup) view;
 
       for (int i = vg.getChildCount() - 1; i >= 0; i--) {
-        View v = findViewByTouchPoint(vg.getChildAt(i), x, y, onlyFocusable);
+        View v = findViewByPoint(vg.getChildAt(i), clazz, x, y, onlyFocusable);
         if (v != null) {
           return (V) v;
         }
       }
     }
 
-    return onlyFocusable == false || view.isFocusableInTouchMode() ? (V) view : null;
+    return (onlyFocusable == false || view.isFocusableInTouchMode())
+            && (clazz == null || clazz.isAssignableFrom(view.getClass()))
+            ? (V) view : null;
   }
 
   int count = 0;
