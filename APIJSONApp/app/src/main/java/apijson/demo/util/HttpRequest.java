@@ -585,8 +585,8 @@ public class HttpRequest {
 	 */
 	public static void addMoment(String content, int requestCode, OnHttpResponseListener listener) {
 		List<String> list = new ArrayList<String>();
-		list.add("http://static.oschina.net/uploads/user/1218/2437072_100.jpg?t=1461076033000");
-		list.add("http://common.cnblogs.com/images/icon_weibo_24.png");
+		list.add("https://static.oschina.net/uploads/user/1218/2437072_100.jpg?t=1461076033000");
+		list.add("https://common.cnblogs.com/images/icon_weibo_24.png");
 
 		post(new JSONRequest(
 				new Moment()
