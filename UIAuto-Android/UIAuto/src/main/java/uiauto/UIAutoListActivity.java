@@ -139,7 +139,7 @@ public class UIAutoListActivity extends Activity implements HttpManager.OnHttpRe
                 else {
                     allList.addAll(eventList);
                 }
-                cache.edit().remove(cacheKey).putString(cacheKey, JSON.toJSONString(allList)).apply();
+                cache.edit().remove(cacheKey).putString(cacheKey, UIAutoApp.toJSONString(allList)).apply();
             }
             else {
                 hasTempTouchList = true;
@@ -259,9 +259,15 @@ public class UIAutoListActivity extends Activity implements HttpManager.OnHttpRe
                                 );
                             }
                             else if (type == InputUtil.EVENT_TYPE_KEY) {
+                                if (obj.getBooleanValue("edit")) {
+                                    list.add("[" + state + "]  " + new Date(obj.getLongValue("time")).toLocaleString() + "   EDIT " + EditTextEvent.getWhenName(obj.getIntValue("when"))
+                                            + "\n[" + obj.getIntValue("selectStart") + ", " + obj.getIntValue("selectEnd") + "] " + obj.getString("text")
+                                    );
+                                } else {
                                 list.add("[" + state + "]  " + new Date(obj.getLongValue("time")).toLocaleString() + "    " + InputUtil.getKeyActionName(action)
                                         + "\nrepeatCount: " + obj.getString("repeatCount") + ", scanCode: " + InputUtil.getScanCodeName(obj.getIntValue("scanCode")) + "         " + InputUtil.getKeyCodeName(obj.getIntValue("keyCode"))
                                 );
+                                }
                             }
                             else if (type == InputUtil.EVENT_TYPE_UI) {
                                 String fragment = obj.getString("fragment");
@@ -306,7 +312,7 @@ public class UIAutoListActivity extends Activity implements HttpManager.OnHttpRe
 
         if (hasTempTouchList == false) {
             hasTempTouchList = true;
-            cache.edit().remove(cacheKey).putString(cacheKey, JSON.toJSONString(eventList)).apply();
+            cache.edit().remove(cacheKey).putString(cacheKey, UIAutoApp.toJSONString(eventList)).apply();
         }
 
         new Thread(new Runnable() {
@@ -430,7 +436,7 @@ public class UIAutoListActivity extends Activity implements HttpManager.OnHttpRe
 
                             statueMap.put(input, "Uploading");
 
-                            JSONObject obj = JSON.parseObject(JSON.toJSONString(input));
+                            JSONObject obj = JSON.parseObject(UIAutoApp.toJSONString(input));
                             obj.remove("id");
                             obj.put("flowId", flowId);
 
@@ -533,7 +539,7 @@ public class UIAutoListActivity extends Activity implements HttpManager.OnHttpRe
         if (isTouch) {
             replay(array);
         } else {
-            setResult(RESULT_OK, new Intent().putExtra(RESULT_LIST, JSON.toJSONString(array)));
+            setResult(RESULT_OK, new Intent().putExtra(RESULT_LIST, UIAutoApp.toJSONString(array)));
             finish();
         }
     }

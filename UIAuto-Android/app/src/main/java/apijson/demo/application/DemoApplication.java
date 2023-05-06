@@ -18,16 +18,16 @@ package apijson.demo.application;
 import android.app.Application;
 import android.support.annotation.NonNull;
 
+import java.util.List;
+
 import apijson.demo.BuildConfig;
 import apijson.demo.R;
 import uiauto.UIAutoApp;
 
-/**Base Application，用法类似 MultiDexApplication。
- * 可在被测 Module 的 Application 的 onCreate 中调用 UnitAutoApp.init(this)；
- * 或者如果项目简单（没有方法签名冲突），可以直接用 被测 Module 的 Application 继承 UnitAutoApp。
+/**Application
  * @author Lemon
- * @see #init(Application)
  */
+
 public class DemoApplication extends UIAutoApp {
 	private static final String TAG = "DemoApplication";
 
@@ -53,6 +53,11 @@ public class DemoApplication extends UIAutoApp {
 			}
 		});
 	}
+
+	public static List<Object> getOutputList(DemoApplication app, int limit, int offset) {
+		return getOutputList(UIAutoApp.getInstance(), limit, offset);
+	}
+
 
 	/**获取应用名
 	 * @return

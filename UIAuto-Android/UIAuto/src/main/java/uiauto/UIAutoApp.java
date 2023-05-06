@@ -17,6 +17,7 @@ package uiauto;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.Application;
+import android.app.Dialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -25,15 +26,25 @@ import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.Matrix;
 import android.graphics.Point;
+import android.graphics.drawable.Drawable;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
+import android.os.PowerManager;
+import android.support.annotation.IdRes;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.annotation.RequiresApi;
 import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentActivity;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.SupportActivity;
 import android.support.v7.widget.RecyclerView;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.ActionMode;
@@ -47,16 +58,20 @@ import android.view.MotionEvent;
 import android.view.SearchEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewParent;
 import android.view.ViewTreeObserver;
 import android.view.Window;
 import android.view.WindowManager;
 import android.view.accessibility.AccessibilityEvent;
+import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson.serializer.PropertyFilter;
+import com.koushikdutta.async.http.Multimap;
 import com.yhao.floatwindow.FloatWindow;
 import com.yhao.floatwindow.IFloatWindow;
 import com.yhao.floatwindow.MoveType;
@@ -64,13 +79,17 @@ import com.yhao.floatwindow.ViewStateListener;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.lang.annotation.Annotation;
 import java.lang.ref.WeakReference;
+import java.lang.reflect.Modifier;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import unitauto.NotNull;
 import unitauto.apk.UnitAutoApp;
@@ -107,6 +126,7 @@ public class UIAutoApp extends Application {
 
   private final Handler mainHandler = new Handler(Looper.getMainLooper());
 
+  private Map<String, List<Node<InputEvent>>> waitMap = new HashMap<>();
   private boolean isReplay = false;
   @SuppressLint("HandlerLeak")
   private final Handler handler = new Handler() {
@@ -140,7 +160,7 @@ public class UIAutoApp extends Application {
 
         // output(null, curNode, activity);
 
-        boolean canRefreshUI = curNode == null || curNode.type != InputUtil.EVENT_TYPE_TOUCH || curNode.action != MotionEvent.ACTION_MOVE;
+        boolean canRefreshUI = true; // FIXME 取消注释 curNode == null || curNode.type != InputUtil.EVENT_TYPE_TOUCH || curNode.action != MotionEvent.ACTION_MOVE;
 
         if (canRefreshUI) {
           tvControllerCount.setText(step + "/" + allStep);
@@ -153,13 +173,14 @@ public class UIAutoApp extends Application {
           showCoverAndSplit(true, false);
           isSplitShowing = false;
           isSplit2Showing = false;
+          waitMap = new HashMap<>();
           return;
         }
 
 
         InputEvent curItem = curNode.item;
         //暂停，等待时机
-        if (curItem == null) { // curNode.type == InputUtil.EVENT_TYPE_UI || curNode.type == InputUtil.EVENT_TYPE_HTTP) {
+        if (curItem == null || waitMap.isEmpty() == false) { // curNode.type == InputUtil.EVENT_TYPE_UI || curNode.type == InputUtil.EVENT_TYPE_HTTP) {
           return;
         }
 
@@ -207,17 +228,47 @@ public class UIAutoApp extends Application {
         // dispatchEventToCurrentActivity(curItem, false);
 
         Node<InputEvent> nextNode = curNode.next;
-        long firstTime = nextNode == null ? 0 : nextNode.time;
+        int lastStep = step;
+
+//        long firstTime = nextNode == null ? 0 : nextNode.time;
         while (nextNode != null && nextNode.disable) {
           // if (nextNode.item != null) {
           //   output(null, nextNode, activity);
           // }
 
           nextNode = nextNode.next;
-          step ++;
+//          step ++;
+          lastStep ++;
         }
         // long lastTime = nextNode == null ? 0 : nextNode.time;
 
+        waitMap = new HashMap<>();
+        int lastWaitStep = 0;
+        Node<InputEvent> lastWaitNode = null;
+        Node<InputEvent> lastNextNode = nextNode;
+
+        while (lastNextNode != null && (lastNextNode.disable || lastNextNode.item == null)) {
+          if (lastNextNode.disable == false && lastNextNode.item == null
+                  && Objects.equals(lastNextNode.activity, activity == null ? null : activity.getClass().getName())
+          ) {
+            List<Node<InputEvent>> list = waitMap.get(lastNextNode.url);
+            if (list == null) {
+              list = new ArrayList<>();
+            }
+            list.add(lastNextNode);
+            waitMap.put(lastNextNode.url, list);
+            lastWaitNode = lastNextNode;
+            lastWaitStep = lastStep;
+          }
+
+          lastNextNode = lastNextNode.next;
+          lastStep ++;
+        }
+
+        if (lastWaitNode != null) {
+          nextNode = lastWaitNode;
+          step = lastWaitStep;
+        }
         msg = new Message();
         msg.obj = nextNode;
 
@@ -227,19 +278,20 @@ public class UIAutoApp extends Application {
           // step --;
           handleMessage(msg);
 
-          dispatchEventToCurrentActivity(curNode.item, false);
+          dispatchEventToCurrentWindow(curItem, false);
         }
         else {
           output(null, curNode, activity);
 
-          dispatchEventToCurrentActivity(curNode.item, false);
+          dispatchEventToCurrentWindow(curItem, false);
 
-          sendMessageDelayed(
-            msg, (nextNode == null ? 0 : (nextItem == null || curItem == null
-              ? (nextNode.time - curNode.time)
-              : (nextItem.getEventTime() - curItem.getEventTime())
-            ))  // 相邻执行事件时间差本身就包含了  + (lastTime <= 0 || firstTime <= 0 ? 10 : lastTime - firstTime)  // 补偿 disable 项跳过的等待时间
-          );
+          long duration = nextNode == null ? 0 : nextItem.getEventTime() - curItem.getEventTime();
+          if (duration <= 0) {
+            handleMessage(msg);
+          }
+          else {
+            sendMessageDelayed(msg, duration); // 相邻执行事件时间差本身就包含了  + (lastTime <= 0 || firstTime <= 0 ? 10 : lastTime - firstTime)  // 补偿 disable 项跳过的等待时间
+          }
         }
 
       }
@@ -256,9 +308,11 @@ public class UIAutoApp extends Application {
 
 
   private Activity activity;
+  private Fragment fragment;
   int screenWidth;
   int screenHeight;
 
+  Window.Callback callback;
   Window window;
   View decorView;
 
@@ -311,25 +365,11 @@ public class UIAutoApp extends Application {
   public void onCreate() {
     super.onCreate();
     instance = this;
-    init(this);
+    initUIAuto(this);
   }
 
-  public void init(Application app) {
-    APP = app;
-    UnitAutoApp.init(app);
-    Log.d(TAG, "项目启动 >>>>>>>>>>>>>>>>>>>> \n\n");
 
-    parentDirectory = app.getExternalFilesDir(Environment.DIRECTORY_PICTURES); // new File(screenshotDirPath);
-    if (parentDirectory.exists() == false) {
-      try {
-        parentDirectory.mkdir();
-      } catch (Throwable e) {
-        e.printStackTrace();
-      }
-    }
 
-    initUIAuto();
-  }
 
   public SharedPreferences getSharedPreferences() {
     return getSharedPreferences(TAG, Context.MODE_PRIVATE);
@@ -338,8 +378,11 @@ public class UIAutoApp extends Application {
   public void onUIAutoActivityCreate() {
     onUIAutoActivityCreate(getCurrentActivity());
   }
+  private Map<FragmentManager, Boolean> fragmentWatchedMap = new HashMap<>();
   public void onUIAutoActivityCreate(@NonNull Activity activity) {
-    window = activity.getWindow();
+    onUIAutoWindowCreate(activity, activity.getWindow());
+  }
+  public void onUIAutoWindowCreate(@NonNull Window.Callback callback, @NonNull Window window) {
 
     //反而让 vFloatCover 与底部差一个导航栏高度 window.addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
     decorView = window.getDecorView(); // activity.findViewById(android.R.id.content);  // decorView = window.getContentView();
@@ -358,133 +401,162 @@ public class UIAutoApp extends Application {
       }
     });
 
+    addTextChangedListener(decorView);
     Window.Callback windowCallback = window.getCallback();
+    this.window = window;
+    this.callback = windowCallback;
     window.setCallback(new Window.Callback() {
       @Override
       public boolean dispatchKeyEvent(KeyEvent event) {
 //				dispatchEventToCurrentActivity(event);
-        addInputEvent(event, activity);
-        return windowCallback.dispatchKeyEvent(event);
+        addInputEvent(event, callback, activity, fragment);
+        return windowCallback != null && windowCallback.dispatchKeyEvent(event);
       }
 
       @Override
       public boolean dispatchKeyShortcutEvent(KeyEvent event) {
 //				dispatchEventToCurrentActivity(event);
-        addInputEvent(event, activity);
-        return windowCallback.dispatchKeyShortcutEvent(event);
+        addInputEvent(event, callback, activity, fragment);
+        return windowCallback != null && windowCallback.dispatchKeyShortcutEvent(event);
       }
 
       @Override
       public boolean dispatchTouchEvent(MotionEvent event) {
 //				dispatchEventToCurrentActivity(event);
-        addInputEvent(event, activity);
-        return windowCallback.dispatchTouchEvent(event);
+        addInputEvent(event, callback, activity, fragment);
+        return windowCallback != null && windowCallback.dispatchTouchEvent(event);
       }
 
       @Override
       public boolean dispatchTrackballEvent(MotionEvent event) {
 //				dispatchEventToCurrentActivity(event);
-        addInputEvent(event, activity);
-        return windowCallback.dispatchTrackballEvent(event);
+        addInputEvent(event, callback, activity, fragment);
+        return windowCallback != null && windowCallback.dispatchTrackballEvent(event);
       }
 
       @Override
       public boolean dispatchGenericMotionEvent(MotionEvent event) {
 //				dispatchEventToCurrentActivity(event);
 // 和 dispatchTouchEvent 重复                addInputEvent(event, activity);
-        return windowCallback.dispatchGenericMotionEvent(event);
+        return windowCallback != null && windowCallback.dispatchGenericMotionEvent(event);
       }
 
       @Override
       public boolean dispatchPopulateAccessibilityEvent(AccessibilityEvent event) {
-        return windowCallback.dispatchPopulateAccessibilityEvent(event);
+        return windowCallback != null && windowCallback.dispatchPopulateAccessibilityEvent(event);
       }
 
       @Nullable
       @Override
       public View onCreatePanelView(int featureId) {
-        return windowCallback.onCreatePanelView(featureId);
+        return windowCallback == null ? null : windowCallback.onCreatePanelView(featureId);
       }
 
       @Override
       public boolean onCreatePanelMenu(int featureId, Menu menu) {
-        return windowCallback.onCreatePanelMenu(featureId, menu);
+        return windowCallback != null && windowCallback.onCreatePanelMenu(featureId, menu);
       }
 
       @Override
       public boolean onPreparePanel(int featureId, View view, Menu menu) {
-        return windowCallback.onPreparePanel(featureId, view, menu);
+        return windowCallback != null && windowCallback.onPreparePanel(featureId, view, menu);
       }
 
       @Override
       public boolean onMenuOpened(int featureId, Menu menu) {
-        return windowCallback.onMenuOpened(featureId, menu);
+        return windowCallback != null && windowCallback.onMenuOpened(featureId, menu);
       }
 
       @Override
       public boolean onMenuItemSelected(int featureId, MenuItem item) {
-        return windowCallback.onMenuItemSelected(featureId, item);
+        return windowCallback != null && windowCallback.onMenuItemSelected(featureId, item);
       }
 
       @Override
       public void onWindowAttributesChanged(WindowManager.LayoutParams attrs) {
+        if (windowCallback == null) {
+          return;
+        }
         windowCallback.onWindowAttributesChanged(attrs);
       }
 
       @Override
       public void onContentChanged() {
+        if (windowCallback == null) {
+          return;
+        }
         windowCallback.onContentChanged();
       }
 
       @Override
       public void onWindowFocusChanged(boolean hasFocus) {
+        if (windowCallback == null) {
+          return;
+        }
         windowCallback.onWindowFocusChanged(hasFocus);
       }
 
       @Override
       public void onAttachedToWindow() {
+        if (windowCallback == null) {
+          return;
+        }
         windowCallback.onAttachedToWindow();
       }
 
       @Override
       public void onDetachedFromWindow() {
+        if (windowCallback == null) {
+          return;
+        }
         windowCallback.onDetachedFromWindow();
       }
 
       @Override
       public void onPanelClosed(int featureId, Menu menu) {
+        if (windowCallback == null) {
+          return;
+        }
         windowCallback.onPanelClosed(featureId, menu);
       }
 
       @Override
       public boolean onSearchRequested() {
-        return windowCallback.onSearchRequested();
+        return windowCallback != null && windowCallback.onSearchRequested();
       }
 
+      @RequiresApi(api = Build.VERSION_CODES.M)
       @Override
       public boolean onSearchRequested(SearchEvent searchEvent) {
-        return windowCallback.onSearchRequested(searchEvent);
+        return windowCallback != null && windowCallback.onSearchRequested(searchEvent);
       }
 
       @Nullable
       @Override
       public ActionMode onWindowStartingActionMode(ActionMode.Callback callback) {
-        return windowCallback.onWindowStartingActionMode(callback);
+        return windowCallback == null ? null : windowCallback.onWindowStartingActionMode(callback);
       }
 
+      @RequiresApi(api = Build.VERSION_CODES.M)
       @Nullable
       @Override
       public ActionMode onWindowStartingActionMode(ActionMode.Callback callback, int type) {
-        return windowCallback.onWindowStartingActionMode(callback, type);
+        return windowCallback == null ? null : windowCallback.onWindowStartingActionMode(callback, type);
       }
 
       @Override
       public void onActionModeStarted(ActionMode mode) {
+        if (windowCallback == null) {
+          return;
+        }
         windowCallback.onActionModeStarted(mode);
       }
 
       @Override
       public void onActionModeFinished(ActionMode mode) {
+        if (windowCallback == null) {
+          return;
+        }
         windowCallback.onActionModeFinished(mode);
       }
     });
@@ -493,8 +565,9 @@ public class UIAutoApp extends Application {
 
     cache = getSharedPreferences(TAG, Context.MODE_PRIVATE);
 
+
     splitSize = cache.getInt(SPLIT_HEIGHT, Math.round(dip2px(36)));
-    splitRadius = splitSize/2;
+    splitRadius = splitSize / 2;
 
     Point[] points = ballPositionMap.get(activity);
     if (points == null || points.length < 1) {
@@ -506,10 +579,10 @@ public class UIAutoApp extends Application {
     splitY = p != null && p.y != 0 ? p.y : cache.getInt(SPLIT_Y, 0);
 
     if (splitX >= 0 || Math.abs(splitX) >= windowWidth) { // decorWidth) {
-      splitX = Math.round(- splitSize - dip2px(30));
+      splitX = Math.round(-splitSize - dip2px(30));
     }
     if (splitY >= 0 || Math.abs(splitY) >= windowHeight) { // decorHeight) {
-      splitY = Math.round(- splitSize - dip2px(30));
+      splitY = Math.round(-splitSize - dip2px(30));
     }
 
     // splitX2 = 0;
@@ -525,12 +598,66 @@ public class UIAutoApp extends Application {
 
     showCover(true);
     // if (isSplitShowing) {
-      floatBall = showSplit(isSplitShowing, splitX, splitY, "floatBall", vFloatBall, floatSplitX, floatSplitY);
-      // if (isSplit2Showing) {
-        floatBall2 = showSplit(isSplitShowing && splitX2 > 0 && splitY2 > 0, splitX2, splitY2, "floatBall2", vFloatBall2, floatSplitX2, floatSplitY2);
-      // }
+    floatBall = showSplit(isSplitShowing, splitX, splitY, "floatBall", vFloatBall, floatSplitX, floatSplitY);
+    // if (isSplit2Showing) {
+    floatBall2 = showSplit(isSplitShowing && splitX2 > 0 && splitY2 > 0, splitX2, splitY2, "floatBall2", vFloatBall2, floatSplitX2, floatSplitY2);
     // }
+  }
 
+  private Map<EditText, Boolean> editTextWatchedMap = new HashMap<>();
+  public void addTextChangedListener(View view) {
+    if (view instanceof EditText) {
+      EditText et = (EditText) view;
+      Boolean watched = editTextWatchedMap.get(et);
+      if (watched == null || watched == false) {
+        editTextWatchedMap.put(et, true);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+          et.addOnUnhandledKeyEventListener(new View.OnUnhandledKeyEventListener() {
+            @Override
+            public boolean onUnhandledKeyEvent(View v, KeyEvent event) {
+              return false;
+            }
+          });
+        }
+
+        et.addTextChangedListener(new TextWatcher() {
+          @Override
+          public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+            if (isSplitShowing == false || isReplay) {
+              return;
+            }
+            InputEvent ie = new EditTextEvent(KeyEvent.ACTION_UP, 0, et, EditTextEvent.WHEN_BEFORE
+                    , StringUtil.getString(et.getText()), et.getSelectionStart(), et.getSelectionEnd(), s, start, count, after);
+            addInputEvent(ie, callback, activity, fragment);
+          }
+          @Override
+          public void onTextChanged(CharSequence s, int start, int before, int count) {
+            if (isSplitShowing == false || isReplay) {
+              return;
+            }
+            InputEvent ie = new EditTextEvent(KeyEvent.ACTION_UP, 0, et, EditTextEvent.WHEN_ON
+                    , StringUtil.getString(et.getText()), et.getSelectionStart(), et.getSelectionEnd(), s, start, count);
+            addInputEvent(ie, callback, activity, fragment);
+          }
+          @Override
+          public void afterTextChanged(Editable s) {
+            if (isSplitShowing == false || isReplay) {
+              return;
+            }
+            InputEvent ie = new EditTextEvent(KeyEvent.ACTION_UP, 0, et, EditTextEvent.WHEN_AFTER
+                    , StringUtil.getString(et.getText()), et.getSelectionStart(), et.getSelectionEnd(),s);
+            addInputEvent(ie, callback, activity, fragment);
+          }
+        });
+      }
+    }
+    if (view instanceof ViewGroup) {
+      ViewGroup vg = (ViewGroup) view;
+      for (int i = 0; i < vg.getChildCount(); i++) {
+        View cv = vg.getChildAt(i);
+        addTextChangedListener(cv);
+      }
+    }
   }
 
   private void updateScreenWindowContentSize() {
@@ -542,7 +669,9 @@ public class UIAutoApp extends Application {
     // windowManager.getDefaultDisplay().getRealSize(point);
 
     activity = getCurrentActivity();
+    if (window == null) { // 可能是弹窗的
     window = activity.getWindow();
+    }
 
     DisplayMetrics metric = new DisplayMetrics();
     Display display = activity.getWindowManager().getDefaultDisplay();
@@ -581,19 +710,30 @@ public class UIAutoApp extends Application {
     decorHeight = decorView == null ? windowHeight : decorView.getHeight();
   }
 
-  private void initUIAuto() {
-    registerActivityLifecycleCallbacks(new ActivityLifecycleCallbacks() {
+  private void initUIAuto(Application app) {
+    APP = app;
+    UnitAutoApp.init(app);
+    Log.d(TAG, "项目启动 >>>>>>>>>>>>>>>>>>>> \n\n");
+    parentDirectory = app.getExternalFilesDir(Environment.DIRECTORY_PICTURES); // new File(screenshotDirPath);
+    if (parentDirectory.exists() == false) {
+      try {
+        parentDirectory.mkdir();
+      } catch (Throwable e) {
+        e.printStackTrace();
+      }
+    }
+    app.registerActivityLifecycleCallbacks(new ActivityLifecycleCallbacks() {
 
       @Override
       public void onActivityStarted(Activity activity) {
         Log.v(TAG, "onActivityStarted  activity = " + activity.getClass().getName());
-        onUIEvent(InputUtil.UI_ACTION_START, activity);
+        onUIEvent(InputUtil.UI_ACTION_START, activity, activity);
       }
 
       @Override
       public void onActivityStopped(Activity activity) {
         Log.v(TAG, "onActivityStopped  activity = " + activity.getClass().getName());
-        onUIEvent(InputUtil.UI_ACTION_STOP, activity);
+        onUIEvent(InputUtil.UI_ACTION_STOP, activity, activity);
       }
 
       @Override
@@ -609,14 +749,14 @@ public class UIAutoApp extends Application {
         if (isShowing) {
           onUIAutoActivityCreate(activity);
         }
-        onUIEvent(InputUtil.UI_ACTION_RESUME, activity);
+        onUIEvent(InputUtil.UI_ACTION_RESUME, activity, activity);
       }
 
       @Override
       public void onActivityPaused(Activity activity) {
         Log.v(TAG, "onActivityPaused  activity = " + activity.getClass().getName());
         // setCurrentActivity(activityList.isEmpty() ? null : activityList.get(activityList.size() - 1));
-        onUIEvent(InputUtil.UI_ACTION_PAUSE, activity);
+        onUIEvent(InputUtil.UI_ACTION_PAUSE, activity, activity);
 
         isSplit2Showing = floatBall2 != null && floatBall2.isShowing();
         Point[] points = new Point[]{
@@ -635,14 +775,15 @@ public class UIAutoApp extends Application {
         Log.v(TAG, "onActivityCreated  activity = " + activity.getClass().getName());
         activityList.add(activity);
         //TODO 按键、键盘监听拦截和转发
-        onUIEvent(InputUtil.UI_ACTION_CREATE, activity);
+        onUIEvent(InputUtil.UI_ACTION_CREATE, activity, activity);
+        onUIAutoFragmentCreate(activity);
       }
 
       @Override
       public void onActivityDestroyed(Activity activity) {
         Log.v(TAG, "onActivityDestroyed  activity = " + activity.getClass().getName());
         activityList.remove(activity);
-        onUIEvent(InputUtil.UI_ACTION_DESTROY, activity);
+        onUIEvent(InputUtil.UI_ACTION_DESTROY, activity, activity);
 
         ballPositionMap.remove(activity);
       }
@@ -723,7 +864,19 @@ public class UIAutoApp extends Application {
           name = " " + item.getString("format") + "\n" + item.getString("url");
         }
         else if (type == InputUtil.EVENT_TYPE_KEY) {
+          if (item.getBooleanValue("edit")) {
+            action = "EDIT " + EditTextEvent.getWhenName(item.getIntValue("when"))
+                    + " [" + item.getIntValue("selectStart") + ", " + item.getIntValue("selectEnd") + "]";
+            String s = StringUtil.getString(item.getString("text"));
+            int l = s.length();
+            if (l > 20) {
+              int m = l/2;
+              s = s.substring(0, 7) + "..." + s.substring(m - 3, m + 3) + "..." + s.substring(l - 7);
+            }
+            name = "\n" + s;
+          } else {
           name = "\n" + InputUtil.getKeyCodeName( item.getIntValue("keyCode"));
+          }
         }
         else {
           name = "\n[" + item.getIntValue("x") + ", " + item.getIntValue("y") + "]";
@@ -745,6 +898,24 @@ public class UIAutoApp extends Application {
 
             item.put("disable", ! disable);
             onBindViewHolder(holder, position);
+          }
+        });
+        holder.itemView.setOnLongClickListener(new View.OnLongClickListener() {
+          @Override
+          public boolean onLongClick(View v) {
+            int index = position + 1;
+            Node<InputEvent> curNode = firstEventNode;
+            for (int i = 0; i < index; i++) {
+              if (curNode == null) {
+                break;
+              }
+              curNode = curNode.next;
+            }
+            currentEventNode = curNode;
+            step = index;
+            tvControllerCount.setText(step + "/" + allStep);
+            onEventChange(step - 1, curNode == null ? 0 : curNode.type);  // move 时刷新容易卡顿
+            return true;
           }
         });
       }
@@ -973,6 +1144,118 @@ public class UIAutoApp extends Application {
 
   }
 
+  private void onUIAutoFragmentCreate(Activity activity) {
+    if (activity instanceof FragmentActivity) {
+      FragmentActivity fa = (FragmentActivity) activity;
+      FragmentManager sfm = fa.getSupportFragmentManager();
+
+      Boolean watched = fragmentWatchedMap.get(sfm);
+      if (watched == null || watched == false) {
+        fragmentWatchedMap.put(sfm, true);
+
+        sfm.registerFragmentLifecycleCallbacks(new FragmentManager.FragmentLifecycleCallbacks() {
+          @Override
+          public void onFragmentPreAttached(FragmentManager fm, Fragment f, Context context) {
+            super.onFragmentPreAttached(fm, f, context);
+            Log.v(TAG, "onFragmentPreAttached  fragment = " + f.getClass().getName());
+            onUIEvent(InputUtil.UI_ACTION_PREATTACH, f.getActivity(), f);
+          }
+
+          @Override
+          public void onFragmentAttached(FragmentManager fm, Fragment f, Context context) {
+            super.onFragmentAttached(fm, f, context);
+            Log.v(TAG, "onFragmentAttached  fragment = " + f.getClass().getName());
+            onUIEvent(InputUtil.UI_ACTION_ATTACH, f.getActivity(), f);
+          }
+
+          @Override
+          public void onFragmentPreCreated(FragmentManager fm, Fragment f, Bundle savedInstanceState) {
+            super.onFragmentPreCreated(fm, f, savedInstanceState);
+            Log.v(TAG, "onFragmentPreCreated  fragment = " + f.getClass().getName());
+            onUIEvent(InputUtil.UI_ACTION_PRECREATE, f.getActivity(), f);
+          }
+
+          @Override
+          public void onFragmentCreated(FragmentManager fm, Fragment f, Bundle savedInstanceState) {
+            super.onFragmentCreated(fm, f, savedInstanceState);
+            Log.v(TAG, "onFragmentCreated  fragment = " + f.getClass().getName());
+            onUIEvent(InputUtil.UI_ACTION_CREATE, f.getActivity(), f);
+          }
+
+          @Override
+          public void onFragmentActivityCreated(FragmentManager fm, Fragment f, Bundle savedInstanceState) {
+            super.onFragmentActivityCreated(fm, f, savedInstanceState);
+          }
+
+          @Override
+          public void onFragmentViewCreated(FragmentManager fm, Fragment f, View v, Bundle savedInstanceState) {
+            super.onFragmentViewCreated(fm, f, v, savedInstanceState);
+            Log.v(TAG, "onFragmentViewCreated  fragment = " + f.getClass().getName());
+            onUIEvent(InputUtil.UI_ACTION_CREATE_VIEW, f.getActivity(), f);
+          }
+
+          @Override
+          public void onFragmentStarted(FragmentManager fm, Fragment f) {
+            super.onFragmentStarted(fm, f);
+            Log.v(TAG, "onFragmentStarted  fragment = " + f.getClass().getName());
+            onUIEvent(InputUtil.UI_ACTION_START, f.getActivity(), f);
+          }
+
+          @Override
+          public void onFragmentResumed(FragmentManager fm, Fragment f) {
+            super.onFragmentResumed(fm, f);
+            setCurrentFragment(f);
+            Log.v(TAG, "onFragmentResumed  fragment = " + f.getClass().getName());
+            onUIEvent(InputUtil.UI_ACTION_RESUME, f.getActivity(), f);
+          }
+
+          @Override
+          public void onFragmentPaused(FragmentManager fm, Fragment f) {
+            super.onFragmentPaused(fm, f);
+            Log.v(TAG, "onFragmentPaused  fragment = " + f.getClass().getName());
+            onUIEvent(InputUtil.UI_ACTION_PAUSE, f.getActivity(), f);
+            setCurrentFragment(null);
+          }
+
+          @Override
+          public void onFragmentStopped(FragmentManager fm, Fragment f) {
+            super.onFragmentStopped(fm, f);
+            Log.v(TAG, "onFragmentStopped  fragment = " + f.getClass().getName());
+            onUIEvent(InputUtil.UI_ACTION_STOP, f.getActivity(), f);
+          }
+
+          @Override
+          public void onFragmentSaveInstanceState(FragmentManager fm, Fragment f, Bundle outState) {
+            super.onFragmentSaveInstanceState(fm, f, outState);
+          }
+
+          @Override
+          public void onFragmentViewDestroyed(FragmentManager fm, Fragment f) {
+            super.onFragmentViewDestroyed(fm, f);
+            Log.v(TAG, "onFragmentViewDestroyed  fragment = " + f.getClass().getName());
+            onUIEvent(InputUtil.UI_ACTION_DESTROY_VIEW, f.getActivity(), f);
+          }
+
+          @Override
+          public void onFragmentDestroyed(FragmentManager fm, Fragment f) {
+            super.onFragmentDestroyed(fm, f);
+            Log.v(TAG, "onFragmentDestroyed  fragment = " + f.getClass().getName());
+            onUIEvent(InputUtil.UI_ACTION_DESTROY, f.getActivity(), f);
+          }
+
+          @Override
+          public void onFragmentDetached(FragmentManager fm, Fragment f) {
+            super.onFragmentDetached(fm, f);
+            Log.v(TAG, "onFragmentDetached  fragment = " + f.getClass().getName());
+            onUIEvent(InputUtil.UI_ACTION_DETACH, f.getActivity(), f);
+          }
+        }, true);
+      }
+
+      // TODO deprecated     android.app.FragmentManager fm = fa.getFragmentManager();
+    }
+
+  }
   public void onClickPlay() {
     isSplitShowing = ! isSplitShowing;
     tvControllerPlay.setText(isReplay ? (isSplitShowing ? R.string.replaying : R.string.replay) : (isSplitShowing ? R.string.recording : R.string.record));
@@ -1024,7 +1307,22 @@ public class UIAutoApp extends Application {
   }
 
 
-  public void onUIAutoActivityDestroy(Activity activity) {
+  public void onUIAutoWindowDestroy(Window.Callback callback, Window window) {
+    if (activity == null) {
+      activity = getCurrentActivity();
+    }
+    if (callback instanceof Dialog) {
+      if (activity == null) {
+        activity = ((Dialog) callback).getOwnerActivity();
+        setCurrentActivity(activity);
+      }
+      onUIAutoActivityCreate(activity);
+    }
+    else {
+      this.window = activity == null ? null : activity.getWindow();
+    }
+  }
+  public void onUIAutoActivityDestroy(Window.Callback callback, Activity activity) {
     cache.edit()
       .remove(SPLIT_X)
       // .putInt(SPLIT_X, Math.round(vSplitX.getX() + vSplitX.getWidth()/2 - windowWidth))
@@ -1033,6 +1331,7 @@ public class UIAutoApp extends Application {
       // .putInt(SPLIT_Y, Math.round(vSplitY.getY() + vSplitY.getHeight()/2 - windowHeight))
       .putInt(SPLIT_Y, Math.round(floatSplitY.getY() + vSplitY.getHeight()/2 - windowHeight))
       .apply();
+    onUIAutoWindowDestroy(callback, activity == null ? null : activity.getWindow());
   }
 
   private LayoutInflater inflater;
@@ -1051,44 +1350,48 @@ public class UIAutoApp extends Application {
 
   private List<Activity> activityList = new LinkedList<>();
 
-  private WeakReference<Activity> sCurrentActivityWeakRef;
+  private WeakReference<Activity> currentActivityWeakRef;
   public Activity getCurrentActivity() {
-    Activity currentActivity = null;
-    if (sCurrentActivityWeakRef != null) {
-      currentActivity = sCurrentActivityWeakRef.get();
-    }
-    return currentActivity;
+    return currentActivityWeakRef == null ? null : currentActivityWeakRef.get();
   }
 
   public void setCurrentActivity(Activity activity) {
     this.activity = activity;
-    if (sCurrentActivityWeakRef == null || ! activity.equals(sCurrentActivityWeakRef.get())) {
-      sCurrentActivityWeakRef = new WeakReference<>(activity);
+    if (currentActivityWeakRef == null || ! activity.equals(currentActivityWeakRef.get())) {
+      currentActivityWeakRef = new WeakReference<>(activity);
     }
 
     UnitAutoApp.setCurrentActivity(activity);
   }
 
-
-
-
-
-  public boolean onTouchEvent(@NotNull MotionEvent event, @NotNull Activity activity) {
-    return onTouchEvent(event, activity, null);
+  private WeakReference<Fragment> currentFragmentWeakRef;
+  public Fragment getCurrentFragment() {
+    return currentFragmentWeakRef == null ? null : currentFragmentWeakRef.get();
   }
-  public boolean onTouchEvent(@NotNull MotionEvent event, @NotNull Fragment fragment) {
-    return onTouchEvent(event, fragment.getActivity(), fragment);
+  public void setCurrentFragment(Fragment fragment) {
+    this.fragment = fragment;
+    if (fragment != null && (currentFragmentWeakRef == null || ! fragment.equals(currentFragmentWeakRef.get()))) {
+      currentFragmentWeakRef = new WeakReference<>(fragment);
+    }
   }
+
+
+//  public boolean onTouchEvent(@NotNull MotionEvent event, @NotNull Activity activity) {
+//    return onTouchEvent(event, activity, null);
+//  }
+//  public boolean onTouchEvent(@NotNull MotionEvent event, @NotNull Fragment fragment) {
+//    return onTouchEvent(event, fragment.getActivity(), fragment);
+//  }
   public boolean onTouchEvent(@NotNull MotionEvent event, @NotNull Activity activity, Fragment fragment) {
-    addInputEvent(event, activity, fragment);
+    addInputEvent(event, activity, activity, fragment);
     return true;
   }
   public boolean onKeyDown(int keyCode, @NotNull KeyEvent event, @NotNull Activity activity, Fragment fragment) {
-    addInputEvent(event, activity, fragment);
+    addInputEvent(event, activity, activity, fragment);
     return true;
   }
   public boolean onKeyUp(int keyCode, @NotNull KeyEvent event, @NotNull Activity activity, Fragment fragment) {
-    addInputEvent(event, activity, fragment);
+    addInputEvent(event, activity, activity, fragment);
     return true;
   }
 
@@ -1524,7 +1827,7 @@ public class UIAutoApp extends Application {
                 //     }
                 // }
 
-                cache.edit().remove(cacheKey).putString(cacheKey, JSON.toJSONString(allList)).commit();
+                cache.edit().remove(cacheKey).putString(cacheKey, toJSONString(allList)).commit();
               }
 
               mainHandler.post(new Runnable() {
@@ -1556,8 +1859,10 @@ public class UIAutoApp extends Application {
         .setViewStateListener(new ViewStateListener() {
           @Override
           public void onPositionUpdate(int x, int y) {
-            int splitX = x + Math.round(splitRadius);
-            int splitY = y + Math.round(splitRadius);
+//            IFloatWindow ball = FloatWindow.get(ballName);
+            boolean isVice = "floatBall2".equals(ballName); // ball == floatBall2;
+            int splitX = Math.round(x + splitRadius - (isVice ? 0 : windowWidth));
+            int splitY = Math.round(y + splitRadius - (isVice ? 0 : windowHeight));
 
             if (floatSplitX_ != null) { //  && floatSplitX_.isShowing()) {
               try {
@@ -1620,10 +1925,46 @@ public class UIAutoApp extends Application {
     }
 
     ball.show();
-    tvControllerX.setText(splitX + "\n" + (splitX/windowWidth) + "%");
-    tvControllerY.setText(splitY + "\n" + (splitY/windowHeight) + "%");
 
+    boolean isVice = "floatBall2".equals(ballName); // ball == floatBall2;
+    int sx = Math.round(x + splitRadius - (isVice ? 0 : windowWidth));
+    int sy = Math.round(y + splitRadius - (isVice ? 0 : windowHeight));
+    tvControllerX.setText(sx + "\n" + (sx/windowWidth) + "%");
+    tvControllerY.setText(sy + "\n" + (sy/windowHeight) + "%");
+
+    if (floatSplitX_ != null && floatSplitX_.isShowing()) {
+      floatSplitX_.updateX(x + Math.round(splitRadius) - dip2px(0.5f));
+      floatSplitX_.hide();
+    }
+    if (floatSplitY_ != null && floatSplitY_.isShowing()) {
+      floatSplitY_.updateY(y + Math.round(splitRadius) - dip2px(0.5f));
+      floatSplitY_.hide();
+    }
     return ball;
+  }
+  public static String toJSONString(Object obj) {
+    return JSON.toJSONString(obj, new PropertyFilter() {
+      @Override
+      public boolean apply(Object object, String name, Object value) {
+        if (value == null) {
+          return true;
+        }
+        if (value instanceof Context
+                || value instanceof Fragment
+                || value instanceof android.app.Fragment
+                || value instanceof Annotation  // Android 客户端中 fastjon 怎么都不支持 Annotation
+                || value instanceof WindowManager
+                || value instanceof PowerManager
+                || value instanceof View
+                || value instanceof ViewParent
+                || value instanceof Drawable
+                || value instanceof Bitmap
+        ) {
+          return false;
+        }
+        return Modifier.isPublic(value.getClass().getModifiers());
+      }
+    });
   }
 
   public static final DecimalFormat DECIMAL_FORMAT = new DecimalFormat("0.0");
@@ -1647,13 +1988,14 @@ public class UIAutoApp extends Application {
     // return rectangle.top;
   }
 
-  public boolean dispatchEventToCurrentActivity(InputEvent ie, boolean record) {
+  public boolean dispatchEventToCurrentWindow(InputEvent ie, boolean record) {
     if (ie == null) {
       return false;
     }
 
-    activity = getCurrentActivity();
-    if (activity != null) {
+//    activity = getCurrentActivity();
+//    if (activity != null) {
+    if (callback != null) {
       if (ie instanceof MotionEvent) {
         MotionEvent event = (MotionEvent) ie;
 //        int windowX = getWindowX(activity);
@@ -1661,26 +2003,64 @@ public class UIAutoApp extends Application {
 //
 //        if (windowX > 0 || windowY > 0) {
 //          event = MotionEvent.obtain(event);
-//          event.offsetLocation(windowX, windowY);
+//          event.offsetLocation(windowX, -windowY);
 //        }
 
         try {
-          activity.dispatchTouchEvent(event);
-        } catch (Throwable e) {  // java.lang.IllegalArgumentException: tagerIndex out of range
+          if (callback.dispatchTouchEvent(event) == false && window != null) {
+            window.superDispatchTouchEvent(event);
+          }
+        } catch (Throwable e) {  // java.lang.IllegalArgumentException: targetIndex out of range
           e.printStackTrace();
+          if (window != null) {
+            window.superDispatchTouchEvent(event);
+          }
         }
       }
       else if (ie instanceof KeyEvent) {
-        KeyEvent event = (KeyEvent) ie;
-        activity.dispatchKeyEvent(event);
+        if (ie instanceof EditTextEvent) {
+          EditTextEvent ete = (EditTextEvent) ie;
+          if (ete.getWhen() == EditTextEvent.WHEN_ON) {
+            EditText target = ete.getTarget();
+            if (target == null || target.isAttachedToWindow() == false) {
+              target = findView(ete.getTargetId());
+            }
+            if (target == null) {
+              target = findViewByFocus(getCurrentDecorView(), EditText.class);
+            }
+            if (target.hasFocus() == false) {
+              target.requestFocus();
+            }
+            String text = StringUtil.getString(target.getText());
+            int l = text.length();
+            int start = Math.min(l, Math.max(0, ete.getSelectStart()));
+            int end = Math.min(l, Math.max(0, ete.getSelectEnd()));
+            target.setSelection(start, end);
+            target.setText(ete.getText());
+            String text2 = StringUtil.getString(target.getText());
+            int l2 = text2.length();
+            int start2 = Math.min(l2, Math.max(0, ete.getSelectStart()));
+            int end2 = Math.min(l2, Math.max(0, ete.getSelectEnd()));
+            if (end2 <= 0) {
+              start2 = end2 = l2;
+            }
+            target.setSelection(start2, end2);
+          }
+        }
+        else {
+          KeyEvent event = (KeyEvent) ie;
+          if (callback.dispatchKeyEvent(event) == false && window != null) {
+            window.superDispatchKeyEvent(event);
+          }
+        }
       }
     }
 
     if (record) {
-      addInputEvent(ie, activity);
+      addInputEvent(ie, callback, activity, fragment);
     }
 
-    return activity != null;
+    return callback != null;
   }
 
 
@@ -1784,6 +2164,29 @@ public class UIAutoApp extends Application {
 
       InputEvent event;
       if (type == InputUtil.EVENT_TYPE_KEY) {
+        if (obj.getBooleanValue("edit")) {
+          event = new EditTextEvent(
+                  obj.getLongValue("downTime"),
+                  obj.getLongValue("eventTime"),
+                  obj.getIntValue("action"),
+                  obj.getIntValue("keyCode"),
+                  obj.getIntValue("repeatCount"),
+                  obj.getIntValue("metaState"),
+                  obj.getIntValue("deviceId"),
+                  obj.getIntValue("scanCode"),
+                  obj.getIntValue("flags"),
+                  obj.getIntValue("source"),
+                  activity.findViewById(obj.getIntValue("targetId")),
+                  obj.getIntValue("when"),
+                  obj.getString("text"),
+                  obj.getIntValue("selectStart"),
+                  obj.getIntValue("selectEnd"),
+                  obj.getString("s"),
+                  obj.getIntValue("start"),
+                  obj.getIntValue("count"),
+                  obj.getIntValue("after")
+          );
+        } else {
         /**
          public KeyEvent(long downTime, long eventTime, int action,
          int code, int repeat, int metaState,
@@ -1813,6 +2216,7 @@ public class UIAutoApp extends Application {
           obj.getIntValue("flags"),
           obj.getIntValue("source")
         );
+        }
       }
       else if (type == InputUtil.EVENT_TYPE_TOUCH) {
         /**
@@ -2044,13 +2448,13 @@ public class UIAutoApp extends Application {
     }, delayMillis);
   }
 
-  public void onUIEvent(int action, Activity activity) {
-    onUIEvent(action, activity, null);
+  public void onUIEvent(int action, Window.Callback callback, Activity activity) {
+    onUIEvent(action, callback, activity, null);
   }
-  public void onUIEvent(int action, Fragment fragment) {
-    onUIEvent(action, null, fragment);
+  public void onUIEvent(int action, Window.Callback callback, Fragment fragment) {
+    onUIEvent(action, callback, null, fragment);
   }
-  public void onUIEvent(int action, Activity activity, Fragment fragment) {
+  public void onUIEvent(int action, Window.Callback callback, Activity activity, Fragment fragment) {
     if (activity != null && activity.isFinishing() == false
             && activity.isDestroyed() == false && activity.getWindow() != null) {
       window = activity.getWindow();
@@ -2061,24 +2465,35 @@ public class UIAutoApp extends Application {
       return;
     }
 
+    if (fragment != null && "com.bumptech.glide.manager.SupportRequestManagerFragment".equals(fragment.getClass().getName())) {
+      if (activity == null) {
+        return;
+      }
+      fragment = null;
+    }
     if (activity == null && fragment != null) {
       activity = fragment.getActivity();
     }
 
     if (isReplay) {
-      output(null, currentEventNode, activity);
+      Node<InputEvent> curNode = currentEventNode;
+      output(null, curNode, activity);
 
-      if (currentEventNode != null && currentEventNode.type == InputUtil.EVENT_TYPE_UI && currentEventNode.action == action
-        && (currentEventNode.activity == null || currentEventNode.activity.equals(activity == null ? null : activity.getClass().getName()))
-        && (currentEventNode.fragment == null || currentEventNode.fragment.equals(fragment == null ? null : fragment.getClass().getName()))
-      ) {
+      if (curNode == null || (curNode.type == InputUtil.EVENT_TYPE_UI && curNode.action == action
+              && ((Objects.equals(curNode.activity, activity == null ? null : activity.getClass().getName()))
+//                && (Objects.equals(curNode.fragment, fragment == null ? null : fragment.getClass().getName()))
+      ))) {
+        InputEvent curItem = curNode == null ? null : curNode.item;
+        Node<InputEvent> nextNode = curNode == null ? null : curNode.next;
+        InputEvent nextItem = nextNode == null ? null : nextNode.item;
+        long duration = curItem == null || nextItem == null ? (curNode == null || nextNode == null ? 0 : nextNode.time - curNode.time) : nextItem.getEventTime() - curItem.getEventTime();
         Message msg = handler.obtainMessage();
-        msg.obj = currentEventNode == null ? null : currentEventNode.next;
-        handler.sendMessageDelayed(msg, 500);
+        msg.obj = nextNode;
+        handler.sendMessageDelayed(msg, duration);
       }
     }
     else {
-      JSONObject obj = newEvent(activity, fragment);
+      JSONObject obj = newEvent(callback, activity, fragment);
       obj.put("type", InputUtil.EVENT_TYPE_UI);
       obj.put("action", action);
       obj.put("disable", true);  //总是导致停止后续动作，尤其是返回键相关的事件  action != InputUtil.UI_ACTION_RESUME);
@@ -2087,12 +2502,12 @@ public class UIAutoApp extends Application {
     }
   }
 
-  public void onHTTPEvent(int action, String format, String url, String request, String response, Activity activity) {
-    onHTTPEvent(action, format, url, request, response, activity, null);
-  }
-  public void onHTTPEvent(int action, String format, String url, String request, String response, Fragment fragment) {
-    onHTTPEvent(action, format, url, request, response, null, fragment);
-  }
+//  public void onHTTPEvent(int action, String format, String url, String request, String response, Activity activity) {
+//    onHTTPEvent(action, format, url, request, response, activity, null);
+//  }
+//  public void onHTTPEvent(int action, String format, String url, String request, String response, Fragment fragment) {
+//    onHTTPEvent(action, format, url, request, response, null, fragment);
+//  }
   public void onHTTPEvent(int action, String format, String url, String request, String response, Activity activity, Fragment fragment) {
     if (isSplitShowing == false) {
       Log.e(TAG, "onHTTPEvent  isSplitShowing == false >> return null;");
@@ -2106,14 +2521,27 @@ public class UIAutoApp extends Application {
     if (isReplay) {
       output(null, currentEventNode, activity);
 
-      if (currentEventNode != null && currentEventNode.type == InputUtil.EVENT_TYPE_HTTP && currentEventNode.action == action
-        && (url != null && url.equals(currentEventNode.url))
-        && (currentEventNode.activity == null || currentEventNode.activity.equals(activity == null ? null : activity.getClass().getName()))
-        && (currentEventNode.fragment == null || currentEventNode.fragment.equals(fragment == null ? null : fragment.getClass().getName()))
-      ) {
+      Node<InputEvent> curNode = currentEventNode;
+      if (curNode == null || ((Objects.equals(curNode.activity, activity == null ? null : activity.getClass().getName()))
+      )) {
+        List<Node<InputEvent>> list = waitMap.get(url);
+        if (list != null && list.isEmpty() == false) {
+          list.remove(0);
+        }
+        if (list == null || list.isEmpty()) {
+          waitMap.remove(url);
+        // if (curNode != null // && curNode.type == InputUtil.EVENT_TYPE_HTTP && curNode.action == action
+//        && (url != null && url.equals(curNode.url))
+
+          InputEvent curItem = curNode == null ? null : curNode.item;
+          Node<InputEvent> nextNode = curNode == null ? null : curNode.next;
+          InputEvent nextItem = nextNode == null ? null : nextNode.item;
+          long duration = curItem == null || nextItem == null ? (curNode == null || nextNode == null ? 0 : nextNode.time - curNode.time) : nextItem.getEventTime() - curItem.getEventTime();
+
         Message msg = handler.obtainMessage();
-        msg.obj = currentEventNode == null ? null : currentEventNode.next;
-        handler.sendMessageDelayed(msg, 500);
+          msg.obj = curNode == null ? null : (curItem != null ? curNode : nextNode);
+          handler.sendMessageDelayed(msg, duration);
+        }
       }
     }
     else {
@@ -2154,9 +2582,10 @@ public class UIAutoApp extends Application {
       return;
     }
 
-    new Thread(new Runnable() {
-      @Override
-      public void run() { //TODO 截屏等记录下来
+    Window window = this.window != null ? this.window : (activity == null ? null : activity.getWindow());
+//    new Thread(new Runnable() {
+//      @Override
+//      public void run() { //TODO 截屏等记录下来
         Node<?> node = eventNode;
 
         Long inputId;
@@ -2177,7 +2606,6 @@ public class UIAutoApp extends Application {
         if (node.disable == false) {
           obj.put("time", System.currentTimeMillis());  // TODO 如果有录屏，则不需要截屏，只需要记录时间点
 
-          Window window = activity == null ? null : activity.getWindow();
           if (window != null && (node.item == null || node.action == MotionEvent.ACTION_DOWN)) {
             // TODO 同步或用协程来上传图片
             obj.put("screenshotUrl", screenshot(directory == null || directory.exists() == false ? parentDirectory : directory, window, inputId, toInputId, node.orientation));
@@ -2190,8 +2618,8 @@ public class UIAutoApp extends Application {
         synchronized (outputList) { // 居然出现 java.lang.ArrayIndexOutOfBoundsException: length=49; index=49
           outputList.add(obj);
         }
-      }
-    }).start();
+//        }
+//    }).start();
   }
 
   /**屏幕截图
@@ -2235,16 +2663,18 @@ public class UIAutoApp extends Application {
       fos = new FileOutputStream(filePath);
       bitmap.compress(Bitmap.CompressFormat.PNG, 100, fos);
 
-      filePath = directory.getName() + "/" + file.getName();  // 返回相对路径
+      return file.getAbsolutePath(); // filePath = directory.getName() + "/" + file.getName();  // 返回相对路径
     }
     catch (Throwable e) {
       Log.e(TAG, "screenshot 截屏异常：" + e.toString());
     }
     finally {
+      if (bitmap != null) {
       try {
         bitmap.recycle();
       } catch (Throwable e) {
         e.printStackTrace();
+        }
       }
 
       if (fos != null) {
@@ -2265,24 +2695,30 @@ public class UIAutoApp extends Application {
   }
 
 
-  public JSONObject addInputEvent(@NotNull InputEvent ie, @NotNull Activity activity) {
-    return addInputEvent(ie, activity, null);
-  }
-  public JSONObject addInputEvent(@NotNull InputEvent ie, @NotNull Fragment fragment) {
-    return addInputEvent(ie, null, fragment);
-  }
+//  public JSONObject addInputEvent(@NotNull InputEvent ie, @NotNull Window.Callback callback, @NotNull Activity activity) {
+//    return addInputEvent(ie, callback, activity, null);
+//  }
+//  public JSONObject addInputEvent(@NotNull InputEvent ie, @NotNull Window.Callback callback, @NotNull Fragment fragment) {
+//    return addInputEvent(ie, callback, null, fragment);
+//  }
 
-  public JSONObject addInputEvent(@NotNull InputEvent ie, Activity activity, Fragment fragment) {
+  public JSONObject addInputEvent(@NotNull InputEvent ie, @NotNull Window.Callback callback, Activity activity, Fragment fragment) {
     if (isSplitShowing == false || vSplitX == null || vSplitY == null || isReplay) {
-      Log.e(TAG, "addInputEvent  isSplitShowing == false || vSplitX == null || vSplitY == null >> return null;");
+      Log.e(TAG, "addInputEvent  isSplitShowing == false || vSplitX == null || vSplitY == null || isReplay >> return null;");
       return null;
     }
 
+    if (fragment != null && "com.bumptech.glide.manager.SupportRequestManagerFragment".equals(fragment.getClass().getName())) {
+      if (activity == null) {
+        return null;
+      }
+      fragment = null;
+    }
     if (activity == null && fragment != null) {
       activity = fragment.getActivity();
     }
 
-    JSONObject obj = newEvent(activity, fragment);
+    JSONObject obj = newEvent(callback, activity, fragment);
 
     int type = 0;
     int action = 0;
@@ -2311,6 +2747,18 @@ public class UIAutoApp extends Application {
       //通过 mMetaState 获取的 obj.put("modifiers", event.getModifiers());
       //通过 mKeyCode 获取的 obj.put("displayLabel", event.getDisplayLabel());
       //通过 mMetaState 获取的 obj.put("unicodeChar", event.getUnicodeChar());
+      if (ie instanceof EditTextEvent) {
+        EditTextEvent mke = (EditTextEvent) ie;
+        obj.put("edit", true);
+        obj.put("target", mke.getTarget());
+        obj.put("targetId", mke.getTargetId());
+        obj.put("when", mke.getWhen());
+        obj.put("s", mke.getS());
+        obj.put("text", mke.getText());
+        obj.put("start", mke.getStart());
+        obj.put("count", mke.getCount());
+        obj.put("after", mke.getAfter());
+      }
     }
     else if (ie instanceof MotionEvent) {
       MotionEvent event = (MotionEvent) ie;
@@ -2334,6 +2782,14 @@ public class UIAutoApp extends Application {
       float rx = x - windowX - decorX;
       float ry = y - windowY - decorY - statusHeight;
 
+      if (callback instanceof Dialog) {
+        Dialog dialog = (Dialog) callback;
+      }
+      View decorView = window.getDecorView();
+      float dx = decorView.getX();
+      float dy = decorView.getY();
+      float dw = decorView.getWidth();
+      float dh = decorView.getHeight();
       // 只在回放前一处处理逻辑
       isSplit2Showing = floatBall2 != null && floatBall2.isShowing();
 //      float minX = (isSplit2Showing ? Math.min(floatBall.getX(), floatBall2.getX()) : floatBall.getX()) - splitRadius;
@@ -2343,8 +2799,8 @@ public class UIAutoApp extends Application {
       float maxY = (isSplit2Showing ? Math.max(floatBall.getY(), floatBall2.getY()) : floatBall.getY()) + splitRadius;
 //      float avgY = (minY + maxY)/2;
 
-      obj.put("x", rx < maxX ? rx : rx - decorWidth); // Math.round(x - windowX - decorX - (x < avgX ? 0 : decorWidth)));
-      obj.put("y", ry < maxY ? ry : ry - decorHeight + statusHeight); // Math.round(y - windowY - decorY - (y < avgY ? 0 : decorHeight)));
+      obj.put("x", rx < maxX ? rx : rx - dw + dx); // Math.round(x - windowX - decorX - (x < avgX ? 0 : decorWidth)));
+      obj.put("y", ry < maxY ? ry : ry - dh + dy + statusHeight); // Math.round(y - windowY - decorY - (y < avgY ? 0 : decorHeight)));
       obj.put("rawX", event.getRawX());
       obj.put("rawY", event.getRawY());
       obj.put("size", event.getSize());
@@ -2356,6 +2812,18 @@ public class UIAutoApp extends Application {
     }
 
     return addEvent(obj, type != InputUtil.EVENT_TYPE_TOUCH || action != MotionEvent.ACTION_MOVE);
+  }
+  public Window getCurrentWindow() {
+    if (window == null) {
+      window = getCurrentActivity().getWindow();
+    }
+    return window;
+  }
+  public View getCurrentDecorView() {
+    if (decorView == null) {
+      decorView = getCurrentWindow().getDecorView();
+    }
+    return decorView;
   }
 
   private boolean isAlignLeft(MotionEvent event) {
@@ -2395,7 +2863,25 @@ public class UIAutoApp extends Application {
     return floatSplitY != null && floatSplitY.getY() != 0 && y > floatSplitY.getY();
   }
 
-  public <V extends View> V findViewByTouchPoint(View view, float x, float y, boolean onlyFocusable) {
+  public <V extends View> V findView(@IdRes int id) {
+    return getCurrentWindow().findViewById(id);
+  }
+  public <V extends View> V findViewByFocus(View view, Class<V> clazz) {
+    if (view == null) {
+      return null;
+    }
+    if (view instanceof ViewGroup) {
+      ViewGroup vg = (ViewGroup) view;
+      for (int i = vg.getChildCount() - 1; i >= 0; i--) {
+        View v = findViewByFocus(vg.getChildAt(i), clazz);
+        if (v != null) {
+          return (V) v;
+        }
+      }
+    }
+    return view.hasFocus() && (clazz == null || clazz.isAssignableFrom(view.getClass())) ? (V) view : null;
+  }
+  public <V extends View> V findViewByPoint(View view, Class<V> clazz, float x, float y, boolean onlyFocusable) {
     if (view == null || x < view.getX() || x > view.getX() + view.getWidth()
             || y < view.getY() || y > view.getY() + view.getHeight()) {
       return null;
@@ -2405,14 +2891,16 @@ public class UIAutoApp extends Application {
       ViewGroup vg = (ViewGroup) view;
 
       for (int i = vg.getChildCount() - 1; i >= 0; i--) {
-        View v = findViewByTouchPoint(vg.getChildAt(i), x, y, onlyFocusable);
+        View v = findViewByPoint(vg.getChildAt(i), clazz, x, y, onlyFocusable);
         if (v != null && (onlyFocusable == false || view.isFocusable() || view.isFocusableInTouchMode())) {
           return (V) v;
         }
       }
     }
 
-    return onlyFocusable == false || view.isFocusable() || view.isFocusableInTouchMode() ? (V) view : null;
+    return (onlyFocusable == false || view.isFocusable() || view.isFocusableInTouchMode())
+            && (clazz == null || clazz.isAssignableFrom(view.getClass()))
+            ? (V) view : null;
   }
 
   int count = 0;
@@ -2480,25 +2968,26 @@ public class UIAutoApp extends Application {
     return eventList;
   }
 
-  public JSONObject newEvent(@NotNull Activity activity) {
-    return newEvent(activity, null);
+  public JSONObject newEvent(@NotNull Window.Callback callback, @NotNull Activity activity) {
+    return newEvent(callback, activity, null);
   }
-  public JSONObject newEvent(@NotNull Fragment fragment) {
-    return newEvent(null, fragment);
+  public JSONObject newEvent(@NotNull Window.Callback callback, @NotNull Fragment fragment) {
+    return newEvent(callback, null, fragment);
   }
-  public JSONObject newEvent(Activity activity, Fragment fragment) {
+  public JSONObject newEvent(@NotNull Window.Callback callback, Activity activity, Fragment fragment) {
     if (activity == null && fragment != null) {
       activity = fragment.getActivity();
     }
     return newEvent(
       activity == null ? Configuration.ORIENTATION_PORTRAIT : activity.getResources().getConfiguration().orientation,
+      callback,
       activity == null ? null : activity.getClass().getName()
       , fragment == null ? null : fragment.getClass().getName()
     );
   }
 
   private long lastId = 0;
-  public JSONObject newEvent(int orientation, String activity, String fragment) {
+  public JSONObject newEvent(int orientation, @NotNull Window.Callback callback, String activity, String fragment) {
     decorX = decorView == null ? 0 : decorView.getX();
     decorY = decorView == null ? 0 : decorView.getY();
     decorWidth = decorView == null ? windowWidth : decorView.getWidth();
@@ -2574,6 +3063,7 @@ public class UIAutoApp extends Application {
     tvControllerCount.setText(step + "/" + allStep);
     tvControllerTime.setText("0:00");
 
+    waitMap = new HashMap<>();
     new Thread(new Runnable() {
       @Override
       public void run() {
