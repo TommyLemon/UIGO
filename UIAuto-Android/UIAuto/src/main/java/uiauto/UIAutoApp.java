@@ -2782,9 +2782,9 @@ public class UIAutoApp extends Application {
       float rx = x - windowX - decorX;
       float ry = y - windowY - decorY - statusHeight;
 
-      if (callback instanceof Dialog) {
-        Dialog dialog = (Dialog) callback;
-      }
+//      if (callback instanceof Dialog) {
+//        Dialog dialog = (Dialog) callback;
+//      }
       View decorView = window.getDecorView();
       float dx = decorView.getX();
       float dy = decorView.getY();

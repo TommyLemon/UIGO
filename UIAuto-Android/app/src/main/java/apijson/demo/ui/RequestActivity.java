@@ -19,6 +19,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.support.v4.app.FragmentActivity;
 import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -43,7 +44,6 @@ import apijson.demo.model.BaseModel;
 import apijson.demo.model.Moment;
 import apijson.demo.model.Privacy;
 import apijson.demo.model.User;
-import uiauto.UIAutoBaseActivity;
 import zuo.biao.apijson.JSON;
 import zuo.biao.apijson.JSONResponse;
 
@@ -53,7 +53,7 @@ import static zuo.biao.apijson.StringUtil.UTF_8;
  * 向服务器发起请求查询或操作相应数据
  * @author Lemon
  */
-public class RequestActivity extends UIAutoBaseActivity implements OnHttpResponseListener {
+public class RequestActivity extends FragmentActivity implements OnHttpResponseListener {
 	private static final String TAG = "RequestActivity";
 
 

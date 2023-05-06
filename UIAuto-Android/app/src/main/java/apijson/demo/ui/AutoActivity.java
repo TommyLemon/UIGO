@@ -22,6 +22,7 @@ import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.os.Bundle;
+import android.support.v4.app.FragmentActivity;
 import android.util.Log;
 import android.view.View;
 import android.view.Window;
@@ -32,13 +33,12 @@ import apijson.demo.CodeUtil;
 import apijson.demo.R;
 import apijson.demo.RequestUtil;
 import uiauto.StringUtil;
-import uiauto.UIAutoBaseActivity;
 import zuo.biao.apijson.JSON;
 
 /**自动生成代码
  * @author Lemon
  */
-public class AutoActivity extends UIAutoBaseActivity {
+public class AutoActivity extends FragmentActivity {
 	private static final String TAG = "AutoActivity";
 
 	public static final String KEY_REQUEST = "KEY_REQUEST";

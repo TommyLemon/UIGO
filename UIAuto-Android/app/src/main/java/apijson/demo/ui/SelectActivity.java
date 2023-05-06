@@ -20,6 +20,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
+import android.support.v4.app.FragmentActivity;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.View.OnLongClickListener;
@@ -33,7 +34,6 @@ import apijson.demo.R;
 import apijson.demo.RequestUtil;
 import uiauto.StringUtil;
 import uiauto.UIAutoActivity;
-import uiauto.UIAutoBaseActivity;
 import unitauto.apk.UnitAutoActivity;
 import zuo.biao.apijson.JSON;
 
@@ -41,7 +41,7 @@ import zuo.biao.apijson.JSON;
  * 选择向服务器发起的请求
  * @author Lemon
  */
-public class SelectActivity extends UIAutoBaseActivity implements OnClickListener {
+public class SelectActivity extends FragmentActivity implements OnClickListener {
 
 	public static final String CONFIG_PATH = "CONFIG_PATH";
 
