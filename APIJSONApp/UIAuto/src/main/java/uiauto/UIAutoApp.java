@@ -86,13 +86,17 @@ import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
+import unitauto.NotNull;
 import unitauto.apk.UnitAutoApp;
-import zuo.biao.apijson.NotNull;
+
 
 /**Application
  * @author Lemon
@@ -102,6 +106,8 @@ public class UIAutoApp extends Application {
 
   private static final String SPLIT_X = "SPLIT_X";
   private static final String SPLIT_Y = "SPLIT_Y";
+  private static final String SPLIT_X2 = "SPLIT_X2";
+  private static final String SPLIT_Y2 = "SPLIT_Y2";
   private static final String SPLIT_HEIGHT = "SPLIT_HEIGHT";
   private static final String SPLIT_COLOR = "SPLIT_COLOR";
 
@@ -123,7 +129,7 @@ public class UIAutoApp extends Application {
 
   private final Handler mainHandler = new Handler(Looper.getMainLooper());
 
-  private Map<String, List<Node<InputEvent>>> waitMap = new HashMap<>();
+  private Map<String, List<Node<InputEvent>>> waitMap = new LinkedHashMap<>();
 
   private boolean isReplay = false;
   @SuppressLint("HandlerLeak")
@@ -143,36 +149,24 @@ public class UIAutoApp extends Application {
         // dispatchEventToCurrentActivity(event);
 
         //根据递归链表来实现，能精准地实现两个事件之间的间隔，不受处理时间不一致，甚至卡顿等影响。还能及时终止
-        Node<InputEvent> curNode = (Node<InputEvent>) msg.obj;
-        while (curNode != null && (curNode.disable || curNode.item == null)) {
-          if (curNode.disable == false && (Objects.equals(curNode.activity, activity == null ? null : activity.getClass().getName()))
-                  && (Objects.equals(curNode.fragment, fragment == null ? null : fragment.getClass().getName()))) {
-            List<Node<InputEvent>> list = waitMap.get(curNode.url);
-            if (list == null) {
-              list = new ArrayList<>();
-            }
-            list.add(curNode);
-            waitMap.put(curNode.url, list);
-          }
 
-          if (waitMap.isEmpty() == false) {
-            currentEventNode = curNode = curNode.next;
-            step ++;
-          }
+        Node<InputEvent> curNode = (Node<InputEvent>) msg.obj;
+
+        while (curNode != null && curNode.disable) { // (curNode.disable || curNode.item == null)) {
+          currentEventNode = curNode = curNode.next;
+          step ++;
 
           // if (curNode != null && curNode.item != null) {
           //   output(null, curNode, activity);
           // }
         }
 
-//        if (waitMap.isEmpty()) {
-          currentEventNode = curNode;
-          step ++;
-//        }
+        currentEventNode = curNode;
+        step = curNode == null ? step + 1 : curNode.step;  // step ++;
 
         // output(null, curNode, activity);
 
-        boolean canRefreshUI = curNode == null || curNode.type != InputUtil.EVENT_TYPE_TOUCH || curNode.action != MotionEvent.ACTION_MOVE;
+        boolean canRefreshUI = true; //FIXME 还原  curNode == null || curNode.type != InputUtil.EVENT_TYPE_TOUCH || curNode.action != MotionEvent.ACTION_MOVE;
 
         if (canRefreshUI) {
           tvControllerCount.setText(step + "/" + allStep);
@@ -185,7 +179,7 @@ public class UIAutoApp extends Application {
           showCoverAndSplit(true, false);
           isSplitShowing = false;
           isSplit2Showing = false;
-          waitMap = new HashMap<>();
+          waitMap = new LinkedHashMap<>();
           return;
         }
 
@@ -227,11 +221,11 @@ public class UIAutoApp extends Application {
 //              || floatBall.getY() != (curNode.splitY - splitRadius + windowHeight)) {
               // FloatWindow.destroy("floatBall");
               // floatBall = null;
-              floatBall = showSplit(isSplitShowing, splitX, splitY, "floatBall", vFloatBall, floatSplitX, floatSplitY);
+              floatBall = showSplit(true, splitX, splitY, "floatBall", vFloatBall, floatSplitX, floatSplitY);
 //            }
 
 //            if (isSplit2Showing) {
-              floatBall2 = showSplit(isSplit2Showing, splitX2, splitY2, "floatBall2", vFloatBall2, floatSplitX2, floatSplitY2);
+              floatBall2 = showSplit(splitX2 > 0 && splitY2 > 0, splitX2, splitY2, "floatBall2", vFloatBall2, floatSplitX2, floatSplitY2);
 //            }
 //          }
         }
@@ -239,8 +233,9 @@ public class UIAutoApp extends Application {
         // 分拆为下面两条，都放在 UI 操作后，减少延迟
         // dispatchEventToCurrentActivity(curItem, false);
 
+
         Node<InputEvent> nextNode = curNode.next;
-        long firstTime = nextNode == null ? 0 : nextNode.time;
+//        long firstTime = nextNode == null ? 0 : nextNode.time;
         while (nextNode != null && nextNode.disable) {
           // if (nextNode.item != null) {
           //   output(null, nextNode, activity);
@@ -251,6 +246,42 @@ public class UIAutoApp extends Application {
         }
         // long lastTime = nextNode == null ? 0 : nextNode.time;
 
+        waitMap = new LinkedHashMap<>();
+        int lastStep = step;
+        int lastWaitStep = 0;
+        Node<InputEvent> lastWaitNode = null;
+        Node<InputEvent> lastNextNode = nextNode;
+
+        Activity activity = getCurrentActivity();
+        while (lastNextNode != null && (lastNextNode.disable || lastNextNode.item == null)
+//                && (activity == null || Objects.equals(lastNextNode.activity, activity.getClass().getName()))
+        ) {
+          String url = lastNextNode.url;
+          if (lastNextNode.item == null // && lastNextNode.disable == false
+//                  && Objects.equals(lastNextNode.fragment, fragment == null ? null : fragment.getClass().getName())
+                  && StringUtil.isNotEmpty(url, true)
+          ) {
+
+            List<Node<InputEvent>> list = waitMap.get(url); // lastNextNode.type + ":" + lastNextNode.action + ": " + url);
+            if (list == null) {
+              list = new ArrayList<>();
+            }
+            list.add(lastNextNode);
+            waitMap.put(url, list);
+
+            lastWaitNode = lastNextNode;
+            lastWaitStep = lastStep;
+          }
+
+          lastNextNode = lastNextNode.next;
+          lastStep ++;
+        }
+
+        if (lastWaitNode != null) {
+          nextNode = lastWaitNode;
+          step = lastWaitStep;
+        }
+
         msg = new Message();
         msg.obj = nextNode;
 
@@ -258,17 +289,26 @@ public class UIAutoApp extends Application {
         //暂停，等待时机
         if (nextNode != null && nextItem == null) { // (nextNode.type == InputUtil.EVENT_TYPE_UI || nextNode.type == InputUtil.EVENT_TYPE_HTTP)) {
           // step --;
-          handleMessage(msg);
+
+//          if (lastWaitStep > 0) {
+//            step = lastWaitStep - 1;
+//          }
+// 导致重复添加到 waitMap          handleMessage(msg);
 
           dispatchEventToCurrentWindow(curNode.item, false);
+          handleMessage(msg);
         }
         else {
           output(null, curNode, activity);
           dispatchEventToCurrentWindow(curNode.item, false);
 
-          sendMessageDelayed(
-            msg, nextNode == null ? 0 : nextItem.getEventTime() - curItem.getEventTime()  // 相邻执行事件时间差本身就包含了  + (lastTime <= 0 || firstTime <= 0 ? 10 : lastTime - firstTime)  // 补偿 disable 项跳过的等待时间
-          );
+          long duration = nextNode == null ? 0 : nextItem.getEventTime() - curItem.getEventTime();
+          if (duration <= 0) {
+            handleMessage(msg);
+          }
+          else {
+            sendMessageDelayed(msg, duration); // 相邻执行事件时间差本身就包含了  + (lastTime <= 0 || firstTime <= 0 ? 10 : lastTime - firstTime)  // 补偿 disable 项跳过的等待时间
+          }
         }
 
       }
@@ -553,11 +593,17 @@ public class UIAutoApp extends Application {
 
     cache = getSharedPreferences(TAG, Context.MODE_PRIVATE);
 
-    splitX = cache.getInt(SPLIT_X, 0);
-    splitY = cache.getInt(SPLIT_Y, 0);
+
     splitSize = cache.getInt(SPLIT_HEIGHT, Math.round(dip2px(36)));
     splitRadius = splitSize/2;
 
+    Point[] points = ballPositionMap.get(activity);
+    if (points == null || points.length < 1) {
+      points = classBallPositionMap.get(activity.getClass().getName());
+    }
+    Point p = points == null || points.length < 1 ? null : points[0];
+    splitX = p != null && p.x != 0 ? p.x : cache.getInt(SPLIT_X, 0);
+    splitY = p != null && p.y != 0 ? p.y : cache.getInt(SPLIT_Y, 0);
     if (splitX >= 0 || Math.abs(splitX) >= windowWidth) { // decorWidth) {
       splitX = Math.round(- splitSize - dip2px(30));
     }
@@ -565,15 +611,22 @@ public class UIAutoApp extends Application {
       splitY = Math.round(- splitSize - dip2px(30));
     }
 
-    splitX2 = 0;
-    splitY2 = 0;
-    isSplit2Showing = false;
+    // splitX2 = 0;
+    // splitY2 = 0;
+    // isSplit2Showing = false;
 
-    showCover(true);
-    if (isSplitShowing) {
-      floatBall = showSplit(isSplitShowing, splitX, splitY, "floatBall", vFloatBall, floatSplitX, floatSplitY);
+    if (points == null || points.length < 2) {
+      points = classBallPositionMap.get(activity.getClass().getName());
     }
-
+    Point p2 = points == null || points.length < 2 ? null : points[1];
+    splitX2 = p2 == null ? 0 : p2.x;
+    splitY2 = p2 == null ? 0 : p2.y;
+    showCover(true);
+    // if (isSplitShowing) {
+      floatBall = showSplit(isSplitShowing, splitX, splitY, "floatBall", vFloatBall, floatSplitX, floatSplitY);
+      // if (isSplit2Showing) {
+        floatBall2 = showSplit(isSplitShowing && splitX2 > 0 && splitY2 > 0, splitX2, splitY2, "floatBall2", vFloatBall2, floatSplitX2, floatSplitY2);
+      // }
   }
 
   private Map<EditText, Boolean> editTextWatchedMap = new HashMap<>();
@@ -640,7 +693,6 @@ public class UIAutoApp extends Application {
   }
 
 
-  @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN_MR1)
   private void updateScreenWindowContentSize() {
     DisplayMetrics dm = getResources().getDisplayMetrics();
     DENSITY = dm.density;
@@ -724,7 +776,6 @@ public class UIAutoApp extends Application {
         Log.v(TAG, "onActivitySaveInstanceState  activity = " + activity.getClass().getName());
       }
 
-      @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN_MR1)
       @Override
       public void onActivityResumed(Activity activity) {
         Log.v(TAG, "onActivityResumed  activity = " + activity.getClass().getName());
@@ -741,6 +792,16 @@ public class UIAutoApp extends Application {
         Log.v(TAG, "onActivityPaused  activity = " + activity.getClass().getName());
         // setCurrentActivity(activityList.isEmpty() ? null : activityList.get(activityList.size() - 1));
         onUIEvent(InputUtil.UI_ACTION_PAUSE, activity, activity);
+        isSplit2Showing = floatBall2 != null && floatBall2.isShowing();
+        Point[] points = new Point[]{
+                new Point(
+                        floatBall == null ? (int) splitX : (int) (floatBall.getX() + splitRadius - windowWidth)
+                        , floatBall == null ? (int) splitY : (int) (floatBall.getY() + splitRadius - windowHeight)
+                )
+                , isSplit2Showing == false ? null : new Point((int) floatBall2.getX(), (int) floatBall2.getY())
+        };
+        ballPositionMap.put(activity, points);
+        classBallPositionMap.put(activity.getClass().getName(), points);
       }
 
       @Override
@@ -758,6 +819,7 @@ public class UIAutoApp extends Application {
         Log.v(TAG, "onActivityDestroyed  activity = " + activity.getClass().getName());
         activityList.remove(activity);
         onUIEvent(InputUtil.UI_ACTION_DESTROY, activity, activity);
+        ballPositionMap.remove(activity);
       }
 
     });
@@ -1022,13 +1084,14 @@ public class UIAutoApp extends Application {
           return;
         }
 
+        isSplit2Showing = floatBall2 != null && floatBall2.isShowing();
         isSplit2Showing = ! isSplit2Showing;
 
-        FloatWindow.destroy("floatBall2");
-        floatBall2 = null;
-        if (isSplit2Showing) {
-          floatBall2 = showSplit(true, - floatBall.getX() - splitRadius, - floatBall.getY() - splitSize, "floatBall2", vFloatBall2, floatSplitX2, floatSplitY2);
-        }
+        // FloatWindow.destroy("floatBall2");
+        // floatBall2 = null;
+        // if (isSplit2Showing) {
+          floatBall2 = showSplit(isSplit2Showing, - floatBall.getX() - splitRadius, - floatBall.getY() - splitSize, "floatBall2", vFloatBall2, floatSplitX2, floatSplitY2);
+        // }
       }
     });
 
@@ -1045,6 +1108,18 @@ public class UIAutoApp extends Application {
         Message msg = handler.obtainMessage();
         msg.obj = currentEventNode == null ? null : currentEventNode.prev;
         handler.sendMessage(msg);
+      }
+    });
+    tvControllerReturn.setOnLongClickListener(new View.OnLongClickListener() {
+      @Override
+      public boolean onLongClick(View v) {
+        handler.removeMessages(0);
+        if (step != 0) {
+          step = 0;
+          tvControllerCount.setText(step + "/" + allStep);
+          onEventChange(0, 0L);
+        }
+        return true;
       }
     });
 
@@ -1082,6 +1157,18 @@ public class UIAutoApp extends Application {
         Message msg = handler.obtainMessage();
         msg.obj = currentEventNode == null ? null : currentEventNode.next;
         handler.sendMessage(msg);
+      }
+    });
+    tvControllerForward.setOnLongClickListener(new View.OnLongClickListener() {
+      @Override
+      public boolean onLongClick(View v) {
+        handler.removeMessages(0);
+        if (step != allStep + 1) {
+          step = allStep + 1;
+          tvControllerCount.setText(step + "/" + allStep);
+          onEventChange(allStep - 1, 0L);
+        }
+        return true;
       }
     });
 
@@ -1212,9 +1299,10 @@ public class UIAutoApp extends Application {
     isSplitShowing = ! isSplitShowing;
     tvControllerPlay.setText(isReplay ? (isSplitShowing ? R.string.replaying : R.string.replay) : (isSplitShowing ? R.string.recording : R.string.record));
     floatBall = showSplit(isSplitShowing, splitX, splitY, "floatBall", vFloatBall, floatSplitX, floatSplitY);
+    floatBall2 = showSplit(isSplitShowing && splitX2 > 0 && splitY2 > 0, splitX2, splitY2, "floatBall2", vFloatBall2, floatSplitX2, floatSplitY2);
 
-    FloatWindow.destroy("floatBall2");
-    floatBall2 = null;
+    // FloatWindow.destroy("floatBall2");
+    // floatBall2 = null;
 
     currentTime = System.currentTimeMillis();
 
@@ -1359,7 +1447,9 @@ public class UIAutoApp extends Application {
 
 
   private int lastOrientation;
-  @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN_MR1)
+  // LifecycleOwner 只覆盖 Activity, Fragment, 而 Window.Callback 只覆盖 Activity, Dialog
+  private final Map<Object, Point[]> ballPositionMap = new HashMap<>();
+  private final Map<String, Point[]> classBallPositionMap = new HashMap<>();
   @Override
   public void onConfigurationChanged(Configuration newConfig) {
     super.onConfigurationChanged(newConfig);
@@ -1391,12 +1481,12 @@ public class UIAutoApp extends Application {
 //          }
 
           showCover(true);
-          if (isSplitShowing) {
+          // if (isSplitShowing) {
             floatBall = showSplit(isSplitShowing, splitX, splitY, "floatBall", vFloatBall, floatSplitX, floatSplitY);
-            if (isSplit2Showing) {
-              floatBall2 = showSplit(isSplit2Showing, splitX2, splitY2, "floatBall2", vFloatBall2, floatSplitX2, floatSplitY);
-            }
-          }
+            // if (isSplit2Showing) {
+              floatBall2 = showSplit(isSplitShowing && splitX2 > 0 && splitY2 > 0, splitX2, splitY2, "floatBall2", vFloatBall2, floatSplitX2, floatSplitY);
+
+
         }
       }
     }, 1000);
@@ -1405,6 +1495,7 @@ public class UIAutoApp extends Application {
   private void showCoverAndSplit(boolean showCover, boolean showSplit) {
     showCover(showCover);
     floatBall = showSplit(showSplit, splitX, splitY, "floatBall", vFloatBall, floatSplitX, floatSplitY);
+    floatBall2 = showSplit(showSplit && splitX2 > 0 && splitY2 > 0, splitX2, splitY2, "floatBall2", vFloatBall2, floatSplitX2, floatSplitY2);
   }
 
   //TODO 仅在触摸 ball 时显示分割线，重写 onTouchEvent
@@ -1593,22 +1684,36 @@ public class UIAutoApp extends Application {
     // showFloatView(true, "splitX2", vSplitX2, ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT, splitX2, 0, MoveType.inactive);
     // showFloatView(true, "splitY2", vSplitY2, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, 0, splitY2, MoveType.inactive);
 
+    int x = Math.round(splitX - splitRadius + (splitX > 0 ? 0 : windowWidth)); // 只有贴边才会自动处理 decorWidth); // 已被 FloatWindow 处理 windowX + decorX
+    int y = Math.round(splitY - splitRadius + (splitX > 0 ? 0 : windowHeight)); // 只有贴边才会自动处理  decorHeight); // 已被 FloatWindow 处理 windowY + decorY
+    if (floatSplitX_ != null) {
+      try {
+        floatSplitX_.updateX(x + Math.round(splitRadius) - dip2px(0.5f));
+      } catch (Throwable e) {
+        e.printStackTrace();
+      }
+    }
+    if (floatSplitY_ != null) {
+      try {
+        floatSplitY_.updateY(y + Math.round(splitRadius) - dip2px(0.5f));
+      } catch (Throwable e) {
+        e.printStackTrace();
+      }
+    }
+    vSplitX.setVisibility(View.GONE);
+    vSplitY.setVisibility(View.GONE);
+    vSplitX2.setVisibility(View.GONE);
+    vSplitY2.setVisibility(View.GONE);
+    if (floatBall2 != null) {
+      floatBall2.hide();
+    }
     IFloatWindow ball = FloatWindow.get(ballName);
     if (show == false) {
       if (ball != null) {
         ball.hide();
       }
-      if (floatSplitX_ != null && floatSplitX_.isShowing()) {
-        floatSplitX_.hide();
-      }
-      if (floatSplitY_ != null && floatSplitY_.isShowing()) {
-        floatSplitY_.hide();
-      }
       return ball;
     }
-
-    int x = Math.round(splitX - splitRadius + windowWidth); // 只有贴边才会自动处理 decorWidth); // 已被 FloatWindow 处理 windowX + decorX
-    int y = Math.round(splitY - splitRadius + windowHeight); // 只有贴边才会自动处理  decorHeight); // 已被 FloatWindow 处理 windowY + decorY
 
     if (ball == null) {
       vFloatBall.setExtraOnTouchListener(new View.OnTouchListener() {
@@ -1758,11 +1863,19 @@ public class UIAutoApp extends Application {
             int splitX = x + Math.round(splitRadius);
             int splitY = y + Math.round(splitRadius);
 
-            if (floatSplitX_ != null && floatSplitX_.isShowing()) {
+            if (floatSplitX_ != null) { //  && floatSplitX_.isShowing()) {
+              try {
               floatSplitX_.updateX(splitX - dip2px(0.5f));
+              } catch (Throwable e) {
+                e.printStackTrace();
+              }
             }
-            if (floatSplitY_ != null && floatSplitY_.isShowing()) {
+            if (floatSplitY_ != null) { //   && floatSplitY_.isShowing()) {
+              try {
               floatSplitY_.updateY(splitY - dip2px(0.5f));
+              } catch (Throwable e) {
+                e.printStackTrace();
+              }
             }
 
             double xr = 100f*splitX/windowWidth;
@@ -1780,10 +1893,10 @@ public class UIAutoApp extends Application {
 
           @Override
           public void onHide() {
-            if (floatSplitX_ != null && floatSplitX_.isShowing()) {
+            if (floatSplitX_ != null) {
               floatSplitX_.hide();
             }
-            if (floatSplitY_ != null && floatSplitY_.isShowing()) {
+            if (floatSplitY_ != null) {
               floatSplitY_.hide();
             }
           }
@@ -1925,33 +2038,37 @@ public class UIAutoApp extends Application {
           EditTextEvent ete = (EditTextEvent) ie;
           if (ete.getWhen() == EditTextEvent.WHEN_ON) {
             EditText target = ete.getTarget();
-            if (target == null) {
-// TODO             target = findViewByTouchPoint()
-            } else {
-              if (target.hasFocus() == false) {
-                target.requestFocus();
-              }
-
-              String text = StringUtil.getString(target.getText());
-              int l = text.length();
-              int start = Math.min(l, Math.max(0, ete.getSelectStart()));
-              int end = Math.min(l, Math.max(0, ete.getSelectEnd()));
-              target.setSelection(start, end);
-
-              target.setText(ete.getText());
-
-              String text2 = StringUtil.getString(target.getText());
-              int l2 = text2.length();
-              int start2 = Math.min(l2, Math.max(0, ete.getSelectStart()));
-              int end2 = Math.min(l2, Math.max(0, ete.getSelectEnd()));
-              if (end2 <= 0) {
-                start2 = end2 = l2;
-              }
-
-              target.setSelection(start2, end2);
+            if (target == null || target.isAttachedToWindow() == false) {
+              target = findView(ete.getTargetId());
             }
+            if (target == null) {
+              target = findViewByFocus(getCurrentDecorView(), EditText.class);
+            }
+
+            if (target.hasFocus() == false) {
+              target.requestFocus();
+            }
+
+            String text = StringUtil.getString(target.getText());
+            int l = text.length();
+            int start = Math.min(l, Math.max(0, ete.getSelectStart()));
+            int end = Math.min(l, Math.max(0, ete.getSelectEnd()));
+            target.setSelection(start, end);
+
+            target.setText(ete.getText());
+
+            String text2 = StringUtil.getString(target.getText());
+            int l2 = text2.length();
+            int start2 = Math.min(l2, Math.max(0, ete.getSelectStart()));
+            int end2 = Math.min(l2, Math.max(0, ete.getSelectEnd()));
+            if (end2 <= 0) {
+              start2 = end2 = l2;
+            }
+
+            target.setSelection(start2, end2);
           }
-        } else {
+        }
+        else {
           KeyEvent event = (KeyEvent) ie;
           callback.dispatchKeyEvent(event);
         }
@@ -1991,6 +2108,7 @@ public class UIAutoApp extends Application {
   private int allStep = 0;
   private int step = 0;
   private int lastStep = 0;
+//  private int lastWaitStep = 0;
 
   private long currentTime = 0;
   public void replay() {
@@ -2047,16 +2165,18 @@ public class UIAutoApp extends Application {
     prepareAndSendEvent(eventList, 0);
   }
   public void prepareAndSendEvent(@NotNull JSONArray eventList, int step) {
+    currentEventNode = null;
+    Node<InputEvent> eventNode = new Node<>(null, null, null);
     for (int i = 0; i < eventList.size(); i++) {
       JSONObject obj = eventList.getJSONObject(i);
       if (obj == null) { // || obj.getBooleanValue("disable")) {
         continue;
       }
 
-      if (i <= 0) {
-        firstEventNode = new Node<>(null, null, null);
-        eventNode = firstEventNode;
-      }
+      // if (i <= 0) {
+      //   firstEventNode = new Node<>(null, null, null);
+      //   eventNode = firstEventNode;
+      // }
 
       int type = obj.getIntValue("type");
       int action = obj.getIntValue("action");
@@ -2256,7 +2376,7 @@ public class UIAutoApp extends Application {
 
 //                list.add(event);
 
-
+      eventNode.step = i + 1;
       eventNode.id = obj.getLongValue("id");
       eventNode.flowId = obj.getLongValue("flowId");
       eventNode.disable = obj.getBooleanValue("disable");
@@ -2275,10 +2395,19 @@ public class UIAutoApp extends Application {
       eventNode.item = event;
 
       eventNode.next = new Node<>(eventNode, null, null);
+      if (i <= 0) {
+        firstEventNode = eventNode;
+      }
+      if (i == step - 1) {
+        currentEventNode = eventNode;
+      }
+
       eventNode = eventNode.next;
     }
 
-    currentEventNode = firstEventNode;
+    if (currentEventNode == null) {
+      currentEventNode = firstEventNode;
+    }
   }
 
   private float getScale(float ww, float wh, int layoutType, float density) {
@@ -2354,20 +2483,36 @@ public class UIAutoApp extends Application {
       return;
     }
 
+    if (fragment != null && "com.bumptech.glide.manager.SupportRequestManagerFragment".equals(fragment.getClass().getName())) {
+      if (activity == null) {
+        return;
+      }
+      fragment = null;
+    }
+
     if (activity == null && fragment != null) {
       activity = fragment.getActivity();
     }
 
     if (isReplay) {
-      output(null, currentEventNode, activity);
+      Node<InputEvent> curNode = currentEventNode;
+      output(null, curNode, activity);
 
-      if (currentEventNode != null && currentEventNode.type == InputUtil.EVENT_TYPE_UI && currentEventNode.action == action
-        && (currentEventNode.activity == null || currentEventNode.activity.equals(activity == null ? null : activity.getClass().getName()))
-        && (currentEventNode.fragment == null || currentEventNode.fragment.equals(fragment == null ? null : fragment.getClass().getName()))
-      ) {
+      if (curNode == null || (curNode.type == InputUtil.EVENT_TYPE_UI && curNode.action == action
+              && ((activity == null || Objects.equals(curNode.activity, activity.getClass().getName()))
+//                && (Objects.equals(curNode.fragment, fragment == null ? null : fragment.getClass().getName()))
+      ))) {
+//        waitMap = new LinkedHashMap<>();
+        InputEvent curItem = curNode == null ? null : curNode.item;
+
+        Node<InputEvent> nextNode = curNode == null ? null : curNode.next;
+        InputEvent nextItem = nextNode == null ? null : nextNode.item;
+
+        long duration = curItem == null || nextItem == null ? (curNode == null || nextNode == null ? 0 : nextNode.time - curNode.time) : nextItem.getEventTime() - curItem.getEventTime();
+
         Message msg = handler.obtainMessage();
-        msg.obj = currentEventNode == null ? null : currentEventNode.next;
-        handler.sendMessageDelayed(msg, 1500);
+        msg.obj = nextNode;
+        handler.sendMessageDelayed(msg, duration);
       }
     }
     else {
@@ -2399,21 +2544,34 @@ public class UIAutoApp extends Application {
     if (isReplay) {
       output(null, currentEventNode, activity);
 
-      List<Node<InputEvent>> list = waitMap.get(url);
-      if (list != null && list.isEmpty() == false) { // && list.contains()) {
-        list.remove(0);
-      }
-      if (list == null || list.isEmpty()) {
-        waitMap.remove(url);
+      Node<InputEvent> curNode = currentEventNode;
 
-        // if (currentEventNode != null // && currentEventNode.type == InputUtil.EVENT_TYPE_HTTP && currentEventNode.action == action
-//        && (url != null && url.equals(currentEventNode.url))
-        if (currentEventNode == null || ((Objects.equals(currentEventNode.activity, activity == null ? null : activity.getClass().getName()))
-                && (Objects.equals(currentEventNode.fragment, fragment == null ? null : fragment.getClass().getName())))
-        ) {
+      if (curNode == null || /** ((activity == null || Objects.equals(curNode.activity, activity.getClass().getName()))
+//                && (Objects.equals(curNode.fragment, fragment == null ? null : fragment.getClass().getName()))
+              && */ StringUtil.isNotEmpty(url, true) // )
+      ) {
+        List<Node<InputEvent>> list = waitMap.get(url);
+        if (list != null && list.isEmpty() == false) {
+          list.remove(0);
+        }
+        if (list == null || list.isEmpty()) {
+          waitMap.remove(url);
+//          step = lastWaitStep;
+        }
+
+        // if (curNode != null // && curNode.type == InputUtil.EVENT_TYPE_HTTP && curNode.action == action
+//        && (url != null && url.equals(curNode.url))
+        if (curNode == null || waitMap.isEmpty()) {
+          InputEvent curItem = curNode == null ? null : curNode.item;
+
+          Node<InputEvent> nextNode = curNode == null ? null : curNode.next;
+          InputEvent nextItem = nextNode == null ? null : nextNode.item;
+
+          long duration = curItem == null || nextItem == null ? (curNode == null || nextNode == null ? 0 : nextNode.time - curNode.time) : nextItem.getEventTime() - curItem.getEventTime();
+
           Message msg = handler.obtainMessage();
-          msg.obj = currentEventNode == null ? null : currentEventNode.next;
-          handler.sendMessageDelayed(msg, 500);
+          msg.obj = curNode == null ? null : (curItem != null ? curNode : nextNode);
+          handler.sendMessageDelayed(msg, duration);
         }
       }
     }
@@ -2450,6 +2608,8 @@ public class UIAutoApp extends Application {
     return outputList.subList(offset, Math.min(offset + limit, size));
   }
 
+  protected ExecutorService executorService = Executors.newSingleThreadExecutor();
+
   public void output(JSONObject out, Node<?> eventNode, Activity activity) {
     if (eventNode == null) {
       return;
@@ -2457,15 +2617,16 @@ public class UIAutoApp extends Application {
 
     Window window = this.window != null ? this.window : (activity == null ? null : activity.getWindow());
 
-    new Thread(new Runnable() {
-      @Override
-      public void run() { //TODO 截屏等记录下来
+//    executorService.execute(new Runnable() {
+//      @Override
+//      public void run() { //TODO 截屏等记录下来
+        Node<?> node = eventNode;
 
         Long inputId;
         Long toInputId;
         // if (eventNode.item == null) {  // 自动触发
-        inputId = eventNode.id;
-        toInputId = eventNode.prev == null || eventNode.prev.disable ? null : eventNode.prev.id;
+        inputId = node.id;
+        toInputId = node.prev == null || node.prev.disable ? null : node.prev.id;
         // }
         // else {  // 手动触发
         //   inputId = eventNode == null || (eventNode.prev) == null ? null : eventNode.prev.id;
@@ -2475,18 +2636,23 @@ public class UIAutoApp extends Application {
         JSONObject obj = out != null ? out : new JSONObject(true);
         obj.put("inputId", inputId);
         obj.put("toInputId", toInputId);
-        obj.put("orientation", eventNode.orientation);
-        if (eventNode.disable == false) {
+        obj.put("orientation", node.orientation);
+        if (node.disable == false) {
           obj.put("time", System.currentTimeMillis());  // TODO 如果有录屏，则不需要截屏，只需要记录时间点
 
-          if (window != null && (eventNode.item == null || eventNode.action == MotionEvent.ACTION_DOWN)) {
+          if (window != null && (node.item == null || node.action == MotionEvent.ACTION_DOWN)) {
             // TODO 同步或用协程来上传图片
-            obj.put("screenshotUrl", screenshot(directory == null || directory.exists() == false ? parentDirectory : directory, window, inputId, toInputId, eventNode.orientation));
+            obj.put("screenshotUrl", screenshot(directory == null || directory.exists() == false ? parentDirectory : directory, window, inputId, toInputId, node.orientation));
           }
         }
-        outputList.add(obj);
-      }
-    }).start();
+        if (outputList == null) {
+          outputList = new JSONArray();
+        }
+        synchronized (outputList) { // 居然出现 java.lang.ArrayIndexOutOfBoundsException: length=49; index=49
+        	outputList.add(obj);
+        }
+//        }
+//    });
   }
 
   /**屏幕截图
@@ -2571,10 +2737,18 @@ public class UIAutoApp extends Application {
 
   public JSONObject addInputEvent(@NotNull InputEvent ie, @NotNull Window.Callback callback, Activity activity, Fragment fragment) {
     if (isSplitShowing == false || vSplitX == null || vSplitY == null || isReplay) {
-      Log.e(TAG, "addInputEvent  isSplitShowing == false || vSplitX == null || vSplitY == null >> return null;");
+      Log.e(TAG, "addInputEvent  isSplitShowing == false || vSplitX == null || vSplitY == null || isReplay >> return null;");
       return null;
     }
 
+    if (fragment != null && "com.bumptech.glide.manager.SupportRequestManagerFragment".equals(fragment.getClass().getName())) {
+      if (activity == null) {
+        return null;
+      }
+      fragment = null;
+    }
+
+    // 直接在上面判断会导致少录制触屏事件
     if (activity == null && fragment != null) {
       activity = fragment.getActivity();
     }
@@ -2693,6 +2867,43 @@ public class UIAutoApp extends Application {
     return decorView;
   }
 
+  private boolean isAlignLeft(MotionEvent event) {
+    return ! isAlignRight(event);
+  }
+  private boolean isAlignLeft(float x) {
+    return ! isAlignRight(x);
+  }
+
+  private boolean isAlignRight(MotionEvent event) {
+    return event != null && isAlignRight(event.getX());
+  }
+  private boolean isAlignRight(float x) {
+    if (floatSplitX == null) {
+      return isFloatBallShowing() ? floatBall.getX() != 0 && floatBall.getY() != 0 && x > floatBall.getX() + splitSize/2 : false;
+    }
+    return floatSplitX.getX() != 0 && x > floatSplitX.getX();
+  }
+  private boolean isFloatBallShowing() {
+    return floatBall != null && floatBall.isShowing();
+  }
+
+  private boolean isAlignTop(MotionEvent event) {
+    return ! isAlignBottom(event);
+  }
+  private boolean isAlignTop(float y) {
+    return ! isAlignBottom(y);
+  }
+
+  private boolean isAlignBottom(MotionEvent event) {
+    return event != null && isAlignBottom(event.getY());
+  }
+  private boolean isAlignBottom(float y) {
+    if (floatSplitY == null) {
+      return isFloatBallShowing() ? floatBall.getX() != 0 && floatBall.getY() != 0 && y > floatBall.getY() + splitSize/2 : false;
+    }
+    return floatSplitY != null && floatSplitY.getY() != 0 && y > floatSplitY.getY();
+  }
+
   public <V extends View> V findView(@IdRes int id) {
     return getCurrentWindow().findViewById(id);
   }
@@ -2727,13 +2938,13 @@ public class UIAutoApp extends Application {
 
       for (int i = vg.getChildCount() - 1; i >= 0; i--) {
         View v = findViewByPoint(vg.getChildAt(i), clazz, x, y, onlyFocusable);
-        if (v != null) {
+        if (v != null && (onlyFocusable == false || view.isFocusable() || view.isFocusableInTouchMode())) {
           return (V) v;
         }
       }
     }
 
-    return (onlyFocusable == false || view.isFocusableInTouchMode())
+    return (onlyFocusable == false || view.isFocusable() || view.isFocusableInTouchMode())
             && (clazz == null || clazz.isAssignableFrom(view.getClass()))
             ? (V) view : null;
   }
@@ -2898,7 +3109,7 @@ public class UIAutoApp extends Application {
     tvControllerCount.setText(step + "/" + allStep);
     tvControllerTime.setText("0:00");
 
-    waitMap = new HashMap<>();
+    waitMap = new LinkedHashMap<>();
 
     new Thread(new Runnable() {
       @Override
@@ -2942,11 +3153,11 @@ public class UIAutoApp extends Application {
 	    allStep = 0;
 	    duration = 0;
 	    flowId = - System.currentTimeMillis();
+        tvControllerTime.setText("0:00");
     }
 
     tvControllerPlay.setText("record");
     tvControllerCount.setText(step + "/" + allStep);
-    tvControllerTime.setText("0:00");
 
     showCover(true);
   }
@@ -2971,6 +3182,8 @@ public class UIAutoApp extends Application {
     E item;
     Node<E> next;
     Node<E> prev;
+
+    int step;
 
     long id;
     long flowId;

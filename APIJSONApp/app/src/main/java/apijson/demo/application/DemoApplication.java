@@ -16,6 +16,11 @@ package apijson.demo.application;
 
 import apijson.demo.manager.DataManager;
 import apijson.demo.model.User;
+
+import android.app.Application;
+import android.support.annotation.NonNull;
+import apijson.demo.BuildConfig;
+import apijson.demo.R;
 import uiauto.UIAutoApp;
 import zuo.biao.library.base.BaseApplication;
 import zuo.biao.library.util.StringUtil;
@@ -27,17 +32,38 @@ import java.util.List;
  * @author Lemon
  */
 public class DemoApplication extends BaseApplication {
-	private static final String TAG = "APIJSONApplication";
+	private static final String TAG = "DemoApplication";
 
 	private static DemoApplication context;
 	public static DemoApplication getInstance() {
 		return context;
 	}
 	
+	// 暂时以继承方式实现，后续改为支持静态调用（需要把 UIAutoApp 成员变量全改为 static）
+	
 	@Override
 	public void onCreate() {
 		super.onCreate();
 		context = this;
+		
+//		UIAutoApp.init(this);	
+	
+		Thread.UncaughtExceptionHandler handler = Thread.currentThread().getUncaughtExceptionHandler();
+		Thread.currentThread().setUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
+			@Override
+			public void uncaughtException(@NonNull Thread t, @NonNull Throwable e) {
+				if (BuildConfig.DEBUG) {
+					if (handler != null) {
+						handler.uncaughtException(t, e);
+					} else {
+						t.stop(e);
+					}
+				} else {
+					e.printStackTrace();
+					// TODO 上传到 Bugly 等日志平台
+				}
+			}
+		});
 	}
 
 	public static List<Object> getOutputList(DemoApplication app, int limit, int offset) {

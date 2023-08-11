@@ -137,7 +137,7 @@ public abstract class BaseBottomTabActivity extends BaseActivity {
 		//消耗资源很少，不像Fragment>>>>>>
 
 		this.currentPosition = position;
-	};
+	}
 
 
 	protected void reload(int position) {
