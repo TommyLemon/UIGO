@@ -2007,20 +2007,25 @@ public class UIAutoApp extends Application {
 //        }
 
         try {
-          if (callback.dispatchTouchEvent(event) == false && window != null) {
-            window.superDispatchTouchEvent(event);
-          }
+          callback.dispatchTouchEvent(event);
+//          if (callback.dispatchTouchEvent(event) == false && window != null) {
+//            window.superDispatchTouchEvent(event);
+//          }
         } catch (Throwable e) {  // java.lang.IllegalArgumentException: targetIndex out of range
           e.printStackTrace();
           if (window != null) {
-            window.superDispatchTouchEvent(event);
+            try {
+              window.superDispatchTouchEvent(event);
+            } catch (Throwable e2) {
+              e.printStackTrace();
+            }
           }
         }
       }
       else if (ie instanceof KeyEvent) {
         if (ie instanceof EditTextEvent) {
           EditTextEvent ete = (EditTextEvent) ie;
-          if (ete.getWhen() == EditTextEvent.WHEN_ON) {
+//          if (ete.getWhen() == EditTextEvent.WHEN_ON) {
             EditText target = ete.getTarget();
             if (target == null || target.isAttachedToWindow() == false) {
               target = findView(ete.getTargetId());
@@ -2033,25 +2038,35 @@ public class UIAutoApp extends Application {
             }
             String text = StringUtil.getString(target.getText());
             int l = text.length();
-            int start = Math.min(l, Math.max(0, ete.getSelectStart()));
-            int end = Math.min(l, Math.max(0, ete.getSelectEnd()));
+
+            int selectStart = Math.max(0, ete.getSelectStart());
+            int selectEnd = Math.max(0, ete.getSelectEnd());
+
+            int start = Math.min(l, selectStart);
+            int end = Math.min(l, selectEnd);
+            if (end <= 0) {
+              start = end = l;
+            }
             target.setSelection(start, end);
+
             target.setText(ete.getText());
+
             String text2 = StringUtil.getString(target.getText());
             int l2 = text2.length();
-            int start2 = Math.min(l2, Math.max(0, ete.getSelectStart()));
-            int end2 = Math.min(l2, Math.max(0, ete.getSelectEnd()));
+            int start2 = Math.min(l2, selectStart);
+            int end2 = Math.min(l2, selectEnd);
             if (end2 <= 0) {
               start2 = end2 = l2;
             }
             target.setSelection(start2, end2);
-          }
+//          }
         }
         else {
           KeyEvent event = (KeyEvent) ie;
-          if (callback.dispatchKeyEvent(event) == false && window != null) {
-            window.superDispatchKeyEvent(event);
-          }
+          callback.dispatchKeyEvent(event);
+//          if (callback.dispatchKeyEvent(event) == false && window != null) {
+//            window.superDispatchKeyEvent(event);
+//          }
         }
       }
     }
@@ -2498,7 +2513,7 @@ public class UIAutoApp extends Application {
       obj.put("action", action);
       obj.put("disable", true);  //总是导致停止后续动作，尤其是返回键相关的事件  action != InputUtil.UI_ACTION_RESUME);
 
-      addEvent(obj);
+// FIXME 仅调试      addEvent(obj);
     }
   }
 
@@ -2555,7 +2570,9 @@ public class UIAutoApp extends Application {
       obj.put("response", response);
       obj.put("name", "");
 
-      addEvent(obj);
+      if (action == InputUtil.HTTP_ACTION_RESPONSE) { // FIXME 仅调试
+//        addEvent(obj);
+      }
     }
   }
 
@@ -2987,6 +3004,8 @@ public class UIAutoApp extends Application {
   }
 
   private long lastId = 0;
+  private long lastTime = 0;
+
   public JSONObject newEvent(int orientation, @NotNull Window.Callback callback, String activity, String fragment) {
     decorX = decorView == null ? 0 : decorView.getX();
     decorY = decorView == null ? 0 : decorView.getY();
@@ -3001,6 +3020,11 @@ public class UIAutoApp extends Application {
     splitY2 = isSplit2Showing ? Math.round(floatBall2.getY() + splitRadius - windowHeight) : 0; // decorHeight) : 0; // - decorY - decorHeight) : 0;
 
     long time = System.currentTimeMillis();
+    if (time <= lastTime) {
+      time = lastTime + 1;
+    }
+    lastTime = time;
+
     if (lastId < time) {
       lastId = time;
     } else {
