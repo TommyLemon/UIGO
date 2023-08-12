@@ -130,6 +130,7 @@ public class UIAutoApp extends Application {
   private final Handler mainHandler = new Handler(Looper.getMainLooper());
 
   private Map<String, List<Node<InputEvent>>> waitMap = new LinkedHashMap<>();
+  private Node<InputEvent> lastWaitNode = null;
 
   private boolean isReplay = false;
   @SuppressLint("HandlerLeak")
@@ -249,7 +250,7 @@ public class UIAutoApp extends Application {
         waitMap = new LinkedHashMap<>();
         int lastStep = step;
         int lastWaitStep = 0;
-        Node<InputEvent> lastWaitNode = null;
+        lastWaitNode = null;
         Node<InputEvent> lastNextNode = nextNode;
 
         Activity activity = getCurrentActivity();
@@ -257,17 +258,18 @@ public class UIAutoApp extends Application {
 //                && (activity == null || Objects.equals(lastNextNode.activity, activity.getClass().getName()))
         ) {
           String url = lastNextNode.url;
-          if (lastNextNode.item == null // && lastNextNode.disable == false
+          if (lastNextNode.item == null && lastNextNode.disable == false
 //                  && Objects.equals(lastNextNode.fragment, fragment == null ? null : fragment.getClass().getName())
                   && StringUtil.isNotEmpty(url, true)
           ) {
 
-            List<Node<InputEvent>> list = waitMap.get(url); // lastNextNode.type + ":" + lastNextNode.action + ": " + url);
+            String key = getWaitKey(lastNextNode);
+            List<Node<InputEvent>> list = waitMap.get(key);
             if (list == null) {
               list = new ArrayList<>();
             }
             list.add(lastNextNode);
-            waitMap.put(url, list);
+            waitMap.put(key, list);
 
             lastWaitNode = lastNextNode;
             lastWaitStep = lastStep;
@@ -314,6 +316,13 @@ public class UIAutoApp extends Application {
       }
     }
   };
+
+  private String getWaitKey(Node<InputEvent> node) {
+    return getWaitKey(node.type, node.action, node.method, node.host, node.url);
+  }
+  private String getWaitKey(int type, int action, String method, String host, String url) {
+    return type + ":" + action + ": " + method + " " + url;
+  }
 
   public void post(@NonNull Runnable r) {
     handler.post(r);
@@ -2385,7 +2394,12 @@ public class UIAutoApp extends Application {
       eventNode.time = obj.getLongValue("time");
       eventNode.activity = obj.getString("activity");
       eventNode.fragment = obj.getString("fragment");
+      eventNode.method = obj.getString("method");
+      eventNode.host = obj.getString("host");
       eventNode.url = obj.getString("url");
+      eventNode.header = obj.getString("header");
+      eventNode.request = obj.getString("request");
+      eventNode.response = obj.getString("response");
 
       eventNode.windowX = obj.getIntValue("windowX");
       eventNode.windowY = obj.getIntValue("windowY");
@@ -2531,7 +2545,7 @@ public class UIAutoApp extends Application {
 //  public void onHTTPEvent(int action, String format, String url, String request, String response, Fragment fragment) {
 //    onHTTPEvent(action, format, url, request, response, null, fragment);
 //  }
-  public void onHTTPEvent(int action, String format, String url, String request, String response, Activity activity, Fragment fragment) {
+  public void onHTTPEvent(int action, String format, String method, String host, String url, String header, String request, String response, Activity activity, Fragment fragment) {
     if (isSplitShowing == false) {
       Log.e(TAG, "onHTTPEvent  isSplitShowing == false >> return null;");
       return;
@@ -2544,24 +2558,27 @@ public class UIAutoApp extends Application {
     if (isReplay) {
       output(null, currentEventNode, activity);
 
-      Node<InputEvent> curNode = currentEventNode;
+      Node<InputEvent> curNode = lastWaitNode == null ? currentEventNode : lastWaitNode;
 
       if (curNode == null || /** ((activity == null || Objects.equals(curNode.activity, activity.getClass().getName()))
 //                && (Objects.equals(curNode.fragment, fragment == null ? null : fragment.getClass().getName()))
               && */ StringUtil.isNotEmpty(url, true) // )
       ) {
-        List<Node<InputEvent>> list = waitMap.get(url);
+        String key = getWaitKey(InputUtil.EVENT_TYPE_HTTP, action, method, host, url);
+        List<Node<InputEvent>> list = waitMap.get(key);
         if (list != null && list.isEmpty() == false) {
           list.remove(0);
         }
         if (list == null || list.isEmpty()) {
-          waitMap.remove(url);
+          waitMap.remove(key);
 //          step = lastWaitStep;
         }
 
         // if (curNode != null // && curNode.type == InputUtil.EVENT_TYPE_HTTP && curNode.action == action
 //        && (url != null && url.equals(curNode.url))
         if (curNode == null || waitMap.isEmpty()) {
+          lastWaitNode = null;
+
           InputEvent curItem = curNode == null ? null : curNode.item;
 
           Node<InputEvent> nextNode = curNode == null ? null : curNode.next;
@@ -2581,7 +2598,10 @@ public class UIAutoApp extends Application {
       obj.put("action", action);
       obj.put("disable", action != InputUtil.HTTP_ACTION_RESPONSE);
       obj.put("format", format);
+      obj.put("method", method);
+      obj.put("host", host);
       obj.put("url", url);
+      obj.put("header", header);
       obj.put("request", request);
       obj.put("response", response);
       obj.put("name", "");
@@ -3201,7 +3221,12 @@ public class UIAutoApp extends Application {
     int orientation;
     String activity;
     String fragment;
+    String method;
+    String header;
+    String host;
     String url;
+    String request;
+    String response;
 
     Node(Node<E> prev, E element, Node<E> next) {
       this.item = element;

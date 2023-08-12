@@ -169,14 +169,13 @@ public class HttpManager {
                             .addHeader(KEY_TOKEN, token).url(url)
                             .post(requestBody).build();
 
-                    httpRequestString = toHttpJSONString(httpRequest == null ? null : httpRequest.headers().toString(), request);
-
                     UIAutoApp.getInstance().post(new Runnable() {
                         @Override
                         public void run() {
                             UIAutoApp.getInstance().onHTTPEvent(
                                     InputUtil.HTTP_ACTION_REQUEST, "JSON"
-                                    , url_, httpRequestString, null
+                                    , "POST", "http://apijson.cn:8080", url_
+                                    , httpRequest == null ? null : httpRequest.headers().toString(), request, null
                                     , getActivity(listener), getFragment(listener)
                             );
                         }
@@ -206,7 +205,8 @@ public class HttpManager {
                     public void run() {
                         UIAutoApp.getInstance().onHTTPEvent(
                                 InputUtil.HTTP_ACTION_RESPONSE, e == null ? ("" + responseCode) : e.getClass().getSimpleName()
-                                , url_, httpRequestString, toHttpJSONString(responseHeaders == null ? null : responseHeaders.toString(), responseBody)
+                                , "POST", "http://apijson.cn:8080", url_
+                                , responseHeaders == null ? null : responseHeaders.toString(), httpRequestString, responseBody
                                 , getActivity(listener), getFragment(listener)
                         );
                     }
