@@ -2419,9 +2419,9 @@ public class UIAutoApp extends Application {
       eventNode.method = obj.getString("method");
       eventNode.host = obj.getString("host");
       eventNode.url = obj.getString("url");
-      eventNode.header = obj.getString("header");
-      eventNode.request = obj.getString("request");
-      eventNode.response = obj.getString("response");
+//      eventNode.header = obj.getString("header");
+//      eventNode.request = obj.getString("request");
+//      eventNode.response = obj.getString("response");
 
       eventNode.windowX = obj.getIntValue("windowX");
       eventNode.windowY = obj.getIntValue("windowY");
@@ -2659,9 +2659,9 @@ public class UIAutoApp extends Application {
 
     Window window = this.window != null ? this.window : (activity == null ? null : activity.getWindow());
 
-//    executorService.execute(new Runnable() {
-//      @Override
-//      public void run() { //TODO 截屏等记录下来
+    executorService.execute(new Runnable() {
+      @Override
+      public void run() { //TODO 截屏等记录下来
         Node<?> node = eventNode;
 
         Long inputId;
@@ -2693,8 +2693,8 @@ public class UIAutoApp extends Application {
         synchronized (outputList) { // 居然出现 java.lang.ArrayIndexOutOfBoundsException: length=49; index=49
         	outputList.add(obj);
         }
-//        }
-//    });
+      }
+    });
   }
 
   /**屏幕截图
@@ -3244,11 +3244,11 @@ public class UIAutoApp extends Application {
     String activity;
     String fragment;
     String method;
-    String header;
+//    String header;
     String host;
     String url;
-    String request;
-    String response;
+//    String request;
+//    String response;
 
     Node(Node<E> prev, E element, Node<E> next) {
       this.item = element;
