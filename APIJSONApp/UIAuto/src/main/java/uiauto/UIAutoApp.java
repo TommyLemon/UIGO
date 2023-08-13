@@ -85,6 +85,7 @@ import java.lang.reflect.Modifier;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
@@ -161,13 +162,12 @@ public class UIAutoApp extends Application {
           //   output(null, curNode, activity);
           // }
         }
-
         currentEventNode = curNode;
         step = curNode == null ? step + 1 : curNode.step;  // step ++;
 
         // output(null, curNode, activity);
 
-        boolean canRefreshUI = true; //FIXME 还原  curNode == null || curNode.type != InputUtil.EVENT_TYPE_TOUCH || curNode.action != MotionEvent.ACTION_MOVE;
+        boolean canRefreshUI = curNode == null || curNode.type != InputUtil.EVENT_TYPE_TOUCH || curNode.action != MotionEvent.ACTION_MOVE;
 
         if (canRefreshUI) {
           tvControllerCount.setText(step + "/" + allStep);
@@ -237,19 +237,20 @@ public class UIAutoApp extends Application {
 
         Node<InputEvent> nextNode = curNode.next;
 //        long firstTime = nextNode == null ? 0 : nextNode.time;
-        while (nextNode != null && nextNode.disable) {
-          // if (nextNode.item != null) {
-          //   output(null, nextNode, activity);
-          // }
-
-          nextNode = nextNode.next;
-          step ++;
-        }
+//        while (nextNode != null && nextNode.disable) {
+//          // if (nextNode.item != null) {
+//          //   output(null, nextNode, activity);
+//          // }
+//
+//          nextNode = nextNode.next;
+//          step ++;
+//        }
+//        step = curNode == null ? step + 1 : curNode.step;
         // long lastTime = nextNode == null ? 0 : nextNode.time;
 
         waitMap = new LinkedHashMap<>();
-        int lastStep = step;
-        int lastWaitStep = 0;
+//        int lastStep = step;
+//        int lastWaitStep = 0;
         lastWaitNode = null;
         Node<InputEvent> lastNextNode = nextNode;
 
@@ -258,7 +259,11 @@ public class UIAutoApp extends Application {
 //                && (activity == null || Objects.equals(lastNextNode.activity, activity.getClass().getName()))
         ) {
           String url = lastNextNode.url;
-          if (lastNextNode.item == null && lastNextNode.disable == false
+
+          if (lastNextNode.disable) {
+            nextNode = nextNode.next;
+          }
+          else if (lastNextNode.item == null && lastNextNode.disable == false
 //                  && Objects.equals(lastNextNode.fragment, fragment == null ? null : fragment.getClass().getName())
                   && StringUtil.isNotEmpty(url, true)
           ) {
@@ -272,7 +277,7 @@ public class UIAutoApp extends Application {
             waitMap.put(key, list);
 
             lastWaitNode = lastNextNode;
-            lastWaitStep = lastStep;
+//            lastWaitStep = lastStep;
           }
 
           lastNextNode = lastNextNode.next;
@@ -281,7 +286,7 @@ public class UIAutoApp extends Application {
 
         if (lastWaitNode != null) {
           nextNode = lastWaitNode;
-          step = lastWaitStep;
+//          step = lastWaitStep;
         }
 
         msg = new Message();
@@ -2503,7 +2508,7 @@ public class UIAutoApp extends Application {
   public void onUIEvent(int action, Window.Callback callback, Fragment fragment) {
     onUIEvent(action, callback, null, fragment);
   }
-  public void onUIEvent(int action, Window.Callback callback, Activity activity, Fragment fragment) {
+  public synchronized void onUIEvent(int action, Window.Callback callback, Activity activity, Fragment fragment) {
     if (activity != null && activity.isFinishing() == false
             && activity.isDestroyed() == false && activity.getWindow() != null) {
       window = activity.getWindow();
@@ -2529,12 +2534,12 @@ public class UIAutoApp extends Application {
       Node<InputEvent> curNode = currentEventNode;
       output(null, curNode, activity);
 
-      if (curNode == null || (curNode.type == InputUtil.EVENT_TYPE_UI && curNode.action == action
+      if (curNode == null || curNode.disable || (curNode.type == InputUtil.EVENT_TYPE_UI && curNode.action == action
               && ((activity == null || Objects.equals(curNode.activity, activity.getClass().getName()))
 //                && (Objects.equals(curNode.fragment, fragment == null ? null : fragment.getClass().getName()))
       ))) {
 //        waitMap = new LinkedHashMap<>();
-        InputEvent curItem = curNode == null ? null : curNode.item;
+        InputEvent curItem = curNode == null || curNode.disable ? null : curNode.item;
 
         Node<InputEvent> nextNode = curNode == null ? null : curNode.next;
         InputEvent nextItem = nextNode == null ? null : nextNode.item;
@@ -2562,7 +2567,7 @@ public class UIAutoApp extends Application {
 //  public void onHTTPEvent(int action, String format, String url, String request, String response, Fragment fragment) {
 //    onHTTPEvent(action, format, url, request, response, null, fragment);
 //  }
-  public void onHTTPEvent(int action, String format, String method, String host, String url, String header, String request, String response, Activity activity, Fragment fragment) {
+  public synchronized void onHTTPEvent(int action, String format, String method, String host, String url, String header, String request, String response, Activity activity, Fragment fragment) {
     if (isSplitShowing == false) {
       Log.e(TAG, "onHTTPEvent  isSplitShowing == false >> return null;");
       return;
@@ -2577,9 +2582,9 @@ public class UIAutoApp extends Application {
 
       Node<InputEvent> curNode = lastWaitNode == null ? currentEventNode : lastWaitNode;
 
-      if (curNode == null || /** ((activity == null || Objects.equals(curNode.activity, activity.getClass().getName()))
+      if (curNode == null || curNode.disable || /** ((activity == null || Objects.equals(curNode.activity, activity.getClass().getName()))
 //                && (Objects.equals(curNode.fragment, fragment == null ? null : fragment.getClass().getName()))
-              && */ StringUtil.isNotEmpty(url, true) // )
+              && */ (StringUtil.isNotEmpty(url, true) && ! waitMap.isEmpty()) // ) // 避免过多调用
       ) {
         String key = getWaitKey(InputUtil.EVENT_TYPE_HTTP, action, method, host, url);
         List<Node<InputEvent>> list = waitMap.get(key);
@@ -2593,10 +2598,10 @@ public class UIAutoApp extends Application {
 
         // if (curNode != null // && curNode.type == InputUtil.EVENT_TYPE_HTTP && curNode.action == action
 //        && (url != null && url.equals(curNode.url))
-        if (curNode == null || waitMap.isEmpty()) {
+        if (curNode == null || curNode.disable || waitMap.isEmpty()) {
           lastWaitNode = null;
 
-          InputEvent curItem = curNode == null ? null : curNode.item;
+          InputEvent curItem = curNode == null || curNode.disable ? null : curNode.item;
 
           Node<InputEvent> nextNode = curNode == null ? null : curNode.next;
           InputEvent nextItem = nextNode == null ? null : nextNode.item;
