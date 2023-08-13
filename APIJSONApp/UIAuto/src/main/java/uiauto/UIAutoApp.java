@@ -1163,6 +1163,23 @@ public class UIAutoApp extends Application {
           onEventChange(step - 1, 0L);
         }
 
+        Collection<List<Node<InputEvent>>> values = waitMap.values();
+        for (List<Node<InputEvent>> list : values) {
+          if (list == null || list.isEmpty()) {
+            continue;
+          }
+
+          for (Node<InputEvent> node : list) {
+            if (node == null) {
+              continue;
+            }
+
+            node.disable = true;
+          }
+        }
+
+        waitMap = new LinkedHashMap<>();
+
         Message msg = handler.obtainMessage();
         msg.obj = currentEventNode == null ? null : currentEventNode.next;
         handler.sendMessage(msg);
