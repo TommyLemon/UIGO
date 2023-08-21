@@ -758,13 +758,14 @@ public class UIAutoApp extends Application {
         // setCurrentActivity(activityList.isEmpty() ? null : activityList.get(activityList.size() - 1));
         onUIEvent(InputUtil.UI_ACTION_PAUSE, activity, activity);
 
+        isSplitShowing = floatBall != null && floatBall.isShowing();
         isSplit2Showing = floatBall2 != null && floatBall2.isShowing();
         Point[] points = new Point[]{
                 new Point(
                         floatBall == null ? (int) splitX : (int) (floatBall.getX() + splitRadius - windowWidth)
                         , floatBall == null ? (int) splitY : (int) (floatBall.getY() + splitRadius - windowHeight)
                 )
-                , isSplit2Showing == false ? null : new Point((int) floatBall2.getX(), (int) floatBall2.getY())
+                , isSplitShowing == false || isSplit2Showing == false ? null : new Point((int) floatBall2.getX(), (int) floatBall2.getY())
         };
         ballPositionMap.put(activity, points);
         classBallPositionMap.put(activity.getClass().getName(), points);
