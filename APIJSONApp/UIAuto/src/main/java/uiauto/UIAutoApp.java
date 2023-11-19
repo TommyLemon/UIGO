@@ -34,6 +34,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 import android.os.PowerManager;
+import android.os.SystemClock;
 import android.support.annotation.IdRes;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -195,10 +196,12 @@ public class UIAutoApp extends Application {
         InputEvent prevItem = prevNode == null ? null : prevNode.item;
 
         if (prevNode != null) {
-          duration += (prevItem == null || curItem == null
-            ? (curNode.time - prevNode.time)
-            : (curItem.getEventTime() - prevItem.getEventTime())
-          );
+          // MotionEvent 是系统启动时间 326941454，UNKNOWN KeyEvent 是当前时间
+          long pet = prevItem == null ? 0 : prevItem.getEventTime();
+          long cet = pet <= 0 || curItem == null ? 0 : curItem.getEventTime();
+          long dur = cet - pet;
+          long dur2 = curNode == null || prevNode == null ? 0 : curNode.time - prevNode.time;
+          long duration = dur <= 0 || dur2 <= 0 ? 1 : Math.min(dur, dur2);
 
           if (canRefreshUI) {
             tvControllerTime.setText(TIME_FORMAT.format(duration));
@@ -309,13 +312,19 @@ public class UIAutoApp extends Application {
           output(null, curNode, activity);
           dispatchEventToCurrentWindow(curItem, false);
 
-          long duration = nextNode == null ? 0 : nextItem.getEventTime() - curItem.getEventTime();
-          if (duration <= 0) {
-            handleMessage(msg);
-          }
-          else {
+          // MotionEvent 是系统启动时间 326941454，UNKNOWN KeyEvent 是当前时间
+          long cet = curItem == null ? 0 : curItem.getEventTime();
+          long net = cet <= 0 || nextItem == null ? 0 : nextItem.getEventTime();
+          long dur = net <= 0 ? 0 : net - cet;
+          long dur2 = nextNode == null || curNode == null ? 0 : nextNode.time - curNode.time;
+          long duration = dur <= 0 || dur2 <= 0 ? 1 : Math.min(dur, dur2);
+
+//          if (duration <= 0) {
+//            handleMessage(msg);
+//          }
+//          else {
             sendMessageDelayed(msg, duration); // 相邻执行事件时间差本身就包含了  + (lastTime <= 0 || firstTime <= 0 ? 10 : lastTime - firstTime)  // 补偿 disable 项跳过的等待时间
-          }
+//          }
         }
 
       }
@@ -2549,7 +2558,12 @@ public class UIAutoApp extends Application {
         Node<InputEvent> nextNode = curNode == null ? null : curNode.next;
         InputEvent nextItem = nextNode == null ? null : nextNode.item;
 
-        long duration = curItem == null || nextItem == null ? (curNode == null || nextNode == null ? 0 : nextNode.time - curNode.time) : nextItem.getEventTime() - curItem.getEventTime();
+        // MotionEvent 是系统启动时间 326941454，UNKNOWN KeyEvent 是当前时间
+        long cet = curItem == null ? 0 : curItem.getEventTime();
+        long net = cet <= 0 || nextItem == null ? 0 : nextItem.getEventTime();
+        long dur = net <= 0 ? 0 : net - cet;
+        long dur2 = nextNode == null || curNode == null ? 0 : nextNode.time - curNode.time;
+        long duration = dur <= 0 || dur2 <= 0 ? 1 : Math.min(dur, dur2);
 
         Message msg = handler.obtainMessage();
         msg.obj = nextNode;
@@ -2611,7 +2625,12 @@ public class UIAutoApp extends Application {
           Node<InputEvent> nextNode = curNode == null ? null : curNode.next;
           InputEvent nextItem = nextNode == null ? null : nextNode.item;
 
-          long duration = curItem == null || nextItem == null ? (curNode == null || nextNode == null ? 0 : nextNode.time - curNode.time) : nextItem.getEventTime() - curItem.getEventTime();
+          // MotionEvent 是系统启动时间 326941454，UNKNOWN KeyEvent 是当前时间
+          long cet = curItem == null ? 0 : curItem.getEventTime();
+          long net = cet <= 0 || nextItem == null ? 0 : nextItem.getEventTime();
+          long dur = net <= 0 ? 0 : net - cet;
+          long dur2 = nextNode == null || curNode == null ? 0 : nextNode.time - curNode.time;
+          long duration = dur <= 0 || dur2 <= 0 ? 1 : Math.min(dur, dur2);
 
           Message msg = handler.obtainMessage();
           msg.obj = curNode == null ? null : (curItem != null ? curNode : nextNode);
@@ -2805,17 +2824,27 @@ public class UIAutoApp extends Application {
     int type = 0;
     int action = 0;
 
+    long eventTime = ie.getEventTime();
+    if (eventTime <= 0) {
+      eventTime = SystemClock.uptimeMillis(); // System.currentTimeMillis();
+    }
+
+    obj.put("eventTime", eventTime);
+
     if (ie instanceof KeyEvent) {
       KeyEvent event = (KeyEvent) ie;
       type = InputUtil.EVENT_TYPE_KEY;
       action = event.getAction();
-
       obj.put("type", type);
 
       //虽然 KeyEvent 和 MotionEvent 都有，但都不在父类 InputEvent 中 <<<<<<<<<<<<<<<<<<
       obj.put("action", action);
-      obj.put("downTime", event.getDownTime());
-      obj.put("eventTime", event.getEventTime());
+      long downTime = event.getDownTime();
+      if (downTime <= 0) {
+        downTime = eventTime;
+      }
+
+      obj.put("downTime", downTime);
       obj.put("metaState", event.getMetaState());
       obj.put("source", event.getSource());
       obj.put("deviceId", event.getDeviceId());
@@ -2831,7 +2860,11 @@ public class UIAutoApp extends Application {
       //通过 mMetaState 获取的 obj.put("unicodeChar", event.getUnicodeChar());
       if (ie instanceof EditTextEvent) {
         EditTextEvent mke = (EditTextEvent) ie;
-//        obj.put("disable", mke.getWhen() != EditTextEvent.WHEN_ON);
+        if (mke.getWhen() != EditTextEvent.WHEN_ON) {
+          return null;
+        }
+
+        obj.put("disable", mke.getWhen() != EditTextEvent.WHEN_ON);
         obj.put("edit", true);
         obj.put("target", mke.getTarget());
         obj.put("targetId", mke.getTargetId());
@@ -2854,7 +2887,6 @@ public class UIAutoApp extends Application {
       //虽然 KeyEvent 和 MotionEvent 都有，但都不在父类 InputEvent 中 <<<<<<<<<<<<<<<<<<
       obj.put("action", action);
       obj.put("downTime", event.getDownTime());
-      obj.put("eventTime", event.getEventTime());
       obj.put("metaState", event.getMetaState());
       obj.put("source", event.getSource());
       obj.put("deviceId", event.getDeviceId());
@@ -2867,6 +2899,7 @@ public class UIAutoApp extends Application {
 
       if (callback instanceof Dialog) {
         Dialog dialog = (Dialog) callback;
+        // TODO
       }
 
       View decorView = window.getDecorView();
