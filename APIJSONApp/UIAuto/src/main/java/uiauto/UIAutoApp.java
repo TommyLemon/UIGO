@@ -2217,7 +2217,8 @@ public class UIAutoApp extends Application {
     Node<InputEvent> eventNode = new Node<>(null, null, null);
     for (int i = 0; i < eventList.size(); i++) {
       JSONObject obj = eventList.getJSONObject(i);
-      if (obj == null) { // || obj.getBooleanValue("disable")) {
+      eventNode = obj2EventNode(obj, eventNode, i + 1);
+      if (eventNode == null) { // || obj.getBooleanValue("disable")) {
         continue;
       }
 
@@ -2225,227 +2226,6 @@ public class UIAutoApp extends Application {
       //   firstEventNode = new Node<>(null, null, null);
       //   eventNode = firstEventNode;
       // }
-
-      int type = obj.getIntValue("type");
-      int action = obj.getIntValue("action");
-
-      InputEvent event;
-      if (type == InputUtil.EVENT_TYPE_KEY) {
-        if (obj.getBooleanValue("edit")) {
-          event = new EditTextEvent(
-                  obj.getLongValue("downTime"),
-                  obj.getLongValue("eventTime"),
-                  obj.getIntValue("action"),
-                  obj.getIntValue("keyCode"),
-                  obj.getIntValue("repeatCount"),
-                  obj.getIntValue("metaState"),
-                  obj.getIntValue("deviceId"),
-                  obj.getIntValue("scanCode"),
-                  obj.getIntValue("flags"),
-                  obj.getIntValue("source"),
-                  activity.findViewById(obj.getIntValue("targetId")),
-                  obj.getIntValue("when"),
-                  obj.getString("text"),
-                  obj.getIntValue("selectStart"),
-                  obj.getIntValue("selectEnd"),
-                  obj.getString("s"),
-                  obj.getIntValue("start"),
-                  obj.getIntValue("count"),
-                  obj.getIntValue("after")
-          );
-        } else {
-          /**
-           public KeyEvent(long downTime, long eventTime, int action,
-           int code, int repeat, int metaState,
-           int deviceId, int scancode, int flags, int source) {
-           mDownTime = downTime;
-           mEventTime = eventTime;
-           mAction = action;
-           mKeyCode = code;
-           mRepeatCount = repeat;
-           mMetaState = metaState;
-           mDeviceId = deviceId;
-           mScanCode = scancode;
-           mFlags = flags;
-           mSource = source;
-           mDisplayId = INVALID_DISPLAY;
-           }
-           */
-          event = new KeyEvent(
-                  obj.getLongValue("downTime"),
-                  obj.getLongValue("eventTime"),
-                  obj.getIntValue("action"),
-                  obj.getIntValue("keyCode"),
-                  obj.getIntValue("repeatCount"),
-                  obj.getIntValue("metaState"),
-                  obj.getIntValue("deviceId"),
-                  obj.getIntValue("scanCode"),
-                  obj.getIntValue("flags"),
-                  obj.getIntValue("source")
-          );
-        }
-      }
-      else if (type == InputUtil.EVENT_TYPE_TOUCH) {
-        /**
-         public static MotionEvent obtain(long downTime, long eventTime, int action,
-         float x, float y, float pressure, float size, int metaState,
-         float xPrecision, float yPrecision, int deviceId, int edgeFlags, int source,
-         int displayId)
-         */
-
-        //居然编译报错，和
-        // static public MotionEvent obtain(long downTime, long eventTime,
-        //    int action, int tagerCount, PointerProperties[] tagerProperties,
-        //    PointerCoords[] tagerCoords, int metaState, int buttonState,
-        //    float xPrecision, float yPrecision, int deviceId,
-        //    int edgeFlags, int source, int displayId, int flags)
-        //冲突，实际上类型没传错
-
-        //                    event = MotionEvent.obtain(obj.getLongValue("downTime"),  obj.getLongValue("eventTime"),  obj.getIntValue("action"),
-        //                    obj.getFloatValue("x"),  obj.getFloatValue("y"),  obj.getFloatValue("pressure"),  obj.getFloatValue("size"),  obj.getIntValue("metaState"),
-        //                    obj.getFloatValue("xPrecision"),  obj.getFloatValue("yPrecision"),  obj.getIntValue("deviceId"),  obj.getIntValue("edgeFlags"),  obj.getIntValue("source"),
-        //                    obj.getIntValue("displayId"));
-
-        eventNode.splitSize = splitSize;  // 只是本地显示  Math.round(obj.getIntValue("splitSize")*ratio);
-        eventNode.orientation = obj.getIntValue("orientation");
-
-        int layoutType = obj.getIntValue("layoutType");
-        float density = obj.getFloatValue("density");
-
-        float ww = obj.getFloatValue("windowWidth");
-        float wh = obj.getFloatValue("windowHeight");
-
-        float sh = obj.getFloatValue("statusHeight");
-        float cw = obj.getFloatValue("decorWidth");
-        float ch = obj.getFloatValue("decorHeight") - sh;
-        if (cw <= 100) {
-          cw = ww;
-        }
-        if (ch <= 100) {
-          ch = wh - sh;
-        }
-
-        float ratio = getScale(cw, ch, layoutType, density);
-        if (ratio <= 0.1) {
-          ratio = 1;
-        }
-
-        float x = obj.getFloatValue("x");
-        float y = obj.getFloatValue("y");
-        float sx = obj.getFloatValue("splitX");
-        float sx2 = obj.getFloatValue("splitX2");
-        float sy = obj.getFloatValue("splitY");
-        float sy2 = obj.getFloatValue("splitY2");
-
-        if (sx == 0 || Math.abs(sx) > cw) {
-          sx = (sx < 0 ? 0 : cw)/ratio;
-        }
-        else if (sx > 0) {
-          sx -= ww;
-        }
-        if (sy == 0 || Math.abs(sy) > ch) {
-          sy = (sy < 0 ? 0 : ch)/ratio;
-        }
-        else if (sy > 0) {
-          sy -= wh;
-        }
-
-        eventNode.splitX = Math.round(sx*ratio);
-        eventNode.splitY = Math.round(sy*ratio);
-        eventNode.splitX2 = Math.round(sx2*ratio);
-        eventNode.splitY2 = Math.round(sy2*ratio);
-
-        // float ratio = getScale(ww, ) //  1f*windowWidth/ww;  //始终以显示时宽度比例为准，不管是横屏还是竖屏   1f*Math.min(windowWidth, windowHeight)/Math.min(ww, wh);
-
-        // 既然已经存了 上下 绝对坐标、屏幕像素 等完整信息，没必要用负值？负值保证稳定，因为 18:9 和 16:9 的分割线高度不一样
-        sx = sx > 0 ? sx : ww + sx; // 转为正数
-        float minSX = sx2 <= 0 ? sx : Math.min(sx, sx2);
-        float maxSX = sx2 <= 0 ? sx : Math.max(sx, sx2);
-
-        sy = sy > 0 ? sy : wh + sy; // 转为正数
-        float minSY = sy2 <= 0 ? sy : Math.min(sy, sy2);
-        float maxSY = sy2 <= 0 ? sy : Math.max(sy, sy2);
-
-        float rx;
-        if (x >= 0 && x <= minSX) {  //靠左
-          rx = ratio*x;
-        }
-        else if (x < 0 || x >= maxSX) {  //靠右，例如列表项右侧标记已读、添加、删除、数量输入框等按钮
-          rx = decorWidth + ratio*(x < 0 ? x : x - cw);
-        }
-        else {  //居中，一般是弹窗
-          float mid = (maxSX + minSX)/2f;
-//          rx = x < mid ? ratio*x : decorWidth*mid/cw + ratio*(x - maxSX); // 居中靠左/靠右，例如关闭按钮
-          rx = decorWidth*mid/cw + ratio*(x - mid); // 居中靠左/靠右，例如关闭按钮
-        }
-
-        // 不一定这样，例如 小米 12 Pro 因为有摄像头挖孔所以横屏过来会默认不显示左侧摄像头占的宽度 // 进一步简化上面的，横向是所有都一致 rx = ratio*x + decorView.getX();
-
-        float ry;
-        if (y >= 0 && y <= minSY) {  //靠上
-          ry = ratio*y;
-        }
-        else if (y < 0 || y >= maxSY) {  //靠下，例如底部 tab、菜单按钮、悬浮按钮等
-          ry = decorHeight - statusHeight + ratio*(y < 0 ? y : y - ch); // decorHeight + ratio*(y < 0 ? y : y - ch);
-        }
-        else {  //居中，一般是弹窗
-          float mid = (maxSY + minSY)/2f;
-          ry = (decorHeight - statusHeight)*mid/ch + ratio*(y - mid); // 居中靠上/靠下，例如 取消、确定 按钮
-        }
-
-        rx += windowX + decorX;
-        ry += windowY + decorY + statusHeight;
-
-        event = MotionEvent.obtain(
-          obj.getLongValue("downTime"),
-          obj.getLongValue("eventTime"),
-          obj.getIntValue("action"),
-//                            obj.getIntValue("targetCount"),
-          rx,
-          ry,
-          obj.getFloatValue("pressure"),
-          obj.getFloatValue("size"),
-          obj.getIntValue("metaState"),
-          obj.getFloatValue("xPrecision"),
-          obj.getFloatValue("yPrecision"),
-          obj.getIntValue("deviceId"),
-          obj.getIntValue("edgeFlags")
-//                            obj.getIntValue("source"),
-//                            obj.getIntValue("displayId")
-        );
-        ((MotionEvent) event).setSource(obj.getIntValue("source"));
-//                    ((MotionEvent) event).setEdgeFlags(obj.getIntValue("edgeFlags"));
-
-      }
-      else {
-        event = null;
-      }
-
-
-//                list.add(event);
-
-      eventNode.step = i + 1;
-      eventNode.id = obj.getLongValue("id");
-      eventNode.flowId = obj.getLongValue("flowId");
-      eventNode.disable = obj.getBooleanValue("disable");
-      eventNode.type = type;
-      eventNode.action = action;
-      eventNode.time = obj.getLongValue("time");
-      eventNode.activity = obj.getString("activity");
-      eventNode.fragment = obj.getString("fragment");
-      eventNode.method = obj.getString("method");
-      eventNode.host = obj.getString("host");
-      eventNode.url = obj.getString("url");
-//      eventNode.header = obj.getString("header");
-//      eventNode.request = obj.getString("request");
-//      eventNode.response = obj.getString("response");
-
-      eventNode.windowX = obj.getIntValue("windowX");
-      eventNode.windowY = obj.getIntValue("windowY");
-      eventNode.decorX = obj.getFloatValue("decorX");
-      eventNode.decorY = obj.getFloatValue("decorY");
-
-      eventNode.item = event;
 
       eventNode.next = new Node<>(eventNode, null, null);
       if (i <= 0) {
@@ -2461,6 +2241,235 @@ public class UIAutoApp extends Application {
     if (currentEventNode == null) {
       currentEventNode = firstEventNode;
     }
+  }
+
+  public Node<InputEvent> obj2EventNode(JSONObject obj, Node<InputEvent> eventNode , int step) {
+    if (eventNode == null) {
+      eventNode = new Node<>(null, null, null);
+    }
+
+    int type = obj.getIntValue("type");
+    int action = obj.getIntValue("action");
+
+    InputEvent event;
+    if (type == InputUtil.EVENT_TYPE_KEY) {
+      if (obj.getBooleanValue("edit")) {
+        event = new EditTextEvent(
+                obj.getLongValue("downTime"),
+                obj.getLongValue("eventTime"),
+                obj.getIntValue("action"),
+                obj.getIntValue("keyCode"),
+                obj.getIntValue("repeatCount"),
+                obj.getIntValue("metaState"),
+                obj.getIntValue("deviceId"),
+                obj.getIntValue("scanCode"),
+                obj.getIntValue("flags"),
+                obj.getIntValue("source"),
+                activity.findViewById(obj.getIntValue("targetId")),
+                obj.getIntValue("when"),
+                obj.getString("text"),
+                obj.getIntValue("selectStart"),
+                obj.getIntValue("selectEnd"),
+                obj.getString("s"),
+                obj.getIntValue("start"),
+                obj.getIntValue("count"),
+                obj.getIntValue("after")
+        );
+      } else {
+        /**
+         public KeyEvent(long downTime, long eventTime, int action,
+         int code, int repeat, int metaState,
+         int deviceId, int scancode, int flags, int source) {
+         mDownTime = downTime;
+         mEventTime = eventTime;
+         mAction = action;
+         mKeyCode = code;
+         mRepeatCount = repeat;
+         mMetaState = metaState;
+         mDeviceId = deviceId;
+         mScanCode = scancode;
+         mFlags = flags;
+         mSource = source;
+         mDisplayId = INVALID_DISPLAY;
+         }
+         */
+        event = new KeyEvent(
+                obj.getLongValue("downTime"),
+                obj.getLongValue("eventTime"),
+                obj.getIntValue("action"),
+                obj.getIntValue("keyCode"),
+                obj.getIntValue("repeatCount"),
+                obj.getIntValue("metaState"),
+                obj.getIntValue("deviceId"),
+                obj.getIntValue("scanCode"),
+                obj.getIntValue("flags"),
+                obj.getIntValue("source")
+        );
+      }
+    }
+    else if (type == InputUtil.EVENT_TYPE_TOUCH) {
+      /**
+       public static MotionEvent obtain(long downTime, long eventTime, int action,
+       float x, float y, float pressure, float size, int metaState,
+       float xPrecision, float yPrecision, int deviceId, int edgeFlags, int source,
+       int displayId)
+       */
+
+      //居然编译报错，和
+      // static public MotionEvent obtain(long downTime, long eventTime,
+      //    int action, int tagerCount, PointerProperties[] tagerProperties,
+      //    PointerCoords[] tagerCoords, int metaState, int buttonState,
+      //    float xPrecision, float yPrecision, int deviceId,
+      //    int edgeFlags, int source, int displayId, int flags)
+      //冲突，实际上类型没传错
+
+      //                    event = MotionEvent.obtain(obj.getLongValue("downTime"),  obj.getLongValue("eventTime"),  obj.getIntValue("action"),
+      //                    obj.getFloatValue("x"),  obj.getFloatValue("y"),  obj.getFloatValue("pressure"),  obj.getFloatValue("size"),  obj.getIntValue("metaState"),
+      //                    obj.getFloatValue("xPrecision"),  obj.getFloatValue("yPrecision"),  obj.getIntValue("deviceId"),  obj.getIntValue("edgeFlags"),  obj.getIntValue("source"),
+      //                    obj.getIntValue("displayId"));
+
+      eventNode.splitSize = splitSize;  // 只是本地显示  Math.round(obj.getIntValue("splitSize")*ratio);
+      eventNode.orientation = obj.getIntValue("orientation");
+
+      int layoutType = obj.getIntValue("layoutType");
+      float density = obj.getFloatValue("density");
+
+      float ww = obj.getFloatValue("windowWidth");
+      float wh = obj.getFloatValue("windowHeight");
+
+      float sh = obj.getFloatValue("statusHeight");
+      float cw = obj.getFloatValue("decorWidth");
+      float ch = obj.getFloatValue("decorHeight") - sh;
+      if (cw <= 100) {
+        cw = ww;
+      }
+      if (ch <= 100) {
+        ch = wh - sh;
+      }
+
+      float ratio = getScale(cw, ch, layoutType, density);
+      if (ratio <= 0.1) {
+        ratio = 1;
+      }
+
+      float x = obj.getFloatValue("x");
+      float y = obj.getFloatValue("y");
+      float sx = obj.getFloatValue("splitX");
+      float sx2 = obj.getFloatValue("splitX2");
+      float sy = obj.getFloatValue("splitY");
+      float sy2 = obj.getFloatValue("splitY2");
+
+      if (sx == 0 || Math.abs(sx) > cw) {
+        sx = (sx < 0 ? 0 : cw)/ratio;
+      }
+      else if (sx > 0) {
+        sx -= ww;
+      }
+      if (sy == 0 || Math.abs(sy) > ch) {
+        sy = (sy < 0 ? 0 : ch)/ratio;
+      }
+      else if (sy > 0) {
+        sy -= wh;
+      }
+
+      eventNode.splitX = Math.round(sx*ratio);
+      eventNode.splitY = Math.round(sy*ratio);
+      eventNode.splitX2 = Math.round(sx2*ratio);
+      eventNode.splitY2 = Math.round(sy2*ratio);
+
+      // float ratio = getScale(ww, ) //  1f*windowWidth/ww;  //始终以显示时宽度比例为准，不管是横屏还是竖屏   1f*Math.min(windowWidth, windowHeight)/Math.min(ww, wh);
+
+      // 既然已经存了 上下 绝对坐标、屏幕像素 等完整信息，没必要用负值？负值保证稳定，因为 18:9 和 16:9 的分割线高度不一样
+      sx = sx > 0 ? sx : ww + sx; // 转为正数
+      float minSX = sx2 <= 0 ? sx : Math.min(sx, sx2);
+      float maxSX = sx2 <= 0 ? sx : Math.max(sx, sx2);
+
+      sy = sy > 0 ? sy : wh + sy; // 转为正数
+      float minSY = sy2 <= 0 ? sy : Math.min(sy, sy2);
+      float maxSY = sy2 <= 0 ? sy : Math.max(sy, sy2);
+
+      float rx;
+      if (x >= 0 && x <= minSX) {  //靠左
+        rx = ratio*x;
+      }
+      else if (x < 0 || x >= maxSX) {  //靠右，例如列表项右侧标记已读、添加、删除、数量输入框等按钮
+        rx = decorWidth + ratio*(x < 0 ? x : x - cw);
+      }
+      else {  //居中，一般是弹窗
+        float mid = (maxSX + minSX)/2f;
+//          rx = x < mid ? ratio*x : decorWidth*mid/cw + ratio*(x - maxSX); // 居中靠左/靠右，例如关闭按钮
+        rx = decorWidth*mid/cw + ratio*(x - mid); // 居中靠左/靠右，例如关闭按钮
+      }
+
+      // 不一定这样，例如 小米 12 Pro 因为有摄像头挖孔所以横屏过来会默认不显示左侧摄像头占的宽度 // 进一步简化上面的，横向是所有都一致 rx = ratio*x + decorView.getX();
+
+      float ry;
+      if (y >= 0 && y <= minSY) {  //靠上
+        ry = ratio*y;
+      }
+      else if (y < 0 || y >= maxSY) {  //靠下，例如底部 tab、菜单按钮、悬浮按钮等
+        ry = decorHeight - statusHeight + ratio*(y < 0 ? y : y - ch); // decorHeight + ratio*(y < 0 ? y : y - ch);
+      }
+      else {  //居中，一般是弹窗
+        float mid = (maxSY + minSY)/2f;
+        ry = (decorHeight - statusHeight)*mid/ch + ratio*(y - mid); // 居中靠上/靠下，例如 取消、确定 按钮
+      }
+
+      rx += windowX + decorX;
+      ry += windowY + decorY + statusHeight;
+
+      event = MotionEvent.obtain(
+              obj.getLongValue("downTime"),
+              obj.getLongValue("eventTime"),
+              obj.getIntValue("action"),
+//                            obj.getIntValue("targetCount"),
+              rx,
+              ry,
+              obj.getFloatValue("pressure"),
+              obj.getFloatValue("size"),
+              obj.getIntValue("metaState"),
+              obj.getFloatValue("xPrecision"),
+              obj.getFloatValue("yPrecision"),
+              obj.getIntValue("deviceId"),
+              obj.getIntValue("edgeFlags")
+//                            obj.getIntValue("source"),
+//                            obj.getIntValue("displayId")
+      );
+      ((MotionEvent) event).setSource(obj.getIntValue("source"));
+//                    ((MotionEvent) event).setEdgeFlags(obj.getIntValue("edgeFlags"));
+
+    }
+    else {
+      event = null;
+    }
+
+
+//                list.add(event);
+
+    eventNode.step = step;
+    eventNode.id = obj.getLongValue("id");
+    eventNode.flowId = obj.getLongValue("flowId");
+    eventNode.disable = obj.getBooleanValue("disable");
+    eventNode.type = type;
+    eventNode.action = action;
+    eventNode.time = obj.getLongValue("time");
+    eventNode.activity = obj.getString("activity");
+    eventNode.fragment = obj.getString("fragment");
+    eventNode.method = obj.getString("method");
+    eventNode.host = obj.getString("host");
+    eventNode.url = obj.getString("url");
+//      eventNode.header = obj.getString("header");
+//      eventNode.request = obj.getString("request");
+//      eventNode.response = obj.getString("response");
+
+    eventNode.windowX = obj.getIntValue("windowX");
+    eventNode.windowY = obj.getIntValue("windowY");
+    eventNode.decorX = obj.getFloatValue("decorX");
+    eventNode.decorY = obj.getFloatValue("decorY");
+
+    eventNode.item = event;
+
+    return eventNode;
   }
 
   private float getScale(float ww, float wh, int layoutType, float density) {
@@ -2547,26 +2556,16 @@ public class UIAutoApp extends Application {
       activity = fragment.getActivity();
     }
 
+    output(null, currentEventNode, activity);
     if (isReplay) {
       Node<InputEvent> curNode = currentEventNode;
-      output(null, curNode, activity);
-
       if (curNode == null || curNode.disable || (curNode.type == InputUtil.EVENT_TYPE_UI && curNode.action == action
               && ((activity == null || Objects.equals(curNode.activity, activity.getClass().getName()))
 //                && (Objects.equals(curNode.fragment, fragment == null ? null : fragment.getClass().getName()))
       ))) {
 //        waitMap = new LinkedHashMap<>();
-        InputEvent curItem = curNode == null || curNode.disable ? null : curNode.item;
-
         Node<InputEvent> nextNode = curNode == null ? null : curNode.next;
-        InputEvent nextItem = nextNode == null ? null : nextNode.item;
-
-        // MotionEvent 是系统启动时间 326941454，UNKNOWN KeyEvent 是当前时间
-        long cet = curItem == null ? 0 : curItem.getEventTime();
-        long net = cet <= 0 || nextItem == null ? 0 : nextItem.getEventTime();
-        long dur = net <= 0 ? 0 : net - cet;
-        long dur2 = nextNode == null || curNode == null ? 0 : nextNode.time - curNode.time;
-        long duration = dur <= 0 || dur2 <= 0 ? 1 : Math.min(dur, dur2);
+        long duration = calcDuration(curNode, nextNode);
 
         Message msg = handler.obtainMessage();
         msg.obj = nextNode;
@@ -2599,11 +2598,9 @@ public class UIAutoApp extends Application {
       activity = fragment.getActivity();
     }
 
+    output(null, currentEventNode, activity);
     if (isReplay) {
-      output(null, currentEventNode, activity);
-
       Node<InputEvent> curNode = lastWaitNode == null ? currentEventNode : lastWaitNode;
-
       if (curNode == null || curNode.disable || /** ((activity == null || Objects.equals(curNode.activity, activity.getClass().getName()))
 //                && (Objects.equals(curNode.fragment, fragment == null ? null : fragment.getClass().getName()))
               && */ (StringUtil.isNotEmpty(url, true) && ! waitMap.isEmpty()) // ) // 避免过多调用
@@ -2678,9 +2675,9 @@ public class UIAutoApp extends Application {
 
     Window window = this.window != null ? this.window : (activity == null ? null : activity.getWindow());
 
-    executorService.execute(new Runnable() {
-      @Override
-      public void run() { //TODO 截屏等记录下来
+//    executorService.execute(new Runnable() {
+//      @Override
+//      public void run() { //TODO 截屏等记录下来
         Node<?> node = eventNode;
 
         Long inputId;
@@ -2700,10 +2697,9 @@ public class UIAutoApp extends Application {
         obj.put("orientation", node.orientation);
         obj.put("time", System.currentTimeMillis());  // TODO 如果有录屏，则不需要截屏，只需要记录时间点
         if (node.disable == false) {
-          obj.put("time", System.currentTimeMillis());  // TODO 如果有录屏，则不需要截屏，只需要记录时间点
 
           if (window != null && (node.item == null || node.action == MotionEvent.ACTION_DOWN)) {
-            // TODO 同步或用协程来上传图片
+            // 同步或用协程来上传图片
             obj.put("screenshotUrl", screenshot(directory == null || directory.exists() == false ? parentDirectory : directory, window, inputId, toInputId, node.orientation));
           }
         }
@@ -2713,24 +2709,24 @@ public class UIAutoApp extends Application {
         synchronized (outputList) { // 居然出现 java.lang.ArrayIndexOutOfBoundsException: length=49; index=49
         	outputList.add(obj);
         }
-      }
-    });
+//      }
+//    });
   }
 
   /**屏幕截图
    * @return
    */
-  public static String screenshot(File directory, Window window, Long inputId, Long toInputId, int orientation) {
-    if (window == null) {
+  public String screenshot(File directory, Window window, Long inputId, Long toInputId, int orientation) {
+    View decorView = window == null ? null : window.getDecorView();
+    if (decorView == null) {
       return null;
     }
 
-    Bitmap bitmap = null;
-    FileOutputStream fos = null;
     String filePath = null;
     try {
-      synchronized (window) {  //必须，且只能是 Window，用 Activity 或 decorView 都不行 解决某些界面会报错 cannot find container of decorView
-        View decorView = window.getDecorView();
+      Bitmap bitmap; // 截屏等记录下来
+
+      synchronized (decorView) { // 必须，且只能是 Window，用 Activity 或 decorView 都不行 解决某些界面会报错 cannot find container of decorView
         decorView.setDrawingCacheEnabled(true);
         // decorView.buildDrawingCache(true);
         bitmap = decorView.getDrawingCache();
@@ -2752,38 +2748,52 @@ public class UIAutoApp extends Application {
         decorView.setDrawingCacheEnabled(false);
       }
 
-      //保存图片
+      // 保存图片
       File file = File.createTempFile("uiauto_screenshot_inputId_" + Math.abs(inputId) + "_time_" + System.currentTimeMillis(), ".png", directory);
       filePath = file.getAbsolutePath();
-      fos = new FileOutputStream(filePath);
-      bitmap.compress(Bitmap.CompressFormat.PNG, 100, fos);
+
+      Bitmap finalBitmap = bitmap;
+      String finalFilePath = filePath;
+      executorService.execute(new Runnable() {
+          @Override
+          public void run() {
+            FileOutputStream fos = null;
+            try {
+              fos = new FileOutputStream(finalFilePath);
+              finalBitmap.compress(Bitmap.CompressFormat.PNG, 100, fos);
+            }
+            catch (Throwable e) {
+              Log.e(TAG, "screenshot 截屏异常：" + e.getMessage());
+            }
+            finally {
+              if (finalBitmap != null) {
+                try {
+                  finalBitmap.recycle();
+                } catch (Throwable e) {
+                  e.printStackTrace();
+                }
+              }
+
+              if (fos != null) {
+                try {
+                  fos.flush();
+                } catch (Throwable e) {
+                  e.printStackTrace();
+                }
+                try {
+                  fos.close();
+                } catch (Throwable e) {
+                  e.printStackTrace();
+                }
+              }
+            }
+          }
+      });
 
       return file.getAbsolutePath(); // filePath = directory.getName() + "/" + file.getName();  // 返回相对路径
     }
     catch (Throwable e) {
-      Log.e(TAG, "screenshot 截屏异常：" + e.toString());
-    }
-    finally {
-      if (bitmap != null) {
-        try {
-          bitmap.recycle();
-        } catch (Throwable e) {
-          e.printStackTrace();
-        }
-      }
-
-      if (fos != null) {
-        try {
-          fos.flush();
-        } catch (Throwable e) {
-          e.printStackTrace();
-        }
-        try {
-          fos.close();
-        } catch (Throwable e) {
-          e.printStackTrace();
-        }
-      }
+      Log.e(TAG, "screenshot 截屏异常：" + e.getMessage());
     }
 
     return filePath;
@@ -3057,6 +3067,11 @@ public class UIAutoApp extends Application {
     eventList.add(event);
     // }
 
+    if (currentEventNode != null) {
+      Node<InputEvent> node = obj2EventNode(event, currentEventNode, step);
+      currentEventNode = node.next = new Node<>(node, null, null);
+    }
+
     if (refreshUI) {
       onEventChange(tagAdapter.getItemCount() - 1, event.getIntValue("type"));
     }
@@ -3220,16 +3235,26 @@ public class UIAutoApp extends Application {
     prepareRecord(true);
   }
   public void prepareRecord(boolean clear) {
-
     isShowing = true;
     isReplay = false;
-	if (clear) {
+    Node<InputEvent> eventNode = new Node<>(null, null, null);
+    if (clear) {
 	    setEventList(null);
+        firstEventNode = currentEventNode = eventNode;
 	    step = 0;
 	    allStep = 0;
 	    duration = 0;
 	    flowId = - System.currentTimeMillis();
         tvControllerTime.setText("0:00");
+    }
+    else {
+      if (currentEventNode == null) {
+        currentEventNode = firstEventNode;
+      }
+      eventNode.prev = currentEventNode;
+      if (currentEventNode != null) {
+        currentEventNode.next = eventNode;
+      }
     }
 
     tvControllerPlay.setText("record");
