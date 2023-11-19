@@ -302,12 +302,12 @@ public class UIAutoApp extends Application {
 //          }
 // 导致重复添加到 waitMap          handleMessage(msg);
 
-          dispatchEventToCurrentWindow(curNode.item, false);
+          dispatchEventToCurrentWindow(curItem, false);
           handleMessage(msg);
         }
         else {
           output(null, curNode, activity);
-          dispatchEventToCurrentWindow(curNode.item, false);
+          dispatchEventToCurrentWindow(curItem, false);
 
           long duration = nextNode == null ? 0 : nextItem.getEventTime() - curItem.getEventTime();
           if (duration <= 0) {
@@ -1185,8 +1185,13 @@ public class UIAutoApp extends Application {
 
         waitMap = new LinkedHashMap<>();
 
+        Node<InputEvent> node = currentEventNode == null ? null : currentEventNode.next;
+        if (node != null) {
+          node.disable = true;
+        }
+
         Message msg = handler.obtainMessage();
-        msg.obj = currentEventNode == null ? null : currentEventNode.next;
+        msg.obj = node;
         handler.sendMessage(msg);
       }
     });
