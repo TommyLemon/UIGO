@@ -193,17 +193,9 @@ public class UIAutoApp extends Application {
         }
 
         Node<InputEvent> prevNode = curNode.prev;
-        InputEvent prevItem = prevNode == null ? null : prevNode.item;
-
         if (prevNode != null) {
-          // MotionEvent 是系统启动时间 326941454，UNKNOWN KeyEvent 是当前时间
-          long pet = prevItem == null ? 0 : prevItem.getEventTime();
-          long cet = pet <= 0 || curItem == null ? 0 : curItem.getEventTime();
-          long dur = cet - pet;
-          long dur2 = curNode == null || prevNode == null ? 0 : curNode.time - prevNode.time;
-          long duration = dur <= 0 || dur2 <= 0 ? 1 : Math.min(dur, dur2);
-
           if (canRefreshUI) {
+            long duration = calcDuration(prevNode, curNode);
             tvControllerTime.setText(TIME_FORMAT.format(duration));
           }
         }
@@ -312,12 +304,7 @@ public class UIAutoApp extends Application {
           output(null, curNode, activity);
           dispatchEventToCurrentWindow(curItem, false);
 
-          // MotionEvent 是系统启动时间 326941454，UNKNOWN KeyEvent 是当前时间
-          long cet = curItem == null ? 0 : curItem.getEventTime();
-          long net = cet <= 0 || nextItem == null ? 0 : nextItem.getEventTime();
-          long dur = net <= 0 ? 0 : net - cet;
-          long dur2 = nextNode == null || curNode == null ? 0 : nextNode.time - curNode.time;
-          long duration = dur <= 0 || dur2 <= 0 ? 1 : Math.min(dur, dur2);
+          long duration = calcDuration(curNode, nextNode);
 
 //          if (duration <= 0) {
 //            handleMessage(msg);
@@ -330,6 +317,22 @@ public class UIAutoApp extends Application {
       }
     }
   };
+
+  private long calcDuration(Node<InputEvent> prevNode, Node<InputEvent> curNode) {
+    // MotionEvent 是系统启动时间 326941454，UNKNOWN KeyEvent 是当前时间
+    InputEvent prevItem = prevNode == null ? null : prevNode.item;
+    InputEvent curItem = curNode == null ? null : curNode.item;
+
+    long pet = prevItem == null ? 0 : prevItem.getEventTime();
+    long cet = pet <= 0 || curItem == null ? 0 : curItem.getEventTime();
+    long dur = cet - pet;
+    long dur2 = curNode == null || prevNode == null ? 0 : curNode.time - prevNode.time;
+    // dur = dur > 60*1000 ? 0 : dur;
+    // dur2 = dur2 > 60*1000 ? 0 : dur2;
+    long duration = dur <= 0 ? (dur2 <= 0 ? 1 : dur2) : (dur2 <= 0 || dur <= 60*1000 ? dur : Math.min(dur, dur2));
+
+    return duration;
+  }
 
   private String getWaitKey(Node<InputEvent> node) {
     return getWaitKey(node.type, node.action, node.method, node.host, node.url);
@@ -2621,16 +2624,8 @@ public class UIAutoApp extends Application {
           lastWaitNode = null;
 
           InputEvent curItem = curNode == null || curNode.disable ? null : curNode.item;
-
           Node<InputEvent> nextNode = curNode == null ? null : curNode.next;
-          InputEvent nextItem = nextNode == null ? null : nextNode.item;
-
-          // MotionEvent 是系统启动时间 326941454，UNKNOWN KeyEvent 是当前时间
-          long cet = curItem == null ? 0 : curItem.getEventTime();
-          long net = cet <= 0 || nextItem == null ? 0 : nextItem.getEventTime();
-          long dur = net <= 0 ? 0 : net - cet;
-          long dur2 = nextNode == null || curNode == null ? 0 : nextNode.time - curNode.time;
-          long duration = dur <= 0 || dur2 <= 0 ? 1 : Math.min(dur, dur2);
+          long duration = calcDuration(curNode, nextNode);
 
           Message msg = handler.obtainMessage();
           msg.obj = curNode == null ? null : (curItem != null ? curNode : nextNode);
@@ -2703,6 +2698,7 @@ public class UIAutoApp extends Application {
         obj.put("inputId", inputId);
         obj.put("toInputId", toInputId);
         obj.put("orientation", node.orientation);
+        obj.put("time", System.currentTimeMillis());  // TODO 如果有录屏，则不需要截屏，只需要记录时间点
         if (node.disable == false) {
           obj.put("time", System.currentTimeMillis());  // TODO 如果有录屏，则不需要截屏，只需要记录时间点
 
@@ -2860,9 +2856,9 @@ public class UIAutoApp extends Application {
       //通过 mMetaState 获取的 obj.put("unicodeChar", event.getUnicodeChar());
       if (ie instanceof EditTextEvent) {
         EditTextEvent mke = (EditTextEvent) ie;
-        if (mke.getWhen() != EditTextEvent.WHEN_ON) {
-          return null;
-        }
+//        if (mke.getWhen() != EditTextEvent.WHEN_ON) {
+//          return null;
+//        }
 
         obj.put("disable", mke.getWhen() != EditTextEvent.WHEN_ON);
         obj.put("edit", true);
