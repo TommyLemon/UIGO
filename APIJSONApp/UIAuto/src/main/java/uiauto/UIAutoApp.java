@@ -330,7 +330,7 @@ public class UIAutoApp extends Application {
     long dur2 = curNode == null || prevNode == null ? 0 : curNode.time - prevNode.time;
     // dur = dur > 60*1000 ? 0 : dur;
     // dur2 = dur2 > 60*1000 ? 0 : dur2;
-    long duration = dur <= 0 ? (dur2 <= 0 ? 1 : dur2) : (dur2 <= 0 || dur <= 60*1000 ? dur : Math.min(dur, dur2));
+    long duration = dur <= 0 ? (dur2 <= 0 ? 0 : dur2) : (dur2 <= 0 || dur <= 60*1000 ? dur : Math.min(dur, dur2));
 
     return duration > 0 ? duration : (curItem == null ? 0 : 1);
   }
