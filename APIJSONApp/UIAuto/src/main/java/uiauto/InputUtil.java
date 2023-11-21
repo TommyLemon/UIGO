@@ -73,13 +73,30 @@ public class InputUtil {
 
     public static final int HTTP_ACTION_REQUEST = 0;
     public static final int HTTP_ACTION_RESPONSE = 1;
+    public static final int HTTP_ACTION_GET = 2;
+    public static final int HTTP_ACTION_POST = 3;
+    public static final int HTTP_ACTION_PUT = 4;
+    public static final int HTTP_ACTION_DELETE = 5;
+    public static final int HTTP_ACTION_HEAD = 6;
+    public static final int HTTP_ACTION_OPTION = 7;
+    public static final int HTTP_ACTION_TRACE = 8;
     public static final String HTTP_ACTION_REQUEST_NAME = "REQUEST";
     public static final String HTTP_ACTION_RESPONSE_NAME = "RESPONSE";
+    public static final String HTTP_ACTION_GET_NAME = "GET";
+    public static final String HTTP_ACTION_POST_NAME = "POST";
+    public static final String HTTP_ACTION_PUT_NAME = "PUT";
+    public static final String HTTP_ACTION_DELETE_NAME = "DELETE";
+    public static final String HTTP_ACTION_HEAD_NAME = "HEAD";
+    public static final String HTTP_ACTION_OPTION_NAME = "OPTION";
+    public static final String HTTP_ACTION_TRACE_NAME = "TRACE";
+
     public static final String HTTP_HEADER_NAME = "HEADER";
     public static final String HTTP_CONTENT_NAME = "CONTENT";
 
     public static final String[] HTTP_ACTION_NAMES = new String[] {
-            HTTP_ACTION_REQUEST_NAME, HTTP_ACTION_RESPONSE_NAME
+            HTTP_ACTION_REQUEST_NAME, HTTP_ACTION_RESPONSE_NAME, HTTP_ACTION_GET_NAME, HTTP_ACTION_POST_NAME
+            , HTTP_ACTION_PUT_NAME, HTTP_ACTION_DELETE_NAME, HTTP_ACTION_HEAD_NAME, HTTP_ACTION_OPTION_NAME
+            , HTTP_ACTION_TRACE_NAME
     };
     public static final List<String> HTTP_ACTION_NAME_LIST = Arrays.asList(HTTP_ACTION_NAMES);
 
@@ -87,7 +104,7 @@ public class InputUtil {
         return HTTP_ACTION_NAME_LIST.indexOf(action);
     }
     public static String getHTTPActionName(int action) {
-        return HTTP_ACTION_NAME_LIST.get(action);
+        return HTTP_ACTION_NAME_LIST.get(action > 0 ? action : -action);
     }
 
 

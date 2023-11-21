@@ -173,7 +173,7 @@ public class HttpManager {
                         @Override
                         public void run() {
                             UIAutoApp.getInstance().onHTTPEvent(
-                                    InputUtil.HTTP_ACTION_REQUEST, "JSON"
+                                    InputUtil.HTTP_ACTION_POST, "JSON"
                                     , "POST", "http://apijson.cn:8080", url_
                                     , httpRequest == null ? null : httpRequest.headers().toString(), request, null
                                     , getActivity(listener), getFragment(listener)
@@ -204,7 +204,7 @@ public class HttpManager {
                     @Override
                     public void run() {
                         UIAutoApp.getInstance().onHTTPEvent(
-                                InputUtil.HTTP_ACTION_RESPONSE, e == null ? ("" + responseCode) : e.getClass().getSimpleName()
+                                - InputUtil.HTTP_ACTION_POST, e == null ? ("" + responseCode) : e.getClass().getSimpleName()
                                 , "POST", "http://apijson.cn:8080", url_
                                 , responseHeaders == null ? null : responseHeaders.toString(), httpRequestString, responseBody
                                 , getActivity(listener), getFragment(listener)

@@ -64,6 +64,7 @@ import android.view.ViewTreeObserver;
 import android.view.Window;
 import android.view.WindowManager;
 import android.view.accessibility.AccessibilityEvent;
+import android.webkit.WebView;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -2535,6 +2536,11 @@ public class UIAutoApp extends Application {
     onUIEvent(action, callback, null, fragment);
   }
   public synchronized void onUIEvent(int action, Window.Callback callback, Activity activity, Fragment fragment) {
+    onUIEvent(action, callback, null, fragment, null, null);
+  }
+
+
+  public synchronized void onUIEvent(int action, Window.Callback callback, Activity activity, Fragment fragment, WebView webView, String url) {
     if (activity != null && activity.isFinishing() == false
             && activity.isDestroyed() == false && activity.getWindow() != null) {
       window = activity.getWindow();
@@ -2634,7 +2640,7 @@ public class UIAutoApp extends Application {
       JSONObject obj = newEvent(activity, fragment);
       obj.put("type", InputUtil.EVENT_TYPE_HTTP);
       obj.put("action", action);
-      obj.put("disable", action != InputUtil.HTTP_ACTION_RESPONSE);
+      obj.put("disable", action >= 0 && action != InputUtil.HTTP_ACTION_RESPONSE);
       obj.put("format", format);
       obj.put("method", method);
       obj.put("host", host);

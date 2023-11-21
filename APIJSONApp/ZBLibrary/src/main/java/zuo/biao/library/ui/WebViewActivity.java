@@ -14,6 +14,9 @@ limitations under the License.*/
 
 package zuo.biao.library.ui;
 
+import uiauto.InputUtil;
+import uiauto.UIAutoApp;
+import uiauto.web.WriteHandlingWebViewClient;
 import zuo.biao.library.R;
 import zuo.biao.library.base.BaseActivity;
 import zuo.biao.library.interfaces.OnBottomDragListener;
@@ -24,14 +27,24 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.support.annotation.Nullable;
+import android.support.annotation.RequiresApi;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.webkit.WebChromeClient;
+import android.webkit.WebResourceRequest;
+import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.ProgressBar;
+
+import java.io.InputStream;
+import java.util.Map;
+import java.util.Set;
 
 /**通用网页Activity
  * @author Lemon
@@ -131,13 +144,23 @@ public class WebViewActivity extends BaseActivity implements OnBottomDragListene
 				super.onProgressChanged(view, newProgress);
 				pbWebView.setProgress(newProgress);
 			}
-		});  
 
-		wvWebView.setWebViewClient(new WebViewClient(){
+		});
+
+		wvWebView.setWebViewClient(new WriteHandlingWebViewClient(wvWebView, getActivity(), null) {
 			@Override
 			public boolean shouldOverrideUrlLoading(WebView view, String url){
 				wvWebView.loadUrl(url);
 				return true;
+			}
+
+			@RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
+			@Nullable
+			@Override
+			public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
+
+
+				return super.shouldInterceptRequest(view, request);
 			}
 
 			@Override
@@ -153,12 +176,11 @@ public class WebViewActivity extends BaseActivity implements OnBottomDragListene
 				tvBaseTitle.setText(StringUtil.getTrimedString(wvWebView.getTitle()));
 				pbWebView.setVisibility(View.GONE);
 			}
+
 		});
 
 		wvWebView.loadUrl(url);
 	}
-
-
 
 	//Data数据区(存在数据获取或处理代码，但不存在事件监听代码)>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
