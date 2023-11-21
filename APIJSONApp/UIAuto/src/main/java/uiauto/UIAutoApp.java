@@ -307,12 +307,12 @@ public class UIAutoApp extends Application {
 
           long duration = calcDuration(curNode, nextNode);
 
-//          if (duration <= 0) {
-//            handleMessage(msg);
-//          }
-//          else {
+          if (duration <= 0) {
+            handleMessage(msg);
+          }
+          else {
             sendMessageDelayed(msg, duration); // 相邻执行事件时间差本身就包含了  + (lastTime <= 0 || firstTime <= 0 ? 10 : lastTime - firstTime)  // 补偿 disable 项跳过的等待时间
-//          }
+          }
         }
 
       }
@@ -332,7 +332,7 @@ public class UIAutoApp extends Application {
     // dur2 = dur2 > 60*1000 ? 0 : dur2;
     long duration = dur <= 0 ? (dur2 <= 0 ? 1 : dur2) : (dur2 <= 0 || dur <= 60*1000 ? dur : Math.min(dur, dur2));
 
-    return duration;
+    return duration > 0 ? duration : (curItem == null ? 0 : 1);
   }
 
   private String getWaitKey(Node<InputEvent> node) {
