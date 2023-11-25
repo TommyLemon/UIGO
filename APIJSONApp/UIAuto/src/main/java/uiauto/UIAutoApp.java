@@ -2582,7 +2582,11 @@ public class UIAutoApp extends Application {
       JSONObject obj = newEvent(callback, activity, fragment);
       obj.put("type", InputUtil.EVENT_TYPE_UI);
       obj.put("action", action);
-      obj.put("disable", true);  //总是导致停止后续动作，尤其是返回键相关的事件  action != InputUtil.UI_ACTION_RESUME);
+      // 总是导致停止后续动作，尤其是返回键相关的事件  obj.put("disable", action != InputUtil.UI_ACTION_RESUME);
+      obj.put("disable", action != InputUtil.UI_ACTION_RESUME || webView == null || StringUtil.isEmpty(url, true));
+      obj.put("format", "WEB");
+      obj.put("name", url);
+      obj.put("url", url);
 
       addEvent(obj);
     }
