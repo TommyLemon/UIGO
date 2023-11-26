@@ -43,5 +43,9 @@ public class AjaxInterceptJavascriptInterface {
         mWebViewClient.addAjaxRequest(ID, body);
     }
 
+    @JavascriptInterface
+    public void onEditEvent(String id, int selectionStart, int selectionEnd, String text) {
+        mWebViewClient.onEditEvent(id, selectionStart, selectionEnd, text);
+    }
 
 }

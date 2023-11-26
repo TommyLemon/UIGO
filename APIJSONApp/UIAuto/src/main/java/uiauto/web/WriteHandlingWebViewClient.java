@@ -4,15 +4,12 @@ import android.app.Activity;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.net.Uri;
-import android.os.Build;
 import android.support.v4.app.Fragment;
-import android.webkit.ValueCallback;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
-import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 
 import java.io.ByteArrayInputStream;
@@ -20,7 +17,6 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -28,8 +24,6 @@ import java.util.Set;
 import uiauto.InputUtil;
 import uiauto.StringUtil;
 import uiauto.UIAutoApp;
-import unitauto.JSON;
-import unitauto.Log;
 
 
 public class WriteHandlingWebViewClient extends WebViewClient {
@@ -49,7 +43,7 @@ public class WriteHandlingWebViewClient extends WebViewClient {
         this.activity = activity != null ? activity : (fragment != null ? fragment.getActivity() : (webView == null ? null : (Activity) webView.getContext()));
 
         AjaxInterceptJavascriptInterface ajaxInterface = new AjaxInterceptJavascriptInterface(this);
-        webView.addJavascriptInterface(ajaxInterface , "interception");
+        webView.addJavascriptInterface(ajaxInterface, "interception");
     }
 
     @Override
@@ -61,7 +55,7 @@ public class WriteHandlingWebViewClient extends WebViewClient {
 //        }
 //
 //        UIAutoApp.getInstance().onUIEvent(InputUtil.UI_ACTION_CREATE, activity, activity, fragment, webView, url);
-        inject();
+        initWeb(url);
     }
 
     @Override
@@ -138,37 +132,8 @@ public class WriteHandlingWebViewClient extends WebViewClient {
 //				UIAutoApp.getInstance().onUIEvent(InputUtil.UI_ACTION_RESUME, activity, activity, fragment, webView, url);
     }
 
-    public void inject() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-            webView.evaluateJavascript("function generateRandom() {\n" +
-                    "      return Math.floor((1 + Math.random()) * 0x10000)\n" +
-                    "        .toString(16)\n" +
-                    "        .substring(1);\n" +
-                    "    }\n" +
-                    "\n" +
-                    "\n" +
-                    "    // This only works if `open` and `send` are called in a synchronous way\n" +
-                    "    // That is, after calling `open`, there must be no other call to `open` or\n" +
-                    "    // `send` from another place of the code until the matching `send` is called.\n" +
-                    "    requestID = null;\n" +
-                    "    XMLHttpRequest.prototype.reallyOpen = XMLHttpRequest.prototype.open;\n" +
-                    "    XMLHttpRequest.prototype.open = function(method, url, async, user, password) {\n" +
-                    "        requestID = generateRandom()\n" +
-                    "        var signed_url = url + \"AJAXINTERCEPT\" + requestID;\n" +
-                    "        this.reallyOpen(method, signed_url , async, user, password);\n" +
-                    "    };\n" +
-                    "    XMLHttpRequest.prototype.reallySend = XMLHttpRequest.prototype.send;\n" +
-                    "    XMLHttpRequest.prototype.send = function(body) {\n" +
-                    "        interception.customAjax(requestID, body);\n" +
-                    "        this.reallySend(body);\n" +
-                    "    };" +
-                    "    JSON.stringify(document);", new ValueCallback<String>() {
-                @Override
-                public void onReceiveValue(String value) {
-                    Log.d(TAG, "wvWebView.evaluateJavascript value = " + value);
-                }
-            });
-        }
+    public void initWeb(String webUrl) {
+        UIAutoApp.getInstance().initWeb(activity, fragment, webView, webUrl);
     }
 
     /*
@@ -314,6 +279,10 @@ public class WriteHandlingWebViewClient extends WebViewClient {
 
     void addAjaxRequest(String id, String body){
         ajaxRequestContents.put(id, body);
+    }
+
+    public void onEditEvent(String id, int selectionStart, int selectionEnd, String text) {
+        UIAutoApp.getInstance().addWebEditTextEvent(activity, fragment, webView, id, selectionStart, selectionEnd, text);
     }
 
     private String getRequestBody(WebResourceRequest request){

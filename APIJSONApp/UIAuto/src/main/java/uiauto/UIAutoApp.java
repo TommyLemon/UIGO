@@ -63,6 +63,7 @@ import android.view.ViewTreeObserver;
 import android.view.Window;
 import android.view.WindowManager;
 import android.view.accessibility.AccessibilityEvent;
+import android.webkit.ValueCallback;
 import android.webkit.WebView;
 import android.widget.EditText;
 import android.widget.TextView;
@@ -2093,34 +2094,45 @@ public class UIAutoApp extends Application {
           EditTextEvent ete = (EditTextEvent) ie;
           if (ete.getWhen() == EditTextEvent.WHEN_ON) {
             EditText target = ete.getTarget();
-            if (target == null || target.isAttachedToWindow() == false) {
-              target = findView(ete.getTargetId());
-            }
-            if (target == null) {
-              target = findViewByFocus(getCurrentDecorView(), EditText.class);
-            }
+            if (target != null) {
+              if (target.hasFocus() == false) {
+                target.requestFocus();
+              }
 
-            if (target.hasFocus() == false) {
-              target.requestFocus();
-            }
+              String text = StringUtil.getString(target.getText());
+              int l = text.length();
+              int start = Math.min(l, Math.max(0, ete.getSelectStart()));
+              int end = Math.min(l, Math.max(0, ete.getSelectEnd()));
+              target.setSelection(start, end);
 
-            String text = StringUtil.getString(target.getText());
-            int l = text.length();
-            int start = Math.min(l, Math.max(0, ete.getSelectStart()));
-            int end = Math.min(l, Math.max(0, ete.getSelectEnd()));
-            target.setSelection(start, end);
+              target.setText(ete.getText());
 
-            target.setText(ete.getText());
+              String text2 = StringUtil.getString(target.getText());
+              int l2 = text2.length();
+              int start2 = Math.min(l2, Math.max(0, ete.getSelectStart()));
+              int end2 = Math.min(l2, Math.max(0, ete.getSelectEnd()));
+              if (end2 <= 0) {
+                start2 = end2 = l2;
+              }
 
-            String text2 = StringUtil.getString(target.getText());
-            int l2 = text2.length();
-            int start2 = Math.min(l2, Math.max(0, ete.getSelectStart()));
-            int end2 = Math.min(l2, Math.max(0, ete.getSelectEnd()));
-            if (end2 <= 0) {
-              start2 = end2 = l2;
+              target.setSelection(start2, end2);
             }
 
-            target.setSelection(start2, end2);
+            String targetWebId = ete.getTargetWebId();
+            if (webView != null && StringUtil.isNotEmpty(targetWebId, true)) {
+              webView.evaluateJavascript("" +
+                      "(function() {\n" +
+                      "       var map = document.uiautoEditTextMap || {};\n" +
+                      "       var et = map['" + targetWebId + "'] || document.getElementById('" + targetWebId + "');\n" +
+                      "       et.value = '" + ete.getText().replaceAll("'", "\\'") + "'\n" +
+                      "})();\n" +
+                      "'document.uiautoEditTextMap = ' + JSON.stringify(document.uiautoEditTextMap)", new ValueCallback<String>() {
+                @Override
+                public void onReceiveValue(String value) {
+                  Log.d(TAG, "dispatchEventToCurrentWindow webView.evaluateJavascript >> onReceiveValue value = " + value);
+                }
+              });
+            }
           }
         }
         else {
@@ -2591,7 +2603,7 @@ public class UIAutoApp extends Application {
       // 总是导致停止后续动作，尤其是返回键相关的事件  obj.put("disable", action != InputUtil.UI_ACTION_RESUME);
       obj.put("disable", action != InputUtil.UI_ACTION_RESUME || webView == null || StringUtil.isEmpty(url, true));
       obj.put("format", "WEB");
-      obj.put("name", url);
+      obj.put("name", StringUtil.isEmpty(url, true) ? "" : (url.length() <= 50 ? url : url.substring(0, 30) + " ... " + url.substring(url.length() - 20)));
       obj.put("url", url);
 
       addEvent(obj);
@@ -2890,6 +2902,7 @@ public class UIAutoApp extends Application {
         obj.put("edit", true);
         obj.put("target", mke.getTarget());
         obj.put("targetId", mke.getTargetId());
+        obj.put("targetWebId", mke.getTargetWebId());
         obj.put("when", mke.getWhen());
         obj.put("s", mke.getS());
         obj.put("text", mke.getText());
@@ -3006,8 +3019,19 @@ public class UIAutoApp extends Application {
     return floatSplitY != null && floatSplitY.getY() != 0 && y > floatSplitY.getY();
   }
 
+
   public <V extends View> V findView(@IdRes int id) {
     return getCurrentWindow().findViewById(id);
+  }
+  public <V extends View> V findView(String id) {
+    String url = webUrl;
+    if (StringUtil.isEmpty(url, true)) {
+      url = webView == null ? null : webView.getUrl();
+    }
+    Map<String, EditText> map = editTextMap.get(url);
+    EditText et = map == null ? null : map.get(id);
+
+    return (V) et;
   }
 
   public <V extends View> V findViewByFocus(View view, Class<V> clazz) {
@@ -3328,6 +3352,108 @@ public class UIAutoApp extends Application {
     }
 
     return url;
+  }
+
+  protected WebView webView;
+  public void setCurrentWebView(WebView webView) {
+    this.webView = webView;
+  }
+  protected String webUrl;
+  public void setCurrentWebUrl(String webUrl) {
+    this.webUrl = webUrl;
+  }
+
+  public Map<String, Map<String, EditText>> editTextMap = new LinkedHashMap<>();
+  public Map<String, Map<Integer, String>> editTextIdMap = new LinkedHashMap<>();
+  public JSONObject addWebEditTextEvent(@NotNull Activity activity, @Nullable Fragment fragment, @NotNull WebView webView
+          , @NotNull String id, int selectionStart, int selectionEnd, String text) {
+    text = StringUtil.getString(text);
+
+    String url = webUrl;
+    if (StringUtil.isEmpty(url, true)) {
+      url = webView == null ? null : webView.getUrl();
+    }
+    Map<String, EditText> map = editTextMap.get(url);
+
+    EditText et = map == null ? null : map.get(id);
+    if (et == null) {
+      et = new EditText(activity);
+      et.setId(View.generateViewId());
+
+      if (map == null) {
+        map = new LinkedHashMap<>();
+        editTextMap.put(url, map);
+      }
+      map.put(id, et);
+
+      Map<Integer, String> idMap = editTextIdMap.get(url);
+      if (idMap == null) {
+        idMap = new LinkedHashMap<>();
+        editTextIdMap.put(url, idMap);
+      }
+      idMap.put(et.getId(), id);
+    }
+
+    et.setText(text);
+    et.setSelection(selectionStart, selectionEnd);
+
+    InputEvent ie = new EditTextEvent(KeyEvent.ACTION_UP, 0, et, EditTextEvent.WHEN_ON
+            , text, selectionStart, selectionEnd, text).setTargetWebId(id);
+    return addInputEvent(ie, activity.getWindow().getCallback(), activity, fragment);
+  }
+
+  public void initWeb(@NotNull Activity activity, @Nullable Fragment fragment, @NotNull WebView webView, String webUrl) {
+    this.webView = webView;
+    this.webUrl = webUrl;
+//    editTextMap = new LinkedHashMap<>();
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+      webView.evaluateJavascript("function generateRandom() {\n" +
+              "      return Math.floor((1 + Math.random()) * 0x10000)\n" +
+              "        .toString(16)\n" +
+              "        .substring(1);\n" +
+              "    }\n" +
+              "\n" +
+              "\n" +
+              "    // This only works if `open` and `send` are called in a synchronous way\n" +
+              "    // That is, after calling `open`, there must be no other call to `open` or\n" +
+              "    // `send` from another place of the code until the matching `send` is called.\n" +
+              "    requestID = null;\n" +
+              "    XMLHttpRequest.prototype.reallyOpen = XMLHttpRequest.prototype.open;\n" +
+              "    XMLHttpRequest.prototype.open = function(method, url, async, user, password) {\n" +
+              "        requestID = generateRandom()\n" +
+              "        var signed_url = url + \"AJAXINTERCEPT\" + requestID;\n" +
+              "        this.reallyOpen(method, signed_url , async, user, password);\n" +
+              "    };\n" +
+              "    XMLHttpRequest.prototype.reallySend = XMLHttpRequest.prototype.send;\n" +
+              "    XMLHttpRequest.prototype.send = function(body) {\n" +
+              "        interception.customAjax(requestID, body);\n" +
+              "        this.reallySend(body);\n" +
+              "    };\n" +
+//                    "    JSON.stringify(document);\n" +
+              "    function onEditEventCallback(event) {\n" +
+              "        var target = event.target;\n" +
+              "        if (['input', 'textarea'].indexOf(target.localName) < 0) {\n" +
+              "            return;\n" +
+              "        }\n" +
+              "        var id = target.id;\n" +
+              "        if (id == null || id.trim().length <= 0) {\n" +
+              "            target.id = id = generateRandom();\n" +
+              "            var map = document.uiautoEditTextMap || {};\n" +
+              "            map[id] = target;\n" +
+              "            document.uiautoEditTextMap = map;\n" +
+              "        }\n" +
+              "        interception.onEditEvent(id, target.selectionStart, target.selectionEnd, target.value); \n" +
+              "    }\n" +
+              "    document.addEventListener('onporpertychange', onEditEventCallback);\n" +
+              "    document.addEventListener('change', onEditEventCallback);\n" +
+              "    'document.uiautoEditTextMap = ' + JSON.stringify(document.uiautoEditTextMap)" +
+              "", new ValueCallback<String>() {
+        @Override
+        public void onReceiveValue(String value) {
+          unitauto.Log.d(TAG, "wvWebView.evaluateJavascript value = " + value);
+        }
+      });
+    }
   }
 
   private static class Node<E> {

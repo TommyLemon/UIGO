@@ -14,9 +14,7 @@ limitations under the License.*/
 
 package zuo.biao.library.ui;
 
-import uiauto.InputUtil;
 import uiauto.UIAutoActivity;
-import uiauto.UIAutoApp;
 import uiauto.web.WriteHandlingWebViewClient;
 import zuo.biao.library.R;
 import zuo.biao.library.base.BaseActivity;
@@ -28,25 +26,18 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
-import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.annotation.RequiresApi;
 import android.view.View;
 import android.view.View.OnClickListener;
-import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
-import android.webkit.WebViewClient;
 import android.widget.ProgressBar;
-
-import java.io.InputStream;
-import java.util.Map;
-import java.util.Set;
 
 /**通用网页Activity
  * @author Lemon
@@ -179,7 +170,7 @@ public class WebViewActivity extends BaseActivity implements OnBottomDragListene
 
 		};
 		wvWebView.setWebViewClient(client);
-		client.inject();
+		client.initWeb(url);
 
 		wvWebView.loadUrl(url);
 	}
