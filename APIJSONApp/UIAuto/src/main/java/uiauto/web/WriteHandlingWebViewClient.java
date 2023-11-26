@@ -219,11 +219,13 @@ public class WriteHandlingWebViewClient extends WebViewClient {
 
 
     private String getAjaxRequestID(WebResourceRequest request) {
-        return getUrlSegments(request, MARKER)[1];
+        String[] segs = getUrlSegments(request, MARKER);
+        return segs == null || segs.length <= 1 ? null : segs[1];
     }
 
     private Uri getOriginalRequestUri(WebResourceRequest request, String marker){
-        String urlString = getUrlSegments(request, marker)[0];
+        String[] segs = getUrlSegments(request, marker);
+        String urlString = segs == null || segs.length <= 0 ? null : segs[0];
         return Uri.parse(urlString);
     }
 
