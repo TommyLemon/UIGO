@@ -15,6 +15,7 @@ limitations under the License.*/
 package zuo.biao.library.ui;
 
 import uiauto.InputUtil;
+import uiauto.UIAutoActivity;
 import uiauto.UIAutoApp;
 import uiauto.web.WriteHandlingWebViewClient;
 import zuo.biao.library.R;
@@ -148,7 +149,7 @@ public class WebViewActivity extends BaseActivity implements OnBottomDragListene
 
 		});
 
-		wvWebView.setWebViewClient(new WriteHandlingWebViewClient(wvWebView, getActivity(), null) {
+		WriteHandlingWebViewClient client = new WriteHandlingWebViewClient(wvWebView, getActivity(), null) {
 			@Override
 			public boolean shouldOverrideUrlLoading(WebView view, String url){
 				wvWebView.loadUrl(url);
@@ -176,7 +177,9 @@ public class WebViewActivity extends BaseActivity implements OnBottomDragListene
 				pbWebView.setVisibility(View.GONE);
 			}
 
-		});
+		};
+		wvWebView.setWebViewClient(client);
+		client.inject();
 
 		wvWebView.loadUrl(url);
 	}
@@ -197,6 +200,18 @@ public class WebViewActivity extends BaseActivity implements OnBottomDragListene
 	public void initEvent() {
 
 		tvBaseTitle.setOnClickListener(this);
+
+		findViewById(R.id.tvBaseTitle).setOnLongClickListener(new View.OnLongClickListener() {
+			@Override
+			public boolean onLongClick(View v) {
+				toActivity(EditTextInfoWindow.createIntent(context
+								, EditTextInfoWindow.TYPE_WEBSITE
+								, StringUtil.getTrimedString(tvBaseTitle)
+								, wvWebView.getUrl()),
+						REQUEST_TO_EDIT_TEXT_WINDOW, false);
+				return true;
+			}
+		});
 	}
 
 	@Override
@@ -219,11 +234,7 @@ public class WebViewActivity extends BaseActivity implements OnBottomDragListene
 	@Override
 	public void onClick(View v) {
 		if (v.getId() == R.id.tvBaseTitle) {
-			toActivity(EditTextInfoWindow.createIntent(context
-					, EditTextInfoWindow.TYPE_WEBSITE
-					, StringUtil.getTrimedString(tvBaseTitle)
-					, wvWebView.getUrl()),
-					REQUEST_TO_EDIT_TEXT_WINDOW, false);
+			toActivity(UIAutoActivity.createIntent(context));
 		}
 	}
 
