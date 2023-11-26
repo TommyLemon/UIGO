@@ -127,6 +127,57 @@
 
         </LinearLayout>
 
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@android:color/white" />
+
+        <LinearLayout
+            android:layout_height="45dp"
+            android:layout_width="match_parent"
+            android:orientation="horizontal"
+            >
+
+            <TextView
+                android:text="Proxy:"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:singleLine="true"
+                android:onClick="ip"
+                android:ellipsize="middle"
+                android:textSize="16sp"
+                android:layout_marginLeft="1dp"
+                />
+
+            <EditText
+                android:id="@+id/etUnitProxy"
+                android:hint="http://apijson.cn:9090"
+                android:inputType="textUri"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="left|center_vertical"
+                android:enabled="true"
+                android:textSize="16sp"
+                android:layout_weight="1"
+                />
+
+            <ProgressBar
+                android:id="@+id/pbUnitProxy"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent" />
+
+            <Button
+                android:id="@+id/tvUnitProxy"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:text="@string/start"
+                android:onClick="switchProxy"
+                />
+
+        </LinearLayout>
+
+
     </LinearLayout>
 
     <View

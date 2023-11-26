@@ -89,9 +89,9 @@ public class UnitAutoActivity extends Activity implements HttpServerRequestCallb
     private TextView etUnitPort;
     private View pbUnit;
 
-    SharedPreferences cache;
+    protected SharedPreferences cache;
 
-    File parentDirectory;
+    protected File parentDirectory;
 
     protected int getLayoutResId() {
         return R.layout.unit_auto_activity;

@@ -42,7 +42,6 @@ import android.support.annotation.RequiresApi;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentManager;
-import android.support.v4.app.SupportActivity;
 import android.support.v7.widget.RecyclerView;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -73,7 +72,6 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.serializer.PropertyFilter;
-import com.koushikdutta.async.http.Multimap;
 import com.yhao.floatwindow.FloatWindow;
 import com.yhao.floatwindow.IFloatWindow;
 import com.yhao.floatwindow.MoveType;
@@ -81,9 +79,11 @@ import com.yhao.floatwindow.ViewStateListener;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.UnsupportedEncodingException;
 import java.lang.annotation.Annotation;
 import java.lang.ref.WeakReference;
 import java.lang.reflect.Modifier;
+import java.net.URLEncoder;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -618,8 +618,7 @@ public class UIAutoApp extends Application {
 
     updateScreenWindowContentSize();
 
-    cache = getSharedPreferences(TAG, Context.MODE_PRIVATE);
-
+    cache = cache != null ? cache : getSharedPreferences(TAG, Context.MODE_PRIVATE);
 
     splitSize = cache.getInt(SPLIT_HEIGHT, Math.round(dip2px(36)));
     splitRadius = splitSize/2;
@@ -770,7 +769,10 @@ public class UIAutoApp extends Application {
     decorHeight = decorView == null ? windowHeight : decorView.getHeight();
   }
 
-  private void initUIAuto(Application app) {
+  public static final String KEY_ENABLE_PROXY = "KEY_ENABLE_PROXY";
+  public static final String KEY_PROXY_SERVER = "KEY_PROXY_SERVER";
+
+  public void initUIAuto(Application app) {
     APP = app;
     UnitAutoApp.init(app);
     Log.d(TAG, "项目启动 >>>>>>>>>>>>>>>>>>>> \n\n");
@@ -783,6 +785,10 @@ public class UIAutoApp extends Application {
         e.printStackTrace();
       }
     }
+
+    cache = getSharedPreferences(TAG, Context.MODE_PRIVATE);
+    isProxy = cache.getBoolean(KEY_ENABLE_PROXY, false);
+    proxyServer = cache.getString(KEY_PROXY_SERVER, null);
 
     app.registerActivityLifecycleCallbacks(new ActivityLifecycleCallbacks() {
 
@@ -3287,7 +3293,42 @@ public class UIAutoApp extends Application {
     getCurrentActivity().startActivity(intent, options);
   }
 
+  private boolean isProxy = false;
+  private String proxyServer = "";
+  public void setHttpProxy(boolean isProxy, String server) {
+    this.isProxy = isProxy;
+    this.proxyServer = server;
+  }
 
+  public boolean isProxyEnabled() {
+    return isProxy;
+  }
+  public String getProxyServer() {
+    return proxyServer;
+  }
+
+  private String delegateId = "";
+  public String getDelegateId() {
+    return delegateId;
+  }
+  public UIAutoApp setDelegateId(String delegateId) {
+    this.delegateId = delegateId;
+    return this;
+  }
+
+  public String getHttpUrl(String url_) throws UnsupportedEncodingException {
+    String url = StringUtil.getNoBlankString(url_);
+    String proxyServer = isProxyEnabled() ? getProxyServer() : null;
+
+    if (StringUtil.isNotEmpty(proxyServer, true)) {
+      String delegateId = getDelegateId();
+      url = proxyServer + "/delegate?" + (isShowing && isSplitShowing ? ("$_record=" + (isReplay ? -1 : 1) + "&") : "")
+              + (StringUtil.isEmpty(delegateId, true) ? "" : "$_delegate_id=" + delegateId + '&')
+              + "$_delegate_url=" + URLEncoder.encode(url, "UTF-8");
+    }
+
+    return url;
+  }
 
   private static class Node<E> {
     E item;

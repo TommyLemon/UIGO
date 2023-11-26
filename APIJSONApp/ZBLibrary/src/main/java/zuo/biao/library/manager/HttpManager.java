@@ -28,6 +28,7 @@ import javax.net.ssl.SSLSocketFactory;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import uiauto.UIAutoApp;
 import zuo.biao.library.base.BaseApplication;
 import zuo.biao.library.model.Parameter;
 import zuo.biao.library.util.Log;
@@ -106,7 +107,7 @@ public class HttpManager {
 	 *            在发起请求的类中可以用requestCode来区分各个请求
 	 * @param listener
 	 */
-	public void get(final List<Parameter> paramList, final String url,
+	public void get(final List<Parameter> paramList, final String url_,
 			final int requestCode, final OnHttpResponseListener listener) {
 
 		new AsyncTask<Void, Void, Exception>() {
@@ -114,25 +115,27 @@ public class HttpManager {
 			String result;
 			@Override
 			protected Exception doInBackground(Void... params) {
-				OkHttpClient client = getHttpClient(url);
-				if (client == null) {
-					return new Exception(TAG + ".get  AsyncTask.doInBackground  client == null >> return;");
-				}
-
-				StringBuffer sb = new StringBuffer();
-				sb.append(StringUtil.getNoBlankString(url));
-				if (paramList != null) {
-					Parameter parameter;
-					for (int i = 0; i < paramList.size(); i++) {
-						parameter = paramList.get(i);
-						sb.append(i <= 0 ? "?" : "&");
-						sb.append(StringUtil.getTrimedString(parameter.key));
-						sb.append("=");
-						sb.append(StringUtil.getTrimedString(parameter.value));
-					}
-				}
-
 				try {
+					String url = UIAutoApp.getInstance().getHttpUrl(url_);
+
+					OkHttpClient client = getHttpClient(url);
+					if (client == null) {
+						return new Exception(TAG + ".get  AsyncTask.doInBackground  client == null >> return;");
+					}
+
+					StringBuffer sb = new StringBuffer();
+					sb.append(StringUtil.getNoBlankString(url));
+					if (paramList != null) {
+						Parameter parameter;
+						for (int i = 0; i < paramList.size(); i++) {
+							parameter = paramList.get(i);
+							sb.append(i <= 0 ? "?" : "&");
+							sb.append(StringUtil.getTrimedString(parameter.key));
+							sb.append("=");
+							sb.append(StringUtil.getTrimedString(parameter.value));
+						}
+					}
+
 					result = getResponseJson(client, new Request.Builder()
 					.addHeader(KEY_TOKEN, getToken(url))
 					.url(sb.toString()).build());
@@ -167,7 +170,7 @@ public class HttpManager {
 	 *            在发起请求的类中可以用requestCode来区分各个请求
 	 * @param listener
 	 */
-	public void post(final List<Parameter> paramList, final String url,
+	public void post(final List<Parameter> paramList, final String url_,
 			final int requestCode, final OnHttpResponseListener listener) {
 
 		new AsyncTask<Void, Void, Exception>() {
@@ -175,19 +178,20 @@ public class HttpManager {
 			String result;
 			@Override
 			protected Exception doInBackground(Void... params) {
-				OkHttpClient client = getHttpClient(url);
-				if (client == null) {
-					return new Exception(TAG + ".post  AsyncTask.doInBackground  client == null >> return;");
-				}
-
-				FormEncodingBuilder fBuilder = new FormEncodingBuilder();
-				if (paramList != null) {
-					for (Parameter p : paramList) {
-						fBuilder.add(StringUtil.getTrimedString(p.key), StringUtil.getTrimedString(p.value));
-					}
-				}
-
 				try {
+					String url = UIAutoApp.getInstance().getHttpUrl(url_);
+					OkHttpClient client = getHttpClient(url);
+					if (client == null) {
+						return new Exception(TAG + ".post  AsyncTask.doInBackground  client == null >> return;");
+					}
+
+					FormEncodingBuilder fBuilder = new FormEncodingBuilder();
+					if (paramList != null) {
+						for (Parameter p : paramList) {
+							fBuilder.add(StringUtil.getTrimedString(p.key), StringUtil.getTrimedString(p.value));
+						}
+					}
+
 					result = getResponseJson(client, new Request.Builder()
 					.addHeader(KEY_TOKEN, getToken(url)).url(StringUtil.getNoBlankString(url))
 					.post(fBuilder.build()).build());

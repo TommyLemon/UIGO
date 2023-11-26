@@ -21,6 +21,7 @@ import static uiauto.HttpManager.getResponseBody;
 import java.io.IOException;
 import java.net.CookieHandler;
 import java.net.URI;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -104,6 +105,7 @@ public class HttpManager {
 	public void post(final String url_, final com.alibaba.fastjson.JSONObject request
 			, final int requestCode, final OnHttpResponseListener listener) {
 		String tag = request == null ? null : request.getString(JSONRequest.KEY_TAG);
+
 		new AsyncTask<Void, Void, Exception>() {
 
 			String httpRequestString;
@@ -114,7 +116,8 @@ public class HttpManager {
 			@Override
 			protected Exception doInBackground(Void... params) {
 				try {
-					String url = StringUtil.getNoBlankString(url_);
+					String url = UIAutoApp.getInstance().getHttpUrl(url_);
+
 					String token = getToken(url);
 
 					OkHttpClient client = getHttpClient(url);
@@ -318,6 +321,10 @@ public class HttpManager {
 				List<String> cList = new ArrayList<String>();
 				cList.add(cookie);
 				map.put("Cookie", cList);
+
+				List<String> idList = new ArrayList<String>();
+				idList.add(UIAutoApp.getInstance().getDelegateId());
+				map.put("Apijson-Delegate-Id", idList);
 			}
 			return map;
 		}
@@ -329,10 +336,19 @@ public class HttpManager {
 				for (int i = 0; i < list.size(); i++) {
 					String cookie = list.get(i);
 					if (cookie.startsWith("JSESSIONID")) {
-						saveCookie(list.get(i));
+						saveCookie(cookie);
 						break;
 					}
 				}
+			}
+
+			List<String> idList = responseHeaders.get("Apijson-Delegate-Id");
+			if (idList != null && idList.isEmpty() == false) {
+				String id = idList.get(0);
+				int start = id.indexOf("JSESSIONID=");
+				int end = id.indexOf(";");
+				id = id.substring((start < 0 ? 0 : start) + "JSESSIONID=".length(), end < 0 ? id.length() : end);
+				UIAutoApp.getInstance().setDelegateId(StringUtil.getTrimedString(id));
 			}
 		}
 

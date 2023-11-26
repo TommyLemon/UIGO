@@ -19,6 +19,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
+import android.widget.ProgressBar;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import unitauto.apk.UnitAutoActivity;
@@ -49,12 +51,36 @@ public class UIAutoActivity extends UnitAutoActivity {
         return R.layout.ui_auto_activity;
     }
 
+
+    private TextView etUnitProxy;
+    private ProgressBar pbUnitProxy;
+    private TextView tvUnitProxy;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         context = this;
 
         flowId = getIntent().getLongExtra(INTENT_FLOW_ID, flowId);
+        isProxy = ! UIAutoApp.getInstance().isProxyEnabled();
+        server = UIAutoApp.getInstance().getProxyServer();
+        if (StringUtil.isEmpty(server, true)) {
+            server = "http://apijson.cn:9090";
+        }
+
+        etUnitProxy = findViewById(R.id.etUnitProxy);
+        pbUnitProxy = findViewById(R.id.pbUnitProxy);
+        tvUnitProxy = findViewById(R.id.tvUnitProxy);
+
+        etUnitProxy.setText(server);
+        switchProxy(tvUnitProxy);
+
+        tvUnitProxy.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                switchProxy(v);
+            }
+        });
     }
 
 
@@ -76,6 +102,19 @@ public class UIAutoActivity extends UnitAutoActivity {
         startActivity(UnitAutoActivity.createIntent(context));
     }
 
+    protected boolean isProxy = false;
+    protected String server = null;
+    public void switchProxy(View v) {
+        isProxy = ! isProxy;
+
+        etUnitProxy.setEnabled(! isProxy);
+        tvUnitProxy.setText(isProxy ? R.string.stop : R.string.start);
+        pbUnitProxy.setVisibility(isProxy ? View.VISIBLE : View.GONE);
+
+        server = StringUtil.getTrimedString(etUnitProxy);
+        UIAutoApp.getInstance().setHttpProxy(isProxy, server);
+    }
+
     public void record(View v) {
         flowId = - System.currentTimeMillis();
 
@@ -86,6 +125,16 @@ public class UIAutoActivity extends UnitAutoActivity {
         UIAutoApp.getInstance().onUIAutoActivityCreate(this);
         UIAutoApp.getInstance().prepareRecord();
         finish();
+    }
+
+    @Override
+    protected void onDestroy() {
+        cache.edit()
+                .putBoolean(UIAutoApp.KEY_ENABLE_PROXY, isProxy)
+                .putString(UIAutoApp.KEY_PROXY_SERVER, server)
+                .commit();
+
+        super.onDestroy();
     }
 
 }
