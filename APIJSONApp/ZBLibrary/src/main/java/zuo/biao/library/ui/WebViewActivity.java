@@ -167,8 +167,6 @@ public class WebViewActivity extends BaseActivity implements OnBottomDragListene
 				super.onPageStarted(view, url, favicon);
 				tvBaseTitle.setText(StringUtil.getTrimedString(wvWebView.getUrl()));
 				pbWebView.setVisibility(View.VISIBLE);
-
-				inject();
 			}
 
 			@Override
@@ -176,8 +174,6 @@ public class WebViewActivity extends BaseActivity implements OnBottomDragListene
 				super.onPageFinished(view, url);
 				tvBaseTitle.setText(StringUtil.getTrimedString(wvWebView.getTitle()));
 				pbWebView.setVisibility(View.GONE);
-
-				inject();
 			}
 
 		});
@@ -185,38 +181,6 @@ public class WebViewActivity extends BaseActivity implements OnBottomDragListene
 		wvWebView.loadUrl(url);
 	}
 
-	private void inject() {
-		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-			wvWebView.evaluateJavascript("function generateRandom() {\n" +
-					"      return Math.floor((1 + Math.random()) * 0x10000)\n" +
-					"        .toString(16)\n" +
-					"        .substring(1);\n" +
-					"    }\n" +
-					"\n" +
-					"\n" +
-					"    // This only works if `open` and `send` are called in a synchronous way\n" +
-					"    // That is, after calling `open`, there must be no other call to `open` or\n" +
-					"    // `send` from another place of the code until the matching `send` is called.\n" +
-					"    requestID = null;\n" +
-					"    XMLHttpRequest.prototype.reallyOpen = XMLHttpRequest.prototype.open;\n" +
-					"    XMLHttpRequest.prototype.open = function(method, url, async, user, password) {\n" +
-					"        requestID = generateRandom()\n" +
-					"        var signed_url = url + \"AJAXINTERCEPT\" + requestID;\n" +
-					"        this.reallyOpen(method, signed_url , async, user, password);\n" +
-					"    };\n" +
-					"    XMLHttpRequest.prototype.reallySend = XMLHttpRequest.prototype.send;\n" +
-					"    XMLHttpRequest.prototype.send = function(body) {\n" +
-					"        interception.customAjax(requestID, body);\n" +
-					"        this.reallySend(body);\n" +
-					"    };" +
-					"    JSON.stringify(document);", new ValueCallback<String>() {
-				@Override
-				public void onReceiveValue(String value) {
-					Log.d(TAG, "wvWebView.evaluateJavascript value = " + value);
-				}
-			});
-		}
-	}
 
 	//Data数据区(存在数据获取或处理代码，但不存在事件监听代码)>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 

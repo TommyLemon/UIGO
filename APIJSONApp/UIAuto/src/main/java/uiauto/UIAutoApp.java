@@ -189,7 +189,7 @@ public class UIAutoApp extends Application {
 
         InputEvent curItem = curNode.item;
         //暂停，等待时机
-        if (curItem == null || waitMap.isEmpty() == false) { // curNode.type == InputUtil.EVENT_TYPE_UI || curNode.type == InputUtil.EVENT_TYPE_HTTP) {
+        if (curItem == null || (waitMap.isEmpty() == false && curNode.type == InputUtil.EVENT_TYPE_HTTP)) { // curNode.type == InputUtil.EVENT_TYPE_UI || curNode.type == InputUtil.EVENT_TYPE_HTTP) {
           return;
         }
 

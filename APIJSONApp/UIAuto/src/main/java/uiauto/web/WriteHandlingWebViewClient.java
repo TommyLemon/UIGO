@@ -4,7 +4,9 @@ import android.app.Activity;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.net.Uri;
+import android.os.Build;
 import android.support.v4.app.Fragment;
+import android.webkit.ValueCallback;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
 import android.webkit.WebView;
@@ -18,9 +20,12 @@ import java.util.Set;
 
 import uiauto.InputUtil;
 import uiauto.UIAutoApp;
+import unitauto.Log;
 
 
 public class WriteHandlingWebViewClient extends WebViewClient {
+
+    private static final String TAG = "WriteHandlingWebViewClient";
 
     private final String MARKER = "AJAXINTERCEPT";
     private final WebView webView;
@@ -42,18 +47,53 @@ public class WriteHandlingWebViewClient extends WebViewClient {
     public void onPageStarted(WebView view, String url, Bitmap favicon) {
         super.onPageStarted(view, url, favicon);
         UIAutoApp.getInstance().onUIEvent(InputUtil.UI_ACTION_CREATE, activity, activity, fragment, webView, url);
+        inject();
     }
 
     @Override
     public void onPageFinished(WebView view, String url) {
         super.onPageFinished(view, url);
         UIAutoApp.getInstance().onUIEvent(InputUtil.UI_ACTION_RESUME, activity, activity, fragment, webView, url);
+//        inject();
     }
 
     @Override
     public void onPageCommitVisible(WebView view, String url) {
         super.onPageCommitVisible(view, url);
 //				UIAutoApp.getInstance().onUIEvent(InputUtil.UI_ACTION_RESUME, activity, activity, fragment, webView, url);
+    }
+
+    public void inject() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+            webView.evaluateJavascript("function generateRandom() {\n" +
+                    "      return Math.floor((1 + Math.random()) * 0x10000)\n" +
+                    "        .toString(16)\n" +
+                    "        .substring(1);\n" +
+                    "    }\n" +
+                    "\n" +
+                    "\n" +
+                    "    // This only works if `open` and `send` are called in a synchronous way\n" +
+                    "    // That is, after calling `open`, there must be no other call to `open` or\n" +
+                    "    // `send` from another place of the code until the matching `send` is called.\n" +
+                    "    requestID = null;\n" +
+                    "    XMLHttpRequest.prototype.reallyOpen = XMLHttpRequest.prototype.open;\n" +
+                    "    XMLHttpRequest.prototype.open = function(method, url, async, user, password) {\n" +
+                    "        requestID = generateRandom()\n" +
+                    "        var signed_url = url + \"AJAXINTERCEPT\" + requestID;\n" +
+                    "        this.reallyOpen(method, signed_url , async, user, password);\n" +
+                    "    };\n" +
+                    "    XMLHttpRequest.prototype.reallySend = XMLHttpRequest.prototype.send;\n" +
+                    "    XMLHttpRequest.prototype.send = function(body) {\n" +
+                    "        interception.customAjax(requestID, body);\n" +
+                    "        this.reallySend(body);\n" +
+                    "    };" +
+                    "    JSON.stringify(document);", new ValueCallback<String>() {
+                @Override
+                public void onReceiveValue(String value) {
+                    Log.d(TAG, "wvWebView.evaluateJavascript value = " + value);
+                }
+            });
+        }
     }
 
     /*
