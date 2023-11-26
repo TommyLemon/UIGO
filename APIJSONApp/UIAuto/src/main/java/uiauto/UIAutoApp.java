@@ -2710,7 +2710,7 @@ public class UIAutoApp extends Application {
 
           if (window != null && (node.item == null || node.action == MotionEvent.ACTION_DOWN)) {
             // 同步或用协程来上传图片
-            obj.put("screenshotUrl", screenshot(directory == null || directory.exists() == false ? parentDirectory : directory, window, inputId, toInputId, node.orientation));
+//            obj.put("screenshotUrl", screenshot(directory == null || directory.exists() == false ? parentDirectory : directory, window, inputId, toInputId, node.orientation));
           }
         }
         if (outputList == null) {

@@ -12,14 +12,23 @@ import android.webkit.WebResourceResponse;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
+
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import uiauto.InputUtil;
+import uiauto.StringUtil;
 import uiauto.UIAutoApp;
+import unitauto.JSON;
 import unitauto.Log;
 
 
@@ -46,15 +55,81 @@ public class WriteHandlingWebViewClient extends WebViewClient {
     @Override
     public void onPageStarted(WebView view, String url, Bitmap favicon) {
         super.onPageStarted(view, url, favicon);
-        UIAutoApp.getInstance().onUIEvent(InputUtil.UI_ACTION_CREATE, activity, activity, fragment, webView, url);
+//        Map<String, List<JSONObject>> reqMap = dataReqMap.get(url);
+//        if (reqMap == null || reqMap.isEmpty()) {
+//            return;
+//        }
+//
+//        UIAutoApp.getInstance().onUIEvent(InputUtil.UI_ACTION_CREATE, activity, activity, fragment, webView, url);
         inject();
     }
 
     @Override
     public void onPageFinished(WebView view, String url) {
         super.onPageFinished(view, url);
-        UIAutoApp.getInstance().onUIEvent(InputUtil.UI_ACTION_RESUME, activity, activity, fragment, webView, url);
+        Map<String, List<JSONObject>> reqMap = dataReqMap.get(url);
+        Set<Map.Entry<String, List<JSONObject>>> set = reqMap == null || reqMap.isEmpty() ? null : reqMap.entrySet();
+        if (set == null) { // || set.isEmpty()) {
+            UIAutoApp.getInstance().onUIEvent(InputUtil.UI_ACTION_RESUME, activity, activity, fragment, webView, url);
 //        inject();
+            return;
+        }
+
+        List<String> toRemoveList = new ArrayList<>();
+
+        for (Map.Entry<String, List<JSONObject>> ety : set) {
+            String key = ety == null ? null : ety.getKey();
+            List<JSONObject> list = key == null ? null : ety.getValue();
+
+            JSONObject first = null;
+            String url_ = null;
+            while (list != null && list.isEmpty() == false) {
+                first = list.remove(0);
+                url_ = first == null || first.isEmpty() ? null : first.getString("url");
+                if (StringUtil.isNotEmpty(url_, true)) {
+                    break;
+                }
+            }
+
+            if (StringUtil.isEmpty(url_, true)) {
+                toRemoveList.add(key);
+                continue;
+            }
+
+            String method = first.getString("method");
+//            String format = first.getString("format");
+            String host = first.getString("host");
+            String path = first.getString("path");
+            String finalHeaders = first.getString("header");
+            String finalRequestBody = first.getString("body");
+
+            UIAutoApp.getInstance().post(new Runnable() {
+                @Override
+                public void run() {
+                    UIAutoApp.getInstance().onHTTPEvent(
+                            InputUtil.getHTTPActionCode(method), "200"
+                            , method, host, path
+                            , finalHeaders, finalRequestBody, null
+                            , activity, fragment
+                    );
+                }
+            });
+
+            break;
+        }
+
+//        if (toRemoveList.size() >= reqMap.size()) {
+//            reqMap = null;
+//        } else {
+            for (String k : toRemoveList) {
+                reqMap.remove(k);
+            }
+//        }
+
+//        if (reqMap == null || reqMap.isEmpty()) {
+//            dataReqMap.remove(url);
+//        }
+
     }
 
     @Override
@@ -104,13 +179,16 @@ public class WriteHandlingWebViewClient extends WebViewClient {
         return null;
     }
 
+    Map<String, Map<String, List<JSONObject>>> dataReqMap = new LinkedHashMap<>();
     @Override
     public WebResourceResponse shouldInterceptRequest(final WebView view, WebResourceRequest request) {
         String requestBody = null;
         Uri uri = request.getUrl();
-        if (isAjaxRequest(request)){
+
+        String requestID = isAjaxRequest(request) ? getAjaxRequestID(request) : null;
+        if (StringUtil.isNotEmpty(requestID, true)){
             try {
-                requestBody = getRequestBody(request);
+                requestBody = getAjaxRequestBodyByID(requestID);
                 uri = getOriginalRequestUri(request, MARKER);
             } catch (Throwable e) {
                 e.printStackTrace();
@@ -121,7 +199,17 @@ public class WriteHandlingWebViewClient extends WebViewClient {
                 new WriteHandlingWebResourceRequest(request, requestBody, uri)
         );
 
-        if (request != null) {
+        int port = uri.getPort();
+        String host = uri.getScheme() + "://" + uri.getHost() + port;
+        String path = uri.getPath();
+
+        String url = host + (path.startsWith("/") ? path : "/" + path);
+
+        boolean isPage = url.endsWith(".htm") || url.endsWith(".html") || url.endsWith(".xml")
+                || url.endsWith(".php") || url.endsWith(".jsp") || url.endsWith(".asp")
+                || path.lastIndexOf(".") <= path.lastIndexOf("/");
+        boolean isJson = false;
+        if (StringUtil.isNotEmpty(requestID, true)) {
             Map<String, String> headerMap = request == null ? null : request.getRequestHeaders();
             if (headerMap != null && headerMap.isEmpty() == false) {
                 String method = request.getMethod();
@@ -129,7 +217,6 @@ public class WriteHandlingWebViewClient extends WebViewClient {
                 String headers = null;
 
                 StringBuilder sb = new StringBuilder();
-                boolean isJson = false;
                 Set<Map.Entry<String, String>> set = headerMap.entrySet();
                 for (Map.Entry<String, String> ety : set) {
                     String k = ety.getKey();
@@ -145,54 +232,80 @@ public class WriteHandlingWebViewClient extends WebViewClient {
                     sb.append(k).append(": ").append(v).append("\n");
                 }
 
-                if (isJson == false) {
-                    if (webResourceResponse == null) {
-                        return webResourceResponse;
-                    } else {
-                        return injectIntercept(webResourceResponse, view.getContext());
+                if (isJson) {
+                    isPage = false;
+
+                    headers = sb.toString();
+
+                    String format = contentType == null ? null : (contentType.contains("application/json")
+                            ? "JSON" : (contentType.contains("form-data") ? "DATA" : (contentType.contains("form") ? "FORM" : "PARAM"))
+                    );
+
+                    Map<String, List<JSONObject>> reqMap = dataReqMap.get(url);
+                    if (reqMap == null) {
+                        reqMap = new LinkedHashMap<>();
                     }
+                    List<JSONObject> reqList = reqMap.get(requestID);
+                    if (reqList == null) {
+                        reqList = new ArrayList<>();
+                    }
+                    JSONObject req = new JSONObject(true);
+                    req.put("id", requestID);
+                    req.put("method", method);
+                    req.put("format", format);
+                    req.put("host", host);
+                    req.put("path", path);
+                    req.put("url", url);
+                    req.put("header", headers);
+                    req.put("body", requestBody);
+
+                    reqList.add(req);
+                    reqMap.put(requestID, reqList);
+                    dataReqMap.put(url, reqMap);
+
+                    String finalHeaders = headers;
+                    String finalRequestBody = requestBody;
+                    UIAutoApp.getInstance().post(new Runnable() {
+                        @Override
+                        public void run() {
+                            UIAutoApp.getInstance().onHTTPEvent(
+                                    InputUtil.getHTTPActionCode(method), format
+                                    , method, host, path
+                                    , finalHeaders, finalRequestBody, null
+                                    , activity, fragment
+                            );
+                        }
+                    });
+
+                    //				UIAutoApp.getInstance().post(new Runnable() {
+                    //					@Override
+                    //					public void run() {
+                    //						UIAutoApp.getInstance().onHTTPEvent(
+                    //								InputUtil.HTTP_ACTION_RESPONSE, ("" + responseCode)
+                    //								, "POST", "http://apijson.cn:8080", url_
+                    //								, responseHeaders == null ? null : responseHeaders.toString(), httpRequestString, responseBody
+                    //								, getActivity(listener), getFragment(listener)
+                    //						);
+                    //					}
+                    //				});
+
                 }
-
-                headers = sb.toString();
-
-                int port = uri.getPort();
-                String host = uri.getScheme() + "://" + uri.getHost() + port;
-                String path = uri.getPath();
-
-                String format = contentType == null ? null : (contentType.contains("application/json")
-                        ? "JSON" : (contentType.contains("form-data") ? "DATA" : (contentType.contains("form") ? "FORM" : "PARAM"))
-                );
-
-                String finalHeaders = headers;
-                String finalRequestBody = requestBody;
-                UIAutoApp.getInstance().post(new Runnable() {
-                    @Override
-                    public void run() {
-                        UIAutoApp.getInstance().onHTTPEvent(
-                                InputUtil.getHTTPActionCode(method), format
-                                , method, host, path
-                                , finalHeaders, finalRequestBody, null
-                                , activity, fragment
-                        );
-                    }
-                });
-
-                //				UIAutoApp.getInstance().post(new Runnable() {
-                //					@Override
-                //					public void run() {
-                //						UIAutoApp.getInstance().onHTTPEvent(
-                //								InputUtil.HTTP_ACTION_RESPONSE, ("" + responseCode)
-                //								, "POST", "http://apijson.cn:8080", url_
-                //								, responseHeaders == null ? null : responseHeaders.toString(), httpRequestString, responseBody
-                //								, getActivity(listener), getFragment(listener)
-                //						);
-                //					}
-                //				});
-
             }
         }
 
-        if (webResourceResponse == null){
+        if (isPage) {
+            Map<String, List<JSONObject>> reqMap = dataReqMap.get(url);
+            if (reqMap == null) { // || reqMap.isEmpty()) {
+                UIAutoApp.getInstance().post(new Runnable() {
+                    @Override
+                    public void run() {
+                        UIAutoApp.getInstance().onUIEvent(InputUtil.UI_ACTION_CREATE, activity, activity, fragment, webView, url);
+                    }
+                });
+            }
+        }
+
+        if (webResourceResponse == null) {
             return webResourceResponse;
         } else {
             return injectIntercept(webResourceResponse, view.getContext());
