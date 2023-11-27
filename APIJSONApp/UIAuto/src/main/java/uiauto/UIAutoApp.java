@@ -80,6 +80,8 @@ import com.yhao.floatwindow.ViewStateListener;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.lang.annotation.Annotation;
 import java.lang.ref.WeakReference;
@@ -2122,16 +2124,19 @@ public class UIAutoApp extends Application {
             if (webView != null && (StringUtil.isNotEmpty(targetWebId, true) || (ete.getX() != null && ete.getY() != null))) {
               String script = "" + // ""(function() {\n" +
                       "  var map = document.uiautoEditTextMap || {};\n" +
-                      "  var et = map['" + targetWebId + "'] || document.getElementById('" + targetWebId + "');\n" +
+                      "  var targetWebId = '" + targetWebId + "';\n" +
+                      "  var et = map[targetWebId] || document.getElementById(targetWebId);\n" +
+                      "  var x = " + ete.getX() + ";\n" +
+                      "  var y = " + ete.getY() + ";\n" +
                       "  if (et == null) {\n" +
-                      "    et = map['" + ete.getX() + "," + ete.getY() + "'];\n" +
+                      "    et = map[x + ',' + y];\n" +
                       "  }\n" +
 //                      "  var ae = document.activeElement;\n" +
 //                      "  if (et == null && ae instanceof HTMLElement && ['input', 'textarea'].indexOf(ae.localName) >= 0) {\n" +
 //                      "    et = ae;\n" +
 //                      "  }\n" +
                       "  if (et == null) {\n" +
-                      "      function findEditText(x, y) {\n" +
+                      "    function findEditText(x, y) {\n" +
                       "\n" +
                       "      var inputs = document.getElementsByTagName('input');\n" +
                       "      var textareas = document.getElementsByTagName('textarea');\n" +
@@ -2179,18 +2184,18 @@ public class UIAutoApp extends Application {
                       "        return target;\n" +
                       "      }\n" +
                       "\n" +
-                      "      var target = findItem(inputs, null, true);\n" +
-                      "      if (target instanceof HTMLElement) {\n" +
-                      "        return target;\n" +
-                      "      }\n" +
+//                      "      var target = findItem(inputs, null, true);\n" +
+//                      "      if (target instanceof HTMLElement) {\n" +
+//                      "        return target;\n" +
+//                      "      }\n" +
+//                      "\n" +
+//                      "      var target2 = findItem(textareas, null, true);\n" +
+//                      "      if (target2 instanceof HTMLElement) {\n" +
+//                      "        return target2;\n" +
+//                      "      }\n" +
                       "\n" +
-                      "      var target2 = findItem(textareas, null, true);\n" +
-                      "      if (target2 instanceof HTMLElement) {\n" +
-                      "        return target2;\n" +
-                      "      }\n" +
-                      "\n" +
-                      "      target = findItem(inputs, null);\n" +
-                      "      target2 = findItem(textareas, target);\n" +
+                      "      var target = findItem(inputs, null);\n" +
+                      "      var target2 = findItem(textareas, target);\n" +
                       "\n" +
                       "      console.log(\"findViewByPoint(\" + x + \", \" + y + \") = \" + (target2 == null ? null : target2.id));\n" +
 //                      "      alert(\"findViewByPoint(\" + x + \", \" + y + \") = \" + (target2 == null ? null : target2.id));\n" +
@@ -2198,7 +2203,7 @@ public class UIAutoApp extends Application {
                       "    }\n" +
                       "    \n" +
                       "    et = findEditText(x, y);\n" +
-                      "    map['" + ete.getX() + "," + ete.getY() + "'] = et;\n" +
+                      "    map[x + ',' + y] = et;\n" +
                       "  }\n" +
                       "  \n" +
                       "  et.value = '" + StringUtil.getString(ete.getText()).replaceAll("'", "\\'") + "';\n" +
@@ -3494,6 +3499,21 @@ public class UIAutoApp extends Application {
     InputEvent ie = new EditTextEvent(KeyEvent.ACTION_UP, 0, et, EditTextEvent.WHEN_ON
             , text, selectionStart, selectionEnd, text).setTargetWebId(id);
     return addInputEvent(ie, activity.getWindow().getCallback(), activity, fragment);
+  }
+
+
+  public String readAssetsText(String fileName) {
+    try {
+      InputStream is = getAssets().open(fileName); // FIXME FileNotFound
+      int lenght = is.available();
+      byte[]  buffer = new byte[lenght];
+      is.read(buffer);
+      String result = new String(buffer, "utf8");
+      return result;
+    } catch (Throwable e) {
+      e.printStackTrace();
+      return null;
+    }
   }
 
   public void initWeb(@NotNull Activity activity, @Nullable Fragment fragment, @NotNull WebView webView, String webUrl) {
