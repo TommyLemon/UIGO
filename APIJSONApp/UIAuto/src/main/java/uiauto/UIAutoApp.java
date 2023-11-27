@@ -2119,14 +2119,98 @@ public class UIAutoApp extends Application {
             }
 
             String targetWebId = ete.getTargetWebId();
-            if (webView != null && StringUtil.isNotEmpty(targetWebId, true)) {
-              webView.evaluateJavascript("" +
-                      "(function() {\n" +
-                      "       var map = document.uiautoEditTextMap || {};\n" +
-                      "       var et = map['" + targetWebId + "'] || document.getElementById('" + targetWebId + "');\n" +
-                      "       et.value = '" + ete.getText().replaceAll("'", "\\'") + "'\n" +
-                      "})();\n" +
-                      "'document.uiautoEditTextMap = ' + JSON.stringify(document.uiautoEditTextMap)", new ValueCallback<String>() {
+            if (webView != null && (StringUtil.isNotEmpty(targetWebId, true) || (ete.getX() != null && ete.getY() != null))) {
+              String script = "" + // ""(function() {\n" +
+                      "  var map = document.uiautoEditTextMap || {};\n" +
+                      "  var et = map['" + targetWebId + "'] || document.getElementById('" + targetWebId + "');\n" +
+                      "  if (et == null) {\n" +
+                      "    et = map['" + ete.getX() + "," + ete.getY() + "'];\n" +
+                      "  }\n" +
+//                      "  var ae = document.activeElement;\n" +
+//                      "  if (et == null && ae instanceof HTMLElement && ['input', 'textarea'].indexOf(ae.localName) >= 0) {\n" +
+//                      "    et = ae;\n" +
+//                      "  }\n" +
+                      "  if (et == null) {\n" +
+                      "      function findEditText(x, y) {\n" +
+                      "\n" +
+                      "      var inputs = document.getElementsByTagName('input');\n" +
+                      "      var textareas = document.getElementsByTagName('textarea');\n" +
+                      "\n" +
+                      "      function getZIndex(e) {\n" +
+                      "        if (e instanceof HTMLElement == false) {\n" +
+                      "          return null;\n" +
+                      "        }\n" +
+                      "\n" +
+                      "        var style = document.defaultView.getComputedStyle(e);\n" +
+                      "        var z = style == null ? null : style.getPropertyValue('z-index');\n" +
+                      "        return z == null || Number.isNaN(z) ? getZIndex(e.parentNode) : z;\n" +
+                      "      }\n" +
+                      "\n" +
+                      "      function findItem(editTexts, target) {\n" +
+                      "        if (editTexts == null || editTexts.length <= 0) {\n" +
+                      "          return target;\n" +
+                      "        }\n" +
+                      "\n" +
+                      "        var tz = getZIndex(target);\n" +
+                      "        for (var i = 0; i < editTexts.length; i ++) {\n" +
+                      "          var et = editTexts.item(i);\n" +
+                      "\n" +
+                      "          var rect = et == null || et.disabled ? null : et.getBoundingClientRect();\n" +
+                      "          var left = rect == null ? null : rect.left;\n" +
+                      "          var right = left == null ? null : rect.right;\n" +
+                      "          var top = right == null ? null : rect.top;\n" +
+                      "          var bottom = top == null ? null : rect.bottom;\n" +
+                      "          if (bottom == null || x < left || x > right || y < top || y > bottom) {\n" +
+                      "            continue;\n" +
+                      "          }\n" +
+                      "\n" +
+                      "          if (target == null) {\n" +
+                      "            target = et;\n" +
+                      "            continue;\n" +
+                      "          }\n" +
+                      "\n" +
+                      "          var z = getZIndex(et);\n" +
+                      "          if (tz == null || (z != null && z > tz)) {\n" +
+                      "            target = et;\n" +
+                      "            tz = z;\n" +
+                      "          }\n" +
+                      "        }\n" +
+                      "\n" +
+                      "        return target;\n" +
+                      "      }\n" +
+                      "\n" +
+                      "      var target = findItem(inputs, null, true);\n" +
+                      "      if (target instanceof HTMLElement) {\n" +
+                      "        return target;\n" +
+                      "      }\n" +
+                      "\n" +
+                      "      var target2 = findItem(textareas, null, true);\n" +
+                      "      if (target2 instanceof HTMLElement) {\n" +
+                      "        return target2;\n" +
+                      "      }\n" +
+                      "\n" +
+                      "      target = findItem(inputs, null);\n" +
+                      "      target2 = findItem(textareas, target);\n" +
+                      "\n" +
+                      "      console.log(\"findViewByPoint(\" + x + \", \" + y + \") = \" + (target2 == null ? null : target2.id));\n" +
+//                      "      alert(\"findViewByPoint(\" + x + \", \" + y + \") = \" + (target2 == null ? null : target2.id));\n" +
+                      "      return target2;\n" +
+                      "    }\n" +
+                      "    \n" +
+                      "    et = findEditText(x, y);\n" +
+                      "    map['" + ete.getX() + "," + ete.getY() + "'] = et;\n" +
+                      "  }\n" +
+                      "  \n" +
+                      "  et.value = '" + StringUtil.getString(ete.getText()).replaceAll("'", "\\'") + "';\n" +
+                      "  try {\n" +
+                      "    et.focus();\n" +
+                      "  } catch (e) {\n" +
+                      "    console.log(e);\n" +
+                      "  }\n" +
+//                      "})();\n" +
+//                      "var ret = 'document.uiautoEditTextMap = ' + JSON.stringify(document.uiautoEditTextMap);\n" +
+                      "et";
+              webView.evaluateJavascript(script , new ValueCallback<String>() {
                 @Override
                 public void onReceiveValue(String value) {
                   Log.d(TAG, "dispatchEventToCurrentWindow webView.evaluateJavascript >> onReceiveValue value = " + value);
@@ -2262,7 +2346,7 @@ public class UIAutoApp extends Application {
     }
   }
 
-  public Node<InputEvent> obj2EventNode(JSONObject obj, Node<InputEvent> eventNode , int step) {
+  public Node<InputEvent> obj2EventNode(JSONObject obj, Node<InputEvent> eventNode, int step) {
     if (eventNode == null) {
       eventNode = new Node<>(null, null, null);
     }
@@ -2273,7 +2357,7 @@ public class UIAutoApp extends Application {
     InputEvent event;
     if (type == InputUtil.EVENT_TYPE_KEY) {
       if (obj.getBooleanValue("edit")) {
-        event = new EditTextEvent(
+        EditTextEvent ete = new EditTextEvent(
                 obj.getLongValue("downTime"),
                 obj.getLongValue("eventTime"),
                 obj.getIntValue("action"),
@@ -2294,6 +2378,9 @@ public class UIAutoApp extends Application {
                 obj.getIntValue("count"),
                 obj.getIntValue("after")
         );
+        ete.setX(obj.getInteger("x"));
+        ete.setY(obj.getInteger("y"));
+        event = ete;
       } else {
         /**
          public KeyEvent(long downTime, long eventTime, int action,
@@ -2909,6 +2996,13 @@ public class UIAutoApp extends Application {
         obj.put("start", mke.getStart());
         obj.put("count", mke.getCount());
         obj.put("after", mke.getAfter());
+
+        Node<InputEvent> prevNode = currentEventNode == null ? null : currentEventNode.prev;
+        InputEvent prevItem = prevNode == null ? null : prevNode.item;
+        if (prevItem instanceof MotionEvent) {
+          obj.put("x", ((MotionEvent) prevItem).getX());
+          obj.put("y", ((MotionEvent) prevItem).getY());
+        }
       }
     }
     else if (ie instanceof MotionEvent) {
@@ -3407,7 +3501,8 @@ public class UIAutoApp extends Application {
     this.webUrl = webUrl;
 //    editTextMap = new LinkedHashMap<>();
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-      webView.evaluateJavascript("function generateRandom() {\n" +
+
+      String script = "function generateRandom() {\n" +
               "      return Math.floor((1 + Math.random()) * 0x10000)\n" +
               "        .toString(16)\n" +
               "        .substring(1);\n" +
@@ -3446,8 +3541,9 @@ public class UIAutoApp extends Application {
               "    }\n" +
               "    document.addEventListener('onporpertychange', onEditEventCallback);\n" +
               "    document.addEventListener('change', onEditEventCallback);\n" +
-              "    'document.uiautoEditTextMap = ' + JSON.stringify(document.uiautoEditTextMap)" +
-              "", new ValueCallback<String>() {
+              "    var ret = 'document.uiautoEditTextMap = ' + JSON.stringify(document.uiautoEditTextMap);\n" +
+              "    ret";
+      webView.evaluateJavascript(script, new ValueCallback<String>() {
         @Override
         public void onReceiveValue(String value) {
           unitauto.Log.d(TAG, "wvWebView.evaluateJavascript value = " + value);
