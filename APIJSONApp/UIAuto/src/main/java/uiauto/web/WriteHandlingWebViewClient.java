@@ -24,6 +24,7 @@ import java.util.Set;
 import uiauto.InputUtil;
 import uiauto.StringUtil;
 import uiauto.UIAutoApp;
+import unitauto.JSON;
 
 
 public class WriteHandlingWebViewClient extends WebViewClient {
@@ -97,17 +98,17 @@ public class WriteHandlingWebViewClient extends WebViewClient {
             String finalHeaders = first.getString("header");
             String finalRequestBody = first.getString("body");
 
-            UIAutoApp.getInstance().post(new Runnable() {
-                @Override
-                public void run() {
-                    UIAutoApp.getInstance().onHTTPEvent(
-                            InputUtil.getHTTPActionCode(method), "200"
-                            , method, host, path
-                            , finalHeaders, finalRequestBody, null
-                            , activity, fragment
-                    );
-                }
-            });
+//            UIAutoApp.getInstance().post(new Runnable() {
+//                @Override
+//                public void run() {
+//                    UIAutoApp.getInstance().onHTTPEvent(
+//                            InputUtil.getHTTPActionCode(method), "200"
+//                            , method, host, path
+//                            , finalHeaders, finalRequestBody, null
+//                            , activity, fragment
+//                    );
+//                }
+//            });
 
             break;
         }
@@ -159,10 +160,6 @@ public class WriteHandlingWebViewClient extends WebViewClient {
                 e.printStackTrace();
             }
         }
-        WebResourceResponse webResourceResponse = shouldInterceptRequest(
-                view,
-                new WriteHandlingWebResourceRequest(request, requestBody, uri)
-        );
 
         int port = uri.getPort();
         String host = uri.getScheme() + "://" + uri.getHost() + port;
@@ -261,28 +258,70 @@ public class WriteHandlingWebViewClient extends WebViewClient {
         if (isPage) {
             Map<String, List<JSONObject>> reqMap = dataReqMap.get(url);
             if (reqMap == null) { // || reqMap.isEmpty()) {
-                UIAutoApp.getInstance().post(new Runnable() {
-                    @Override
-                    public void run() {
-                        UIAutoApp.getInstance().onUIEvent(InputUtil.UI_ACTION_CREATE, activity, activity, fragment, webView, url);
-                    }
-                });
+//                UIAutoApp.getInstance().post(new Runnable() {
+//                    @Override
+//                    public void run() {
+//                        UIAutoApp.getInstance().onUIEvent(InputUtil.UI_ACTION_CREATE, activity, activity, fragment, webView, url);
+//                    }
+//                });
             }
+
+            WebResourceResponse webResourceResponse = shouldInterceptRequest(
+                    view,
+                    new WriteHandlingWebResourceRequest(request, requestBody, uri)
+            );
+            return webResourceResponse == null ? null : injectIntercept(webResourceResponse, view.getContext());
+
         }
 
-        if (webResourceResponse == null) {
-            return webResourceResponse;
-        } else {
-            return injectIntercept(webResourceResponse, view.getContext());
-        }
+        return super.shouldInterceptRequest(webView, request);
     }
 
-    void addAjaxRequest(String id, String body){
-        ajaxRequestContents.put(id, body);
+    public void onHttpEvent(int action, String id, String item) {
+        JSONObject req = JSON.parseObject(item);
+        String method = req.getString("method");
+        String format = req.getString("format");
+        String status = req.getString("status");
+        String url = req.getString("url");
+
+        Uri uri = Uri.parse(url);
+
+        int port = uri.getPort();
+        String host = uri.getScheme() + "://" + uri.getHost() + port;
+        String path = uri.getPath();
+
+        String reqHeader = req.getString("requestHeader");
+        String reqBody = req.getString("postData");
+
+        String resHeader = req.getString("responseHeader");
+        String resBody = req.getString("response");
+
+        boolean isRes = action > 0 && action != InputUtil.HTTP_ACTION_RESPONSE;
+
+        UIAutoApp.getInstance().post(new Runnable() {
+            @Override
+            public void run() {
+                UIAutoApp.getInstance().onHTTPEvent(
+                        (isRes ? -1 : 1)*InputUtil.getHTTPActionCode(method), isRes ? format : status
+                        , method, host, path
+                        , reqHeader, reqBody, resBody
+                        , activity, fragment
+                );
+            }
+        });
     }
 
     public void onEditEvent(String id, int selectionStart, int selectionEnd, String text) {
-        UIAutoApp.getInstance().addWebEditTextEvent(activity, fragment, webView, id, selectionStart, selectionEnd, text);
+        UIAutoApp.getInstance().addWebEditTextEvent(activity, fragment, webView, id, selectionStart, selectionEnd, text, touchX, touchY);
+    }
+
+    String touchId;
+    Integer touchX;
+    Integer touchY;
+    public void onTouchEvent(String id, Integer touchX, Integer touchY) {
+        this.touchId = id;
+        this.touchX = touchX;
+        this.touchY = touchY;
     }
 
     private String getRequestBody(WebResourceRequest request){
@@ -318,9 +357,9 @@ public class WriteHandlingWebViewClient extends WebViewClient {
     }
 
     private WebResourceResponse injectIntercept(WebResourceResponse response, Context context){
-        String encoding = response.getEncoding();
-        String mime = response.getMimeType();
-        InputStream responseData = response.getData();
+        String encoding = response == null ? "UTF-8" : response.getEncoding();
+        String mime = response == null ? "text/html" : response.getMimeType();
+        InputStream responseData = response == null ? null : response.getData();
         InputStream injectedResponseData = injectInterceptToStream(
                 context,
                 responseData,

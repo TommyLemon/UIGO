@@ -3465,7 +3465,7 @@ public class UIAutoApp extends Application {
   public Map<String, Map<String, EditText>> editTextMap = new LinkedHashMap<>();
   public Map<String, Map<Integer, String>> editTextIdMap = new LinkedHashMap<>();
   public JSONObject addWebEditTextEvent(@NotNull Activity activity, @Nullable Fragment fragment, @NotNull WebView webView
-          , @NotNull String id, int selectionStart, int selectionEnd, String text) {
+          , @NotNull String id, int selectionStart, int selectionEnd, String text, Integer touchX, Integer touchY) {
     text = StringUtil.getString(text);
 
     String url = webUrl;
@@ -3497,7 +3497,8 @@ public class UIAutoApp extends Application {
     et.setSelection(selectionStart, selectionEnd);
 
     InputEvent ie = new EditTextEvent(KeyEvent.ACTION_UP, 0, et, EditTextEvent.WHEN_ON
-            , text, selectionStart, selectionEnd, text).setTargetWebId(id);
+            , text, selectionStart, selectionEnd, text)
+            .setTargetWebId(id).setX(touchX).setY(touchY);
     return addInputEvent(ie, activity.getWindow().getCallback(), activity, fragment);
   }
 
@@ -3521,30 +3522,52 @@ public class UIAutoApp extends Application {
     this.webUrl = webUrl;
 //    editTextMap = new LinkedHashMap<>();
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-
-      String script = "function generateRandom() {\n" +
+      String script = "" +
+              "    function generateRandom() {\n" +
               "      return Math.floor((1 + Math.random()) * 0x10000)\n" +
               "        .toString(16)\n" +
               "        .substring(1);\n" +
               "    }\n" +
-              "\n" +
-              "\n" +
-              "    // This only works if `open` and `send` are called in a synchronous way\n" +
-              "    // That is, after calling `open`, there must be no other call to `open` or\n" +
-              "    // `send` from another place of the code until the matching `send` is called.\n" +
-              "    requestID = null;\n" +
-              "    XMLHttpRequest.prototype.reallyOpen = XMLHttpRequest.prototype.open;\n" +
-              "    XMLHttpRequest.prototype.open = function(method, url, async, user, password) {\n" +
-              "        requestID = generateRandom()\n" +
-              "        var signed_url = url + \"AJAXINTERCEPT\" + requestID;\n" +
-              "        this.reallyOpen(method, signed_url , async, user, password);\n" +
-              "    };\n" +
-              "    XMLHttpRequest.prototype.reallySend = XMLHttpRequest.prototype.send;\n" +
-              "    XMLHttpRequest.prototype.send = function(body) {\n" +
-              "        interception.customAjax(requestID, body);\n" +
-              "        this.reallySend(body);\n" +
-              "    };\n" +
+              "    " +
+              "    (function f() {\n" +
+              "      if (window.VConsole == null) {\n" +
+              "        return;" +
+              "      }\n" +
+              "      var vConsole = new window.VConsole();\n" +
+              "      var pluginList = vConsole.pluginList;\n" +
+              "      var network = pluginList.network;\n" +
+              "      var exporter = network.exporter;\n" +
+              "      var model = exporter.model;\n" +
+              "      var updateRequest = model.updateRequest;\n" +
+              "      model.updateRequest = function(id, item) {\n" +
+              "          item = item || {};\n" +
+              "          if (item.status == 0 && [null, undefined, ''].indexOf(item.statusText) >= 0) {\n" +
+              "              interception.onHttpEvent(0, id, JSON.stringify(item));\n" +
+              "          }\n" +
+              "          else if (item.status >= 200 && [null, undefined, '', 'Pending', 'Loading'].indexOf(item.statusText) < 0) {\n" +
+              "              interception.onHttpEvent(1, id, JSON.stringify(item));\n" +
+              "          }\n" +
+              "          return updateRequest.apply(this, arguments);\n" +
+              "      }\n" +
+              "    })();\n" +
 //                    "    JSON.stringify(document);\n" +
+              "    function onTouchEventCallback(event) {\n" +
+              "        var target = event.target;\n" +
+              "        if (['input', 'textarea'].indexOf(target.localName) < 0) {\n" +
+              "            return;\n" +
+              "        }\n" +
+              "        var id = target.id;\n" +
+              "        if (id == null || id.trim().length <= 0) {\n" +
+              "            target.id = id = generateRandom();\n" +
+              "            var map = document.uiautoEditTextMap || {};\n" +
+              "            map[id] = target;\n" +
+              "            document.uiautoEditTextMap = map;\n" +
+              "        }\n" +
+              "        var touches = event.touches;\n" +
+              "        var touch = touches == null ? null : touches[0];\n" +
+              "        interception.onTouchEvent(id, touch == null ? null : touch.pageX, touch == null ? null : touch.pageY); \n" +
+              "    }\n" +
+              "    document.addEventListener('touchstart', onTouchEventCallback);\n" +
               "    function onEditEventCallback(event) {\n" +
               "        var target = event.target;\n" +
               "        if (['input', 'textarea'].indexOf(target.localName) < 0) {\n" +
@@ -3557,7 +3580,10 @@ public class UIAutoApp extends Application {
               "            map[id] = target;\n" +
               "            document.uiautoEditTextMap = map;\n" +
               "        }\n" +
-              "        interception.onEditEvent(id, target.selectionStart, target.selectionEnd, target.value); \n" +
+              "        var touches = event.touches;\n" +
+              "        var touch = touches == null ? null : touches[0];\n" +
+              "        interception.onEditEvent(id, target.selectionStart, target.selectionEnd, target.value" +
+              "           , touch == null ? null : touch.pageX, touch == null ? null : touch.pageY); \n" +
               "    }\n" +
               "    document.addEventListener('onporpertychange', onEditEventCallback);\n" +
               "    document.addEventListener('change', onEditEventCallback);\n" +

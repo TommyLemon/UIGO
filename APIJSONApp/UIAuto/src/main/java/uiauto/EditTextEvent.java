@@ -77,14 +77,16 @@ public class EditTextEvent extends KeyEvent {
     public Integer getX() {
         return x;
     }
-    public void setX(Integer x) {
+    public EditTextEvent setX(Integer x) {
         this.x = x;
+        return this;
     }
     public Integer getY() {
         return y;
     }
-    public void setY(Integer y) {
+    public EditTextEvent setY(Integer y) {
         this.y = y;
+        return this;
     }
 
     int when;

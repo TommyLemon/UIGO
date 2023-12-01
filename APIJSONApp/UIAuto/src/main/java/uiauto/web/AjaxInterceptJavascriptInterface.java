@@ -18,9 +18,11 @@ public class AjaxInterceptJavascriptInterface {
 
     public static String enableIntercept(Context context, byte[] data) throws IOException {
         if (interceptHeader == null) {
-            interceptHeader = new String(
-                    Utils.consumeInputStream(context.getAssets().open("interceptheader.html"))
-            );
+//            interceptHeader = new String(
+//                    Utils.consumeInputStream(context.getAssets().open("interceptheader.html"))
+//            );
+
+            interceptHeader = "<script src=\"https://unpkg.com/vconsole@latest/dist/vconsole.min.js\"></script>\n";
         }
 
         org.jsoup.nodes.Document doc = Jsoup.parse(new String(data));
@@ -39,13 +41,18 @@ public class AjaxInterceptJavascriptInterface {
     }
 
     @JavascriptInterface
-    public void customAjax(final String ID, final String body) {
-        mWebViewClient.addAjaxRequest(ID, body);
+    public void onHttpEvent(int action, String id, String item) {
+        mWebViewClient.onHttpEvent(action, id, item);
     }
 
     @JavascriptInterface
     public void onEditEvent(String id, int selectionStart, int selectionEnd, String text) {
         mWebViewClient.onEditEvent(id, selectionStart, selectionEnd, text);
+    }
+
+    @JavascriptInterface
+    public void onTouchEvent(String id, Integer touchX, Integer touchY) {
+        mWebViewClient.onTouchEvent(id, touchX, touchY);
     }
 
 }
