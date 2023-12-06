@@ -51,8 +51,9 @@ public class AjaxInterceptJavascriptInterface {
     }
 
     @JavascriptInterface
-    public void onTouchEvent(String id, Integer touchX, Integer touchY) {
-        mWebViewClient.onTouchEvent(id, touchX, touchY);
+    public void onTouchEvent(String id, int touchX, int touchY) { // 不兼容 Integer touchX, Integer touchY
+        boolean isNull = touchX == 0 && touchY == 0;
+        mWebViewClient.onTouchEvent(id, isNull ? null : touchX, isNull ? null : touchY);
     }
 
 }

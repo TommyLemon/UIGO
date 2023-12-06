@@ -3583,7 +3583,7 @@ public class UIAutoApp extends Application {
               "        var touches = event.touches;\n" +
               "        var touch = touches == null ? null : touches[0];\n" +
               "        interception.onEditEvent(id, target.selectionStart, target.selectionEnd, target.value" +
-              "           , touch == null ? null : touch.pageX, touch == null ? null : touch.pageY); \n" +
+              "           , touch == null ? 0 : touch.pageX, touch == null ? 0 : touch.pageY); \n" +
               "    }\n" +
               "    document.addEventListener('onporpertychange', onEditEventCallback);\n" +
               "    document.addEventListener('change', onEditEventCallback);\n" +
