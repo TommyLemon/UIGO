@@ -31,6 +31,8 @@ public class WriteHandlingWebViewClient extends WebViewClient {
 
     private static final String TAG = "WriteHandlingWebViewClient";
 
+    private static UIAutoApp APP = UIAutoApp.getInstance();
+
     private final String MARKER = "AJAXINTERCEPT";
     private final WebView webView;
     private final Fragment fragment;
@@ -55,7 +57,7 @@ public class WriteHandlingWebViewClient extends WebViewClient {
 //            return;
 //        }
 //
-//        UIAutoApp.getInstance().onUIEvent(InputUtil.UI_ACTION_CREATE, activity, activity, fragment, webView, url);
+//        APP.onUIEvent(InputUtil.UI_ACTION_CREATE, activity, activity, fragment, webView, url);
         initWeb(url);
     }
 
@@ -65,7 +67,7 @@ public class WriteHandlingWebViewClient extends WebViewClient {
         Map<String, List<JSONObject>> reqMap = dataReqMap.get(url);
         Set<Map.Entry<String, List<JSONObject>>> set = reqMap == null || reqMap.isEmpty() ? null : reqMap.entrySet();
         if (set == null) { // || set.isEmpty()) {
-            UIAutoApp.getInstance().onUIEvent(InputUtil.UI_ACTION_RESUME, activity, activity, fragment, webView, url);
+            APP.onUIEvent(InputUtil.UI_ACTION_RESUME, activity, activity, fragment, webView, url);
 //        inject();
             return;
         }
@@ -98,10 +100,10 @@ public class WriteHandlingWebViewClient extends WebViewClient {
             String finalHeaders = first.getString("header");
             String finalRequestBody = first.getString("body");
 
-//            UIAutoApp.getInstance().post(new Runnable() {
+//            APP.post(new Runnable() {
 //                @Override
 //                public void run() {
-//                    UIAutoApp.getInstance().onHTTPEvent(
+//                    APP.onHTTPEvent(
 //                            InputUtil.getHTTPActionCode(method), "200"
 //                            , method, host, path
 //                            , finalHeaders, finalRequestBody, null
@@ -130,11 +132,11 @@ public class WriteHandlingWebViewClient extends WebViewClient {
     @Override
     public void onPageCommitVisible(WebView view, String url) {
         super.onPageCommitVisible(view, url);
-//				UIAutoApp.getInstance().onUIEvent(InputUtil.UI_ACTION_RESUME, activity, activity, fragment, webView, url);
+//				APP.onUIEvent(InputUtil.UI_ACTION_RESUME, activity, activity, fragment, webView, url);
     }
 
     public void initWeb(String webUrl) {
-        UIAutoApp.getInstance().initWeb(activity, fragment, webView, webUrl);
+        APP.initWeb(activity, fragment, webView, webUrl);
     }
 
     /*
@@ -227,10 +229,10 @@ public class WriteHandlingWebViewClient extends WebViewClient {
 
                     String finalHeaders = headers;
                     String finalRequestBody = requestBody;
-                    UIAutoApp.getInstance().post(new Runnable() {
+                    APP.post(new Runnable() {
                         @Override
                         public void run() {
-                            UIAutoApp.getInstance().onHTTPEvent(
+                            APP.onHTTPEvent(
                                     InputUtil.getHTTPActionCode(method), format
                                     , method, host, path
                                     , finalHeaders, finalRequestBody, null
@@ -239,10 +241,10 @@ public class WriteHandlingWebViewClient extends WebViewClient {
                         }
                     });
 
-                    //				UIAutoApp.getInstance().post(new Runnable() {
+                    //				APP.post(new Runnable() {
                     //					@Override
                     //					public void run() {
-                    //						UIAutoApp.getInstance().onHTTPEvent(
+                    //						APP.onHTTPEvent(
                     //								InputUtil.HTTP_ACTION_RESPONSE, ("" + responseCode)
                     //								, "POST", "http://apijson.cn:8080", url_
                     //								, responseHeaders == null ? null : responseHeaders.toString(), httpRequestString, responseBody
@@ -258,10 +260,10 @@ public class WriteHandlingWebViewClient extends WebViewClient {
         if (isPage) {
             Map<String, List<JSONObject>> reqMap = dataReqMap.get(url);
             if (reqMap == null) { // || reqMap.isEmpty()) {
-//                UIAutoApp.getInstance().post(new Runnable() {
+//                APP.post(new Runnable() {
 //                    @Override
 //                    public void run() {
-//                        UIAutoApp.getInstance().onUIEvent(InputUtil.UI_ACTION_CREATE, activity, activity, fragment, webView, url);
+//                        APP.onUIEvent(InputUtil.UI_ACTION_CREATE, activity, activity, fragment, webView, url);
 //                    }
 //                });
             }
@@ -298,10 +300,10 @@ public class WriteHandlingWebViewClient extends WebViewClient {
 
         boolean isRes = action > 0 && action != InputUtil.HTTP_ACTION_RESPONSE;
 
-        UIAutoApp.getInstance().post(new Runnable() {
+        APP.post(new Runnable() {
             @Override
             public void run() {
-                UIAutoApp.getInstance().onHTTPEvent(
+                APP.onHTTPEvent(
                         (isRes ? -1 : 1)*InputUtil.getHTTPActionCode(method), isRes ? format : status
                         , method, host, path
                         , reqHeader, reqBody, resBody
@@ -312,7 +314,7 @@ public class WriteHandlingWebViewClient extends WebViewClient {
     }
 
     public void onEditEvent(String id, int selectionStart, int selectionEnd, String text) {
-        UIAutoApp.getInstance().addWebEditTextEvent(activity, fragment, webView, id, selectionStart, selectionEnd, text, touchX, touchY);
+        APP.addWebEditTextEvent(activity, fragment, webView, id, selectionStart, selectionEnd, text, touchX, touchY);
     }
 
     String touchId;

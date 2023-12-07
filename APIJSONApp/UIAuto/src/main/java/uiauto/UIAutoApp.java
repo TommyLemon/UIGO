@@ -2143,15 +2143,15 @@ public class UIAutoApp extends Application {
                       "  var map = document.uiautoEditTextMap || {};\n" +
                       "  var targetWebId = '" + targetWebId + "';\n" +
                       "  var et = map[targetWebId] || document.getElementById(targetWebId);\n" +
+                      "  var ae = document.activeElement;\n" +
+                      "  if (et == null /* && (ae instanceof HTMLInputElement || ae instanceof HTMLTextAreaElement) */ && ['input', 'textarea'].indexOf(ae.localName) >= 0 && ['INPUT', 'TEXTAREA'].indexOf(ae.tagName) >= 0) {\n" +
+                      "    et = ae;\n" +
+                      "  }\n" +
                       "  var x = " + ete.getX() + ";\n" +
                       "  var y = " + ete.getY() + ";\n" +
                       "  if (et == null) {\n" +
                       "    et = map[x + ',' + y];\n" +
                       "  }\n" +
-//                      "  var ae = document.activeElement;\n" +
-//                      "  if (et == null && ae instanceof HTMLElement && ['input', 'textarea'].indexOf(ae.localName) >= 0) {\n" +
-//                      "    et = ae;\n" +
-//                      "  }\n" +
                       "  if (et == null) {\n" +
                       "    function findEditText(x, y) {\n" +
                       "\n" +
@@ -2177,7 +2177,7 @@ public class UIAutoApp extends Application {
                       "        for (var i = 0; i < editTexts.length; i ++) {\n" +
                       "          var et = editTexts.item(i);\n" +
                       "\n" +
-                      "          var rect = et == null || et.disabled ? null : et.getBoundingClientRect();\n" +
+                      "          var rect = et == null || et.disabled /* || (ae instanceof HTMLInputElement == false && ae instanceof HTMLTextAreaElement == false) */ || ['INPUT', 'TEXTAREA'].indexOf(et.tagName) < 0 ? null : et.getBoundingClientRect();\n" +
                       "          var left = rect == null ? null : rect.left;\n" +
                       "          var right = left == null ? null : rect.right;\n" +
                       "          var top = right == null ? null : rect.top;\n" +
@@ -2223,15 +2223,21 @@ public class UIAutoApp extends Application {
                       "    map[x + ',' + y] = et;\n" +
                       "  }\n" +
                       "  \n" +
-                      "  et.value = '" + StringUtil.getString(ete.getText()).replaceAll("'", "\\'") + "';\n" +
+                      "  if (et == null) {\n" +
+                      "    et = inputs == null || inputs.length <= 0 ? null : inputs.item(0);\n" +
+                      "  }\n" +
+                      "  if (et == null) {\n" +
+                      "    et = textareas == null || textareas.length <= 0 ? null : textareas.item(0);\n" +
+                      "  }\n" +
                       "  try {\n" +
-                      "    et.focus();\n" +
+                      "    et.value = '" + StringUtil.getString(ete.getText()).replaceAll("'", "\\'") + "';\n" +
+//                      "    et.focus();\n" +
                       "  } catch (e) {\n" +
                       "    console.log(e);\n" +
                       "  }\n" +
 //                      "})();\n" +
 //                      "var ret = 'document.uiautoEditTextMap = ' + JSON.stringify(document.uiautoEditTextMap);\n" +
-                      "et";
+                      "  et";
               webView.evaluateJavascript(script , new ValueCallback<String>() {
                 @Override
                 public void onReceiveValue(String value) {
@@ -2400,6 +2406,7 @@ public class UIAutoApp extends Application {
                 obj.getIntValue("count"),
                 obj.getIntValue("after")
         );
+        ete.setTargetWebId(obj.getString("targetWebId"));
         ete.setX(obj.getInteger("x"));
         ete.setY(obj.getInteger("y"));
         event = ete;
@@ -3020,11 +3027,16 @@ public class UIAutoApp extends Application {
         obj.put("count", mke.getCount());
         obj.put("after", mke.getAfter());
 
-        Node<InputEvent> prevNode = currentEventNode == null ? null : currentEventNode.prev;
+        Node<InputEvent> prevNode = webView == null || currentEventNode == null || (mke.getX() != null && mke.getY() != null) ? null : currentEventNode.prev;
         InputEvent prevItem = prevNode == null ? null : prevNode.item;
         if (prevItem instanceof MotionEvent) {
-          obj.put("x", ((MotionEvent) prevItem).getX());
-          obj.put("y", ((MotionEvent) prevItem).getY());
+          float ratio = 980f/webView.getWidth();
+
+          int[] loc = new int[2];
+          webView.getLocationOnScreen(loc);
+
+          obj.put("x", ratio*((MotionEvent) prevItem).getX());
+          obj.put("y", ratio*(((MotionEvent) prevItem).getY() - loc[1]));
         }
       }
     }
@@ -3485,6 +3497,10 @@ public class UIAutoApp extends Application {
   public Map<String, Map<Integer, String>> editTextIdMap = new LinkedHashMap<>();
   public JSONObject addWebEditTextEvent(@NotNull Activity activity, @Nullable Fragment fragment, @NotNull WebView webView
           , @NotNull String id, int selectionStart, int selectionEnd, String text, Integer touchX, Integer touchY) {
+    if (isShowing == false || isSplitShowing == false || isReplay) {
+      return null;
+    }
+
     text = StringUtil.getString(text);
 
     String url = webUrl;
@@ -3540,7 +3556,7 @@ public class UIAutoApp extends Application {
     this.webView = webView;
     this.webUrl = webUrl;
 //    editTextMap = new LinkedHashMap<>();
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+    if (isReplay == false && Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
       String script = "" +
               "    function generateRandom() {\n" +
               "      return Math.floor((1 + Math.random()) * 0x10000)\n" +
@@ -3548,61 +3564,58 @@ public class UIAutoApp extends Application {
               "        .substring(1);\n" +
               "    }\n" +
               "    " +
-              "    (function f() {\n" +
-              "      if (window.VConsole == null) {\n" +
-              "        return;" +
-              "      }\n" +
-              "      var vConsole = new window.VConsole();\n" +
-              "      var pluginList = vConsole.pluginList;\n" +
-              "      var network = pluginList.network;\n" +
-              "      var exporter = network.exporter;\n" +
-              "      var model = exporter.model;\n" +
-              "      var updateRequest = model.updateRequest;\n" +
-              "      model.updateRequest = function(id, item) {\n" +
-              "          item = item || {};\n" +
-              "          if (item.status == 0 && [null, undefined, ''].indexOf(item.statusText) >= 0) {\n" +
-              "              interception.onHttpEvent(0, id, JSON.stringify(item));\n" +
-              "          }\n" +
-              "          else if (item.status >= 200 && [null, undefined, '', 'Pending', 'Loading'].indexOf(item.statusText) < 0) {\n" +
-              "              interception.onHttpEvent(1, id, JSON.stringify(item));\n" +
-              "          }\n" +
-              "          return updateRequest.apply(this, arguments);\n" +
-              "      }\n" +
-              "    })();\n" +
+//              "    (function f() {\n" +
+//              "      if (window.VConsole == null) {\n" +
+//              "        return;" +
+//              "      }\n" +
+//              "      var vConsole = new window.VConsole();\n" +
+//              "      var pluginList = vConsole.pluginList;\n" +
+//              "      var network = pluginList.network;\n" +
+//              "      var exporter = network.exporter;\n" +
+//              "      var model = exporter.model;\n" +
+//              "      var updateRequest = model.updateRequest;\n" +
+//              "      model.updateRequest = function(id, item) {\n" +
+//              "          item = item || {};\n" +
+//              "          if (item.status == 0 && [null, undefined, ''].indexOf(item.statusText) >= 0) {\n" +
+//              "              interception.onHttpEvent(0, id, JSON.stringify(item));\n" +
+//              "          }\n" +
+//              "          else if (item.status >= 200 && [null, undefined, '', 'Pending', 'Loading'].indexOf(item.statusText) < 0) {\n" +
+//              "              interception.onHttpEvent(1, id, JSON.stringify(item));\n" +
+//              "          }\n" +
+//              "          return updateRequest.apply(this, arguments);\n" +
+//              "      }\n" +
+//              "    })();\n" +
 //                    "    JSON.stringify(document);\n" +
-              "    function onTouchEventCallback(event) {\n" +
+//              "    var onTouchEventCallback = function(event) {\n" +
+//              "        var target = event.target;\n" +
+//              "        if (target == null || ['input', 'textarea'].indexOf(target.localName) < 0 || ['INPUT', 'TEXTAREA'].indexOf(target.tagName) < 0) {\n" +
+//              "            return;\n" +
+//              "        }\n" +
+//              "        var id = target.id;\n" +
+//              "        if (id == null || id.trim().length <= 0) {\n" +
+//              "            /* target.id = */ id = generateRandom();\n" +
+//              "            var map = document.uiautoEditTextMap || {};\n" +
+//              "            map[id] = target;\n" +
+//              "            document.uiautoEditTextMap = map;\n" +
+//              "        }\n" +
+//              "        var touches = event.touches;\n" +
+//              "        var touch = touches == null ? null : touches[0];\n" +
+//              "        interception.onTouchEvent(id, touch == null ? null : touch.pageX, touch == null ? null : touch.pageY); \n" +
+//              "    }\n" +
+//              "    document.addEventListener('touchstart', onTouchEventCallback);\n" +
+              "    var onEditEventCallback = function(event) {\n" +
               "        var target = event.target;\n" +
-              "        if (['input', 'textarea'].indexOf(target.localName) < 0) {\n" +
+              "        if (target == null || ['input', 'textarea'].indexOf(target.localName) < 0 || ['INPUT', 'TEXTAREA'].indexOf(target.tagName) < 0) {\n" +
               "            return;\n" +
               "        }\n" +
               "        var id = target.id;\n" +
               "        if (id == null || id.trim().length <= 0) {\n" +
-              "            target.id = id = generateRandom();\n" +
+              "            /* target.id = */ id = generateRandom();\n" +
               "            var map = document.uiautoEditTextMap || {};\n" +
               "            map[id] = target;\n" +
               "            document.uiautoEditTextMap = map;\n" +
               "        }\n" +
-              "        var touches = event.touches;\n" +
-              "        var touch = touches == null ? null : touches[0];\n" +
-              "        interception.onTouchEvent(id, touch == null ? null : touch.pageX, touch == null ? null : touch.pageY); \n" +
-              "    }\n" +
-              "    document.addEventListener('touchstart', onTouchEventCallback);\n" +
-              "    function onEditEventCallback(event) {\n" +
-              "        var target = event.target;\n" +
-              "        if (['input', 'textarea'].indexOf(target.localName) < 0) {\n" +
-              "            return;\n" +
-              "        }\n" +
-              "        var id = target.id;\n" +
-              "        if (id == null || id.trim().length <= 0) {\n" +
-              "            target.id = id = generateRandom();\n" +
-              "            var map = document.uiautoEditTextMap || {};\n" +
-              "            map[id] = target;\n" +
-              "            document.uiautoEditTextMap = map;\n" +
-              "        }\n" +
-              "        var touches = event.touches;\n" +
-              "        var touch = touches == null ? null : touches[0];\n" +
-              "        interception.onEditEvent(id, target.selectionStart, target.selectionEnd, target.value" +
-              "           , touch == null ? 0 : touch.pageX, touch == null ? 0 : touch.pageY); \n" +
+              "        interception.onEditEvent(id, target.selectionStart, target.selectionEnd, target.value); \n" +
               "    }\n" +
               "    document.addEventListener('onporpertychange', onEditEventCallback);\n" +
               "    document.addEventListener('change', onEditEventCallback);\n" +
