@@ -50,6 +50,11 @@ public class AjaxInterceptJavascriptInterface {
         mWebViewClient.onEditEvent(id, selectionStart, selectionEnd, text);
     }
 
+//    @JavascriptInterface
+//    public void onKeyEvent(String id, int action, String key, int keyCode) {
+//        mWebViewClient.onKeyEvent(id, action, key, keyCode);
+//    }
+
     @JavascriptInterface
     public void onTouchEvent(String id, int touchX, int touchY) { // 不兼容 Integer touchX, Integer touchY
         boolean isNull = touchX == 0 && touchY == 0;

@@ -15,6 +15,7 @@ limitations under the License.*/
 package zuo.biao.library.ui;
 
 import uiauto.UIAutoActivity;
+import uiauto.UIAutoApp;
 import uiauto.web.WriteHandlingWebViewClient;
 import zuo.biao.library.R;
 import zuo.biao.library.base.BaseActivity;
@@ -30,6 +31,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.annotation.RequiresApi;
+import android.view.KeyEvent;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.webkit.WebChromeClient;
@@ -170,6 +172,18 @@ public class WebViewActivity extends BaseActivity implements OnBottomDragListene
 
 		};
 		wvWebView.setWebViewClient(client);
+//		wvWebView.setOnKeyListener(new View.OnKeyListener() {
+//			@Override
+//			public boolean onKey(View v, int keyCode, KeyEvent event) {
+//				if (event.getAction() == KeyEvent.ACTION_DOWN) {
+//					UIAutoApp.getInstance().onKeyDown(keyCode, event, context, null);
+//				}
+//				else if (event.getAction() == KeyEvent.ACTION_UP) {
+//					UIAutoApp.getInstance().onKeyUp(keyCode, event, context, null);
+//				}
+//				return false;
+//			}
+//		});
 		client.initWeb(url);
 
 		wvWebView.loadUrl(url);
@@ -204,6 +218,18 @@ public class WebViewActivity extends BaseActivity implements OnBottomDragListene
 			}
 		});
 	}
+
+//	@Override
+//	public boolean onKeyDown(int keyCode, KeyEvent event) {
+//		UIAutoApp.getInstance().onKeyDown(keyCode, event, context, null);
+//		return super.onKeyDown(keyCode, event);
+//	}
+//
+//	@Override
+//	public boolean onKeyUp(int keyCode, KeyEvent event) {
+//		UIAutoApp.getInstance().onKeyUp(keyCode, event, context, null);
+//		return super.onKeyUp(keyCode, event);
+//	}
 
 	@Override
 	public void onDragBottom(boolean rightToLeft) {

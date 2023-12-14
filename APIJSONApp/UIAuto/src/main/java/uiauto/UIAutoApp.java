@@ -2231,7 +2231,7 @@ public class UIAutoApp extends Application {
                       "  }\n" +
                       "  try {\n" +
                       "    et.value = '" + StringUtil.getString(ete.getText()).replaceAll("'", "\\'") + "';\n" +
-//                      "    et.focus();\n" +
+                      "    et.focus();\n" +
                       "  } catch (e) {\n" +
                       "    console.log(e);\n" +
                       "  }\n" +
@@ -2245,6 +2245,11 @@ public class UIAutoApp extends Application {
                 }
               });
             }
+          }
+        }
+        else if (webView != null) {
+          if (webView.dispatchKeyEvent((KeyEvent) ie) == false) {
+            callback.dispatchKeyEvent((KeyEvent) ie);
           }
         }
         else {
@@ -3616,9 +3621,27 @@ public class UIAutoApp extends Application {
               "            document.uiautoEditTextMap = map;\n" +
               "        }\n" +
               "        interception.onEditEvent(id, target.selectionStart, target.selectionEnd, target.value); \n" +
-              "    }\n" +
-              "    document.addEventListener('onporpertychange', onEditEventCallback);\n" +
-              "    document.addEventListener('change', onEditEventCallback);\n" +
+              "    };\n" +
+//              "    document.addEventListener('onporpertychange', onEditEventCallback);\n" +
+//              "    document.addEventListener('change', onEditEventCallback);\n" +
+              "    document.addEventListener('input', onEditEventCallback);\n" +
+//              "    var onKeyEventCallback = function(event) {\n" +
+////              "        var target = event.target;\n" +
+////              "        if (target == null || ['input', 'textarea'].indexOf(target.localName) < 0 || ['INPUT', 'TEXTAREA'].indexOf(target.tagName) < 0) {\n" +
+////              "            return;\n" +
+////              "        }\n" +
+////              "        var id = target.id;\n" +
+////              "        if (id == null || id.trim().length <= 0) {\n" +
+////              "            /* target.id = */ id = generateRandom();\n" +
+////              "            var map = document.uiautoEditTextMap || {};\n" +
+////              "            map[id] = target;\n" +
+////              "            document.uiautoEditTextMap = map;\n" +
+////              "        }\n" +
+//              "        interception.onKeyEvent('', event.type == 'keyup' ? 1 : 0, event.key, event.code); \n" +
+//              "    };\n" +
+//              "    document.addEventListener('keydown', onKeyEventCallback);\n" +
+//              "    document.addEventListener('keyup', onKeyEventCallback);\n" +
+//              "    document.addEventListener('keypress', onKeyEventCallback);\n" +
               "    var ret = 'document.uiautoEditTextMap = ' + JSON.stringify(document.uiautoEditTextMap);\n" +
               "    ret";
       webView.evaluateJavascript(script, new ValueCallback<String>() {
