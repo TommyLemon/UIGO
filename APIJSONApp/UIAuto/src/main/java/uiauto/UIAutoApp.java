@@ -3044,6 +3044,14 @@ public class UIAutoApp extends Application {
           obj.put("y", ratio*(((MotionEvent) prevItem).getY() - loc[1]));
         }
       }
+      else { // 解决录制网页的一次返回按键等录到连续的返回键 DOWN, DOWN, UP, UP
+        JSONObject lastItem = eventList == null || eventList.isEmpty() ? null : eventList.getJSONObject(eventList.size() - 1); ; // currentEventNode == null ? null : currentEventNode.item;
+        if (lastItem != null) {
+          if (Objects.equals(lastItem.getInteger("action"), action) && Objects.equals(lastItem.getIntValue("keyCode"), event.getKeyCode())) {
+            return null;
+          }
+        }
+      }
     }
     else if (ie instanceof MotionEvent) {
       MotionEvent event = (MotionEvent) ie;
