@@ -80,7 +80,6 @@ import com.yhao.floatwindow.ViewStateListener;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.lang.annotation.Annotation;
@@ -867,8 +866,8 @@ public class UIAutoApp extends Application {
 
     isShowing = false;
 
-    isSeparatedStatus = RomUtils.INSTANCE.checkIsMiuiRom();
-    statusHeight = DisplayUtils.INSTANCE.getStatusBarHeight(getApp());
+    isSeparatedStatus = RomUtil.checkIsMiuiRom();
+    statusHeight = DisplayUtil.getStatusBarHeight(getApp());
     if (statusHeight <= 0) {
       statusResourceId = getResources().getIdentifier("status_bar_height", "dimen", "android");
       if (statusResourceId > 0) {
@@ -876,9 +875,9 @@ public class UIAutoApp extends Application {
       }
     }
 
-    isNavigationShow = DisplayUtils.INSTANCE.hasNavigationBar(getApp());
+    isNavigationShow = DisplayUtil.hasNavigationBar(getApp());
     if (isNavigationShow) {
-      navigationHeight = DisplayUtils.INSTANCE.getNavigationBarHeight(getApp());
+      navigationHeight = DisplayUtil.getNavigationBarHeight(getApp());
       if (navigationHeight <= 0) {
         navigationResourceId = getResources().getIdentifier("navigation_bar_height", "dimen", "android");
         if (navigationResourceId > 0) {
@@ -3411,7 +3410,7 @@ public class UIAutoApp extends Application {
           }
         });
       }
-    }).start();
+    });
   }
 
   public void prepareRecord() {
@@ -3553,10 +3552,12 @@ public class UIAutoApp extends Application {
 
   public String readAssetsText(String fileName) {
     try {
-      InputStream is = getAssets().open(fileName); // FIXME FileNotFound
-      int lenght = is.available();
-      byte[]  buffer = new byte[lenght];
-      is.read(buffer);
+      byte[] buffer;
+      try (InputStream is = getAssets().open(fileName)) {
+        int length = is.available();
+        buffer = new byte[length];
+        is.read(buffer);
+      } // FIXME FileNotFound
       String result = new String(buffer, "utf8");
       return result;
     } catch (Throwable e) {
