@@ -3410,7 +3410,7 @@ public class UIAutoApp extends Application {
           }
         });
       }
-    });
+    }).start();
   }
 
   public void prepareRecord() {
