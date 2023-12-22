@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.net.Uri;
+import android.os.SystemClock;
 import android.support.v4.app.Fragment;
 import android.view.KeyEvent;
 import android.webkit.WebResourceRequest;
@@ -317,17 +318,33 @@ public class WriteHandlingWebViewClient extends WebViewClient {
     public void onEditEvent(String id, int selectionStart, int selectionEnd, String text) {
         APP.addWebEditTextEvent(activity, fragment, webView, id, selectionStart, selectionEnd, text, touchX, touchY);
     }
-//    public void onKeyEvent(String id, int action, String key, int keyCode) {
-////        if (action == KeyEvent.ACTION_DOWN) {
-////            UIAutoApp.getInstance().onKeyDown(keyCode, event, activity, fragment);
-////        }
-////        else if (action == KeyEvent.ACTION_UP) {
-////            UIAutoApp.getInstance().onKeyUp(keyCode, event, activity, fragment);
-////        }
-//    }
+    public void onKeyEvent(String id, int action, String key, int keyCode) { // 能拦截到 ENTER, TAB, ESC 等
+        long time = SystemClock.uptimeMillis();
+        if (keyCode == 13 || "Enter".equalsIgnoreCase(key)) {
+            keyCode = KeyEvent.KEYCODE_ENTER;
+        }
+        else if (keyCode == 9 || "Tab".equalsIgnoreCase(key)) {
+            keyCode = KeyEvent.KEYCODE_TAB;
+        }
+        else if (keyCode == 27 || "Escape".equalsIgnoreCase(key)) {
+            keyCode = KeyEvent.KEYCODE_ESCAPE;
+        }
+        else {
+            return;
+        }
+
+        KeyEvent event = new KeyEvent(time, time, action, keyCode, 1);
+
+        if (action == KeyEvent.ACTION_DOWN) {
+            UIAutoApp.getInstance().onKeyDown(keyCode, event, activity, fragment);
+        }
+        else if (action == KeyEvent.ACTION_UP) {
+            UIAutoApp.getInstance().onKeyUp(keyCode, event, activity, fragment);
+        }
+    }
 
     @Override
-    public boolean shouldOverrideKeyEvent(WebView view, KeyEvent event) {
+    public boolean shouldOverrideKeyEvent(WebView view, KeyEvent event) { // 能拦截到 BACK, MENU, HOME 等
         if (event.getAction() == KeyEvent.ACTION_DOWN) {
             UIAutoApp.getInstance().onKeyDown(event.getKeyCode(), event, activity, fragment);
         }

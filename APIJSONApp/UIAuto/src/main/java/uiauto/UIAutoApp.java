@@ -3653,22 +3653,19 @@ public class UIAutoApp extends Application {
 //              "    document.addEventListener('onporpertychange', onEditEventCallback);\n" +
 //              "    document.addEventListener('change', onEditEventCallback);\n" +
               "    document.addEventListener('input', onEditEventCallback);\n" +
-//              "    var onKeyEventCallback = function(event) {\n" +
-////              "        var target = event.target;\n" +
-////              "        if (target == null || ['input', 'textarea'].indexOf(target.localName) < 0 || ['INPUT', 'TEXTAREA'].indexOf(target.tagName) < 0) {\n" +
-////              "            return;\n" +
-////              "        }\n" +
-////              "        var id = target.id;\n" +
-////              "        if (id == null || id.trim().length <= 0) {\n" +
-////              "            /* target.id = */ id = generateRandom();\n" +
-////              "            var map = document.uiautoEditTextMap || {};\n" +
-////              "            map[id] = target;\n" +
-////              "            document.uiautoEditTextMap = map;\n" +
-////              "        }\n" +
-//              "        interception.onKeyEvent('', event.type == 'keyup' ? 1 : 0, event.key, event.code); \n" +
-//              "    };\n" +
-//              "    document.addEventListener('keydown', onKeyEventCallback);\n" +
-//              "    document.addEventListener('keyup', onKeyEventCallback);\n" +
+              "    var onKeyEventCallback = function(event) {\n" +
+              "        var target = event.target;\n" +
+              "        var id = target.id;\n" +
+              "        if (id == null || id.trim().length <= 0) {\n" +
+              "            /* target.id = */ id = generateRandom();\n" +
+              "            var map = document.uiautoEditTextMap || {};\n" +
+              "            map[id] = target;\n" +
+              "            document.uiautoEditTextMap = map;\n" +
+              "        }\n" +
+              "        interception.onKeyEvent('', event.type == 'keyup' ? 1 : 0, event.key, event.code || event.keyCode); \n" +
+              "    };\n" +
+              "    document.addEventListener('keydown', onKeyEventCallback);\n" +
+              "    document.addEventListener('keyup', onKeyEventCallback);\n" +
 //              "    document.addEventListener('keypress', onKeyEventCallback);\n" +
               "    var ret = 'document.uiautoEditTextMap = ' + JSON.stringify(document.uiautoEditTextMap);\n" +
               "    ret";
