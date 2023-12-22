@@ -311,8 +311,10 @@ public class UIAutoApp extends Application {
 
           if (duration <= 0) {
             handleMessage(msg);
+//            dispatchEventToCurrentWindow(curItem, false);
           }
           else {
+//            dispatchEventToCurrentWindow(curItem, false);
             sendMessageDelayed(msg, duration); // 相邻执行事件时间差本身就包含了  + (lastTime <= 0 || firstTime <= 0 ? 10 : lastTime - firstTime)  // 补偿 disable 项跳过的等待时间
           }
         }
@@ -369,8 +371,8 @@ public class UIAutoApp extends Application {
 
   int statusResourceId;
   int navigationResourceId;
-  int statusHeight;
-  int navigationHeight;
+  float statusHeight;
+  float navigationHeight;
   boolean isNavigationShow = false;
   boolean isSeparatedStatus = false;
   float decorX;
@@ -762,6 +764,22 @@ public class UIAutoApp extends Application {
       windowHeight = metric.heightPixels;
     }
 
+    float sum = windowHeight + statusHeight + navigationHeight;
+    if (sum > screenHeight) {
+      windowHeight -= statusHeight;
+    } else if (sum < screenHeight) {
+      if (statusHeight <= 0) {
+        statusHeight = screenHeight - sum;
+      }
+      else if (isNavigationShow == false) {
+        windowHeight = screenHeight - statusHeight;
+      }
+      else if (navigationHeight <= 0) {
+        navigationHeight = screenHeight - sum;
+        isNavigationShow = true;
+      }
+    }
+
     windowX = getWindowX(activity);
     windowY = getWindowY(activity);
 
@@ -771,8 +789,8 @@ public class UIAutoApp extends Application {
 
     decorX = decorView == null ? 0 : decorView.getX();
     decorY = decorView == null ? 0 : decorView.getY();
-    decorWidth = decorView == null ? windowWidth : decorView.getWidth();
-    decorHeight = decorView == null ? windowHeight : decorView.getHeight();
+    decorWidth = decorView == null ? screenWidth : decorView.getWidth();
+    decorHeight = decorView == null ? screenHeight : decorView.getHeight();
   }
 
   public static final String KEY_ENABLE_PROXY = "KEY_ENABLE_PROXY";
@@ -1759,7 +1777,7 @@ public class UIAutoApp extends Application {
     // showFloatView(true, "splitY2", vSplitY2, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, 0, splitY2, MoveType.inactive);
 
     int x = Math.round(splitX - splitRadius + (splitX > 0 ? 0 : windowWidth)); // 只有贴边才会自动处理 decorWidth); // 已被 FloatWindow 处理 windowX + decorX
-    int y = Math.round(splitY - splitRadius + (splitY > 0 ? 0 : windowHeight - (isSeparatedStatus ? 0 : statusHeight))); // + navigationHeight)); // 只有贴边才会自动处理  decorHeight); // 已被 FloatWindow 处理 windowY + decorY
+    int y = Math.round(splitY - splitRadius + (splitY > 0 ? 0 : windowHeight)); // - (isSeparatedStatus ? 0 : statusHeight))); // + navigationHeight)); // 只有贴边才会自动处理  decorHeight); // 已被 FloatWindow 处理 windowY + decorY
     if (floatSplitX_ != null) {
       try {
         floatSplitX_.updateX(x + Math.round(splitRadius) - dip2px(0.5f));
@@ -1953,7 +1971,8 @@ public class UIAutoApp extends Application {
             }
 
             double xr = 100f*splitX/windowWidth;
-            double yr = 100f*(splitY + (isSeparatedStatus ? 0 : statusHeight))/windowHeight;
+//            double yr = 100f*(splitY + (isSeparatedStatus ? 0 : statusHeight))/windowHeight;
+            double yr = 100f*splitY/windowHeight;
 
             tvControllerX.setText(DECIMAL_FORMAT.format(xr) + "%" + "\n" + DECIMAL_FORMAT.format(yr) + "%");
             tvControllerY.setText(splitX + "\n" + splitY);
@@ -2548,15 +2567,15 @@ public class UIAutoApp extends Application {
         ry = ratio*y;
       }
       else if (y < 0 || y >= maxSY) { // 靠下，例如底部 tab、菜单按钮、悬浮按钮等
-        ry = windowHeight - (isSeparatedStatus ? 0 : statusHeight) + ratio*(y < 0 ? y : y - ch); // decorHeight + ratio*(y < 0 ? y : y - ch);
+        ry = windowHeight /* - (isSeparatedStatus ? 0 : statusHeight) */ + ratio*(y < 0 ? y : y - ch); // decorHeight + ratio*(y < 0 ? y : y - ch);
       }
       else {  //居中，一般是弹窗
         float mid = (maxSY + minSY)/2f;
-        ry = (windowHeight - (isSeparatedStatus ? 0 : statusHeight))*mid/ch + ratio*(y - mid); // 居中靠上/靠下，例如 取消、确定 按钮
+        ry = (windowHeight /* - (isSeparatedStatus ? 0 : statusHeight) */)*mid/ch + ratio*(y - mid); // 居中靠上/靠下，例如 取消、确定 按钮
       }
 
       rx += windowX + decorX;
-      ry += windowY + decorY + (isSeparatedStatus ? statusHeight : 0);
+      ry += windowY + decorY + statusHeight; // + (isSeparatedStatus ? statusHeight : 0);
 
       event = MotionEvent.obtain(
               obj.getLongValue("downTime"),
@@ -2626,7 +2645,7 @@ public class UIAutoApp extends Application {
 //      decorHeight = windowHeight;
 //    }
 
-    float curWW = Math.min(windowWidth, windowHeight - (isSeparatedStatus ? 0 : statusHeight)); // decorWidth, decorHeight - statusHeight - navigationHeight);
+    float curWW = Math.min(windowWidth, windowHeight); //  - (isSeparatedStatus ? 0 : statusHeight)); // decorWidth, decorHeight - statusHeight - navigationHeight);
     float targetWw = Math.min(ww, wh);
     if (curWW == targetWw || layoutType == InputUtil.LAYOUT_TYPE_ABSOLUTE) {  // 同宽像素或绝对位置
       return 1.0f;
@@ -3071,7 +3090,7 @@ public class UIAutoApp extends Application {
       float x = event.getX();
       float y = event.getY();
       float rx = x - windowX - decorX;
-      float ry = y - windowY - decorY - (isSeparatedStatus ? statusHeight : 0);
+      float ry = y - windowY - decorY - statusHeight; // (isSeparatedStatus ? 0 : statusHeight);
 
       if (callback instanceof Dialog) {
         Dialog dialog = (Dialog) callback;
@@ -3094,7 +3113,7 @@ public class UIAutoApp extends Application {
 //      float avgY = (minY + maxY)/2;
 
       obj.put("x", rx < maxX ? rx : rx - windowWidth); // dw + dx); // Math.round(x - windowX - decorX - (x < avgX ? 0 : decorWidth)));
-      obj.put("y", ry < maxY ? ry : ry - windowHeight); // - (isSeparatedStatus ? statusHeight : 0)); // dh + dy + statusHeight + navigationHeight); // Math.round(y - windowY - decorY - (y < avgY ? 0 : decorHeight)));
+      obj.put("y", ry < maxY ? ry : ry - windowHeight); // + (isSeparatedStatus ? 0 : statusHeight)); // dh + dy + statusHeight + navigationHeight); // Math.round(y - windowY - decorY - (y < avgY ? 0 : decorHeight)));
       obj.put("rawX", event.getRawX());
       obj.put("rawY", event.getRawY());
       obj.put("size", event.getSize());
@@ -3338,7 +3357,7 @@ public class UIAutoApp extends Application {
     event.put("windowX", windowX);
     event.put("windowY", windowY);
     event.put("windowWidth", windowWidth);
-    event.put("windowHeight", windowHeight - (isSeparatedStatus ? 0 : statusHeight));
+    event.put("windowHeight", windowHeight); // - (isSeparatedStatus ? 0 : statusHeight));
     event.put("statusHeight", statusHeight);
     event.put("navigationHeight", navigationHeight);
     event.put("decorX", decorX);
@@ -3422,7 +3441,7 @@ public class UIAutoApp extends Application {
     Node<InputEvent> eventNode = new Node<>(null, null, null);
     if (clear) {
 	    setEventList(null);
-        firstEventNode = currentEventNode = eventNode;
+	    firstEventNode = currentEventNode = eventNode;
 	    step = 0;
 	    allStep = 0;
 	    duration = 0;
