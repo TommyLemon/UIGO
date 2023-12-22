@@ -3003,7 +3003,7 @@ public class UIAutoApp extends Application {
       eventTime = SystemClock.uptimeMillis(); // System.currentTimeMillis();
     }
 
-    obj.put("eventTime", eventTime);
+    JSONObject lastItem = eventList == null || eventList.isEmpty() ? null : eventList.getJSONObject(eventList.size() - 1); ; // currentEventNode == null ? null : currentEventNode.item;
 
     if (ie instanceof KeyEvent) {
       KeyEvent event = (KeyEvent) ie;
@@ -3063,7 +3063,6 @@ public class UIAutoApp extends Application {
         }
       }
       else { // 解决录制网页的一次返回按键等录到连续的返回键 DOWN, DOWN, UP, UP
-        JSONObject lastItem = eventList == null || eventList.isEmpty() ? null : eventList.getJSONObject(eventList.size() - 1); ; // currentEventNode == null ? null : currentEventNode.item;
         if (lastItem != null) {
           if (Objects.equals(lastItem.getInteger("action"), action) && Objects.equals(lastItem.getIntValue("keyCode"), event.getKeyCode())) {
             return null;
@@ -3076,16 +3075,6 @@ public class UIAutoApp extends Application {
 
       type = InputUtil.EVENT_TYPE_TOUCH;
       action = event.getAction();
-
-      obj.put("type", type);
-
-      //虽然 KeyEvent 和 MotionEvent 都有，但都不在父类 InputEvent 中 <<<<<<<<<<<<<<<<<<
-      obj.put("action", action);
-      obj.put("downTime", event.getDownTime());
-      obj.put("metaState", event.getMetaState());
-      obj.put("source", event.getSource());
-      obj.put("deviceId", event.getDeviceId());
-      //虽然 KeyEvent 和 MotionEvent 都有，但都不在父类 InputEvent 中 >>>>>>>>>>>>>>>>>>
 
       float x = event.getX();
       float y = event.getY();
@@ -3116,6 +3105,24 @@ public class UIAutoApp extends Application {
       obj.put("y", ry < maxY ? ry : ry - windowHeight); // + (isSeparatedStatus ? 0 : statusHeight)); // dh + dy + statusHeight + navigationHeight); // Math.round(y - windowY - decorY - (y < avgY ? 0 : decorHeight)));
       obj.put("rawX", event.getRawX());
       obj.put("rawY", event.getRawY());
+
+      // 导致录制不到最初的下拉刷新？
+      if (lastItem != null) { // 避免重复，尤其是 ACTION_UP
+        if (Objects.equals(lastItem.get("x"), obj.get("x")) && Objects.equals(lastItem.get("y"), obj.get("y"))
+                && Objects.equals(lastItem.getInteger("action"), action)) {
+          return null;
+        }
+      }
+
+      obj.put("type", type);
+      //虽然 KeyEvent 和 MotionEvent 都有，但都不在父类 InputEvent 中 <<<<<<<<<<<<<<<<<<
+      obj.put("action", action);
+      obj.put("downTime", event.getDownTime());
+      obj.put("metaState", event.getMetaState());
+      obj.put("source", event.getSource());
+      obj.put("deviceId", event.getDeviceId());
+      //虽然 KeyEvent 和 MotionEvent 都有，但都不在父类 InputEvent 中 >>>>>>>>>>>>>>>>>>
+
       obj.put("size", event.getSize());
       obj.put("pressure", event.getPressure());
       obj.put("xPrecision", event.getXPrecision());
@@ -3123,6 +3130,8 @@ public class UIAutoApp extends Application {
       obj.put("pointerCount", event.getPointerCount());
       obj.put("edgeFlags", event.getEdgeFlags());
     }
+
+    obj.put("eventTime", eventTime);
 
     return addEvent(obj, type != InputUtil.EVENT_TYPE_TOUCH || action != MotionEvent.ACTION_MOVE);
   }
