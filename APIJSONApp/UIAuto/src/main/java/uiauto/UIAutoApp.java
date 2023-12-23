@@ -116,7 +116,7 @@ public class UIAutoApp extends Application {
   private static final String SPLIT_HEIGHT = "SPLIT_HEIGHT";
   private static final String SPLIT_COLOR = "SPLIT_COLOR";
 
-  private static float DENSITY = Resources.getSystem().getDisplayMetrics().density;
+  private static double DENSITY = Resources.getSystem().getDisplayMetrics().density;
 
 
   private static UIAutoApp instance;
@@ -364,21 +364,21 @@ public class UIAutoApp extends Application {
   Window window;
   View decorView;
 
-  float windowWidth;
-  float windowHeight;
-  float windowX;
-  float windowY;
+  double windowWidth;
+  double windowHeight;
+  double windowX;
+  double windowY;
 
   int statusResourceId;
   int navigationResourceId;
-  float statusHeight;
-  float navigationHeight;
+  double statusHeight;
+  double navigationHeight;
   boolean isNavigationShow = false;
   boolean isSeparatedStatus = false;
-  float decorX;
-  float decorY;
-  float decorWidth;
-  float decorHeight;
+  double decorX;
+  double decorY;
+  double decorWidth;
+  double decorHeight;
 
   ViewGroup vFloatCover;
   View vFloatController;
@@ -399,10 +399,10 @@ public class UIAutoApp extends Application {
   RecyclerView rvControllerTag;
 
   // 都取负数，表示相对于最右侧和最下方还差多少
-  private float splitX, splitX2;
-  private float splitY, splitY2;
-  private float splitSize;
-  private float splitRadius;
+  private double splitX, splitX2;
+  private double splitY, splitY2;
+  private double splitSize;
+  private double splitRadius;
 
   @NotNull
   private JSONArray eventList = new JSONArray();
@@ -764,7 +764,7 @@ public class UIAutoApp extends Application {
       windowHeight = metric.heightPixels;
     }
 
-    float sum = windowHeight + statusHeight + navigationHeight;
+    double sum = windowHeight + statusHeight + navigationHeight;
     if (sum > screenHeight) {
       windowHeight -= statusHeight;
     } else if (sum < screenHeight) {
@@ -1460,10 +1460,10 @@ public class UIAutoApp extends Application {
     cache.edit()
       .remove(SPLIT_X)
       // .putInt(SPLIT_X, Math.round(vSplitX.getX() + vSplitX.getWidth()/2 - windowWidth))
-      .putInt(SPLIT_X, Math.round(floatSplitX.getX() + vSplitX.getWidth()/2 - windowWidth))
+      .putInt(SPLIT_X, (int) Math.round(floatSplitX.getX() + vSplitX.getWidth()/2 - windowWidth))
       .remove(SPLIT_Y)
       // .putInt(SPLIT_Y, Math.round(vSplitY.getY() + vSplitY.getHeight()/2 - windowHeight))
-      .putInt(SPLIT_Y, Math.round(floatSplitY.getY() + vSplitY.getHeight()/2 - windowHeight))
+      .putInt(SPLIT_Y, (int) Math.round(floatSplitY.getY() + vSplitY.getHeight()/2 - windowHeight))
       .apply();
 
     onUIAutoWindowDestroy(callback, activity == null ? null : activity.getWindow());
@@ -1763,7 +1763,7 @@ public class UIAutoApp extends Application {
   }
 
   private boolean isSplitShowing, isSplit2Showing;
-  private IFloatWindow showSplit(boolean show, float splitX, float splitY, String ballName, FloatBallView vFloatBall, IFloatWindow floatSplitX_, IFloatWindow floatSplitY_) {
+  private IFloatWindow showSplit(boolean show, double splitX, double splitY, String ballName, FloatBallView vFloatBall, IFloatWindow floatSplitX_, IFloatWindow floatSplitY_) {
     // vSplitX.setVisibility(View.GONE);
     // vSplitY.setVisibility(View.GONE);
     // vSplitX2.setVisibility(View.GONE);
@@ -1776,18 +1776,18 @@ public class UIAutoApp extends Application {
     // showFloatView(true, "splitX2", vSplitX2, ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT, splitX2, 0, MoveType.inactive);
     // showFloatView(true, "splitY2", vSplitY2, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, 0, splitY2, MoveType.inactive);
 
-    int x = Math.round(splitX - splitRadius + (splitX > 0 ? 0 : windowWidth)); // 只有贴边才会自动处理 decorWidth); // 已被 FloatWindow 处理 windowX + decorX
-    int y = Math.round(splitY - splitRadius + (splitY > 0 ? 0 : windowHeight)); // - (isSeparatedStatus ? 0 : statusHeight))); // + navigationHeight)); // 只有贴边才会自动处理  decorHeight); // 已被 FloatWindow 处理 windowY + decorY
+    int x = (int) Math.round(splitX - splitRadius + (splitX > 0 ? 0 : windowWidth)); // 只有贴边才会自动处理 decorWidth); // 已被 FloatWindow 处理 windowX + decorX
+    int y = (int) Math.round(splitY - splitRadius + (splitY > 0 ? 0 : windowHeight)); // - (isSeparatedStatus ? 0 : statusHeight))); // + navigationHeight)); // 只有贴边才会自动处理  decorHeight); // 已被 FloatWindow 处理 windowY + decorY
     if (floatSplitX_ != null) {
       try {
-        floatSplitX_.updateX(x + Math.round(splitRadius) - dip2px(0.5f));
+        floatSplitX_.updateX((int) (x + Math.round(splitRadius) - dip2px(0.5f)));
       } catch (Throwable e) {
         e.printStackTrace();
       }
     }
     if (floatSplitY_ != null) {
       try {
-        floatSplitY_.updateY(y + Math.round(splitRadius) - dip2px(0.5f));
+        floatSplitY_.updateY((int) (y + Math.round(splitRadius) - dip2px(0.5f)));
       } catch (Throwable e) {
         e.printStackTrace();
       }
@@ -1937,7 +1937,7 @@ public class UIAutoApp extends Application {
         }
       });
 
-      int size = Math.round(splitSize);
+      int size = (int) Math.round(splitSize);
 
       FloatWindow
         .with(getApplicationContext())
@@ -1952,8 +1952,8 @@ public class UIAutoApp extends Application {
         .setViewStateListener(new ViewStateListener() {
           @Override
           public void onPositionUpdate(int x, int y) {
-            int splitX = x + Math.round(splitRadius);
-            int splitY = y + Math.round(splitRadius);
+            int splitX = (int) (x + Math.round(splitRadius));
+            int splitY = (int) (y + Math.round(splitRadius));
 
             if (floatSplitX_ != null) { //  && floatSplitX_.isShowing()) {
               try {
@@ -2021,11 +2021,11 @@ public class UIAutoApp extends Application {
     tvControllerY.setText(splitY + "\n" + (splitY/windowHeight) + "%");
 
     if (floatSplitX_ != null && floatSplitX_.isShowing()) {
-      floatSplitX_.updateX(x + Math.round(splitRadius) - dip2px(0.5f));
+      floatSplitX_.updateX((int) (x + Math.round(splitRadius) - dip2px(0.5f)));
       floatSplitX_.hide();
     }
     if (floatSplitY_ != null && floatSplitY_.isShowing()) {
-      floatSplitY_.updateY(y + Math.round(splitRadius) - dip2px(0.5f));
+      floatSplitY_.updateY((int) (y + Math.round(splitRadius) - dip2px(0.5f)));
       floatSplitY_.hide();
     }
 
@@ -2289,16 +2289,16 @@ public class UIAutoApp extends Application {
   /**
    * 根据手机的分辨率从 dp 的单位 转成为 px(像素)
    */
-  public int dip2px(float dpValue) {
-    final float scale = DENSITY;
+  public int dip2px(double dpValue) {
+    final double scale = DENSITY;
     return (int) (dpValue * scale + 0.5f);  // + 0.5f 是为了让结果四舍五入
   }
 
   /**
    * 根据手机的分辨率从 px(像素) 的单位 转成为 dp
    */
-  public int px2dip(float pxValue) {
-    final float scale = DENSITY;
+  public int px2dip(double pxValue) {
+    final double scale = DENSITY;
     return (int) (pxValue / scale + 0.5f);  // + 0.5f 是为了让结果四舍五入
   }
 
@@ -2468,8 +2468,8 @@ public class UIAutoApp extends Application {
     else if (type == InputUtil.EVENT_TYPE_TOUCH) {
       /**
        public static MotionEvent obtain(long downTime, long eventTime, int action,
-       float x, float y, float pressure, float size, int metaState,
-       float xPrecision, float yPrecision, int deviceId, int edgeFlags, int source,
+       double x, double y, double pressure, double size, int metaState,
+       double xPrecision, double yPrecision, int deviceId, int edgeFlags, int source,
        int displayId)
        */
 
@@ -2477,28 +2477,28 @@ public class UIAutoApp extends Application {
       // static public MotionEvent obtain(long downTime, long eventTime,
       //    int action, int tagerCount, PointerProperties[] tagerProperties,
       //    PointerCoords[] tagerCoords, int metaState, int buttonState,
-      //    float xPrecision, float yPrecision, int deviceId,
+      //    double xPrecision, double yPrecision, int deviceId,
       //    int edgeFlags, int source, int displayId, int flags)
       //冲突，实际上类型没传错
 
       //                    event = MotionEvent.obtain(obj.getLongValue("downTime"),  obj.getLongValue("eventTime"),  obj.getIntValue("action"),
-      //                    obj.getFloatValue("x"),  obj.getFloatValue("y"),  obj.getFloatValue("pressure"),  obj.getFloatValue("size"),  obj.getIntValue("metaState"),
-      //                    obj.getFloatValue("xPrecision"),  obj.getFloatValue("yPrecision"),  obj.getIntValue("deviceId"),  obj.getIntValue("edgeFlags"),  obj.getIntValue("source"),
+      //                    obj.getDoubleValue("x"),  obj.getDoubleValue("y"),  obj.getDoubleValue("pressure"),  obj.getDoubleValue("size"),  obj.getIntValue("metaState"),
+      //                    obj.getDoubleValue("xPrecision"),  obj.getDoubleValue("yPrecision"),  obj.getIntValue("deviceId"),  obj.getIntValue("edgeFlags"),  obj.getIntValue("source"),
       //                    obj.getIntValue("displayId"));
 
       eventNode.splitSize = splitSize;  // 只是本地显示  Math.round(obj.getIntValue("splitSize")*ratio);
       eventNode.orientation = obj.getIntValue("orientation");
 
       int layoutType = obj.getIntValue("layoutType");
-      float density = obj.getFloatValue("density");
+      double density = obj.getDoubleValue("density");
 
-      float ww = obj.getFloatValue("windowWidth");
-      float wh = obj.getFloatValue("windowHeight");
+      double ww = obj.getDoubleValue("windowWidth");
+      double wh = obj.getDoubleValue("windowHeight");
 
-      float sh = obj.getFloatValue("statusHeight");
-      float nh = obj.getFloatValue("navigationHeight");
-      float cw = ww; // obj.getFloatValue("decorWidth");
-      float ch = wh; // - sh; // obj.getFloatValue("decorHeight") - sh - nh;
+      double sh = obj.getDoubleValue("statusHeight");
+      double nh = obj.getDoubleValue("navigationHeight");
+      double cw = ww; // obj.getDoubleValue("decorWidth");
+      double ch = wh; // - sh; // obj.getDoubleValue("decorHeight") - sh - nh;
       if (cw <= 100) {
         cw = ww;
       }
@@ -2506,17 +2506,17 @@ public class UIAutoApp extends Application {
         ch = wh; // - sh; // - nh;
       }
 
-      float ratio = getScale(cw, ch, layoutType, density);
+      double ratio = getScale(cw, ch, layoutType, density);
       if (ratio <= 0.1) {
         ratio = 1;
       }
 
-      float x = obj.getFloatValue("x");
-      float y = obj.getFloatValue("y");
-      float sx = obj.getFloatValue("splitX");
-      float sx2 = obj.getFloatValue("splitX2");
-      float sy = obj.getFloatValue("splitY");
-      float sy2 = obj.getFloatValue("splitY2");
+      double x = obj.getDoubleValue("x");
+      double y = obj.getDoubleValue("y");
+      double sx = obj.getDoubleValue("splitX");
+      double sx2 = obj.getDoubleValue("splitX2");
+      double sy = obj.getDoubleValue("splitY");
+      double sy2 = obj.getDoubleValue("splitY2");
 
       if (sx == 0 || Math.abs(sx) > cw) {
         sx = (sx < 0 ? 0 : cw)/ratio;
@@ -2536,18 +2536,18 @@ public class UIAutoApp extends Application {
       eventNode.splitX2 = Math.round(sx2*ratio);
       eventNode.splitY2 = Math.round(sy2*ratio);
 
-      // float ratio = getScale(ww, ) //  1f*windowWidth/ww;  //始终以显示时宽度比例为准，不管是横屏还是竖屏   1f*Math.min(windowWidth, windowHeight)/Math.min(ww, wh);
+      // double ratio = getScale(ww, ) //  1f*windowWidth/ww;  //始终以显示时宽度比例为准，不管是横屏还是竖屏   1f*Math.min(windowWidth, windowHeight)/Math.min(ww, wh);
 
       // 既然已经存了 上下 绝对坐标、屏幕像素 等完整信息，没必要用负值？负值保证稳定，因为 18:9 和 16:9 的分割线高度不一样
       sx = sx > 0 ? sx : ww + sx; // 转为正数
-      float minSX = sx2 <= 0 ? sx : Math.min(sx, sx2);
-      float maxSX = sx2 <= 0 ? sx : Math.max(sx, sx2);
+      double minSX = sx2 <= 0 ? sx : Math.min(sx, sx2);
+      double maxSX = sx2 <= 0 ? sx : Math.max(sx, sx2);
 
       sy = sy > 0 ? sy : wh + sy; // 转为正数
-      float minSY = sy2 <= 0 ? sy : Math.min(sy, sy2);
-      float maxSY = sy2 <= 0 ? sy : Math.max(sy, sy2);
+      double minSY = sy2 <= 0 ? sy : Math.min(sy, sy2);
+      double maxSY = sy2 <= 0 ? sy : Math.max(sy, sy2);
 
-      float rx;
+      double rx;
       if (x >= 0 && x <= minSX) { // 靠左
         rx = ratio*x;
       }
@@ -2555,14 +2555,14 @@ public class UIAutoApp extends Application {
         rx = windowWidth + ratio*(x < 0 ? x : x - cw);
       }
       else {  //居中，一般是弹窗
-        float mid = (maxSX + minSX)/2f;
+        double mid = (maxSX + minSX)/2f;
 //          rx = x < mid ? ratio*x : decorWidth*mid/cw + ratio*(x - maxSX); // 居中靠左/靠右，例如关闭按钮
         rx = windowWidth*mid/cw + ratio*(x - mid); // 居中靠左/靠右，例如关闭按钮
       }
 
       // 不一定这样，例如 小米 12 Pro 因为有摄像头挖孔所以横屏过来会默认不显示左侧摄像头占的宽度 // 进一步简化上面的，横向是所有都一致 rx = ratio*x + decorView.getX();
 
-      float ry;
+      double ry;
       if (y >= 0 && y <= minSY) { // 靠上
         ry = ratio*y;
       }
@@ -2570,7 +2570,7 @@ public class UIAutoApp extends Application {
         ry = windowHeight /* - (isSeparatedStatus ? 0 : statusHeight) */ + ratio*(y < 0 ? y : y - ch); // decorHeight + ratio*(y < 0 ? y : y - ch);
       }
       else {  //居中，一般是弹窗
-        float mid = (maxSY + minSY)/2f;
+        double mid = (maxSY + minSY)/2f;
         ry = (windowHeight /* - (isSeparatedStatus ? 0 : statusHeight) */)*mid/ch + ratio*(y - mid); // 居中靠上/靠下，例如 取消、确定 按钮
       }
 
@@ -2582,8 +2582,8 @@ public class UIAutoApp extends Application {
               obj.getLongValue("eventTime"),
               obj.getIntValue("action"),
 //                            obj.getIntValue("targetCount"),
-              rx,
-              ry,
+              (float) rx,
+              (float) ry,
               obj.getFloatValue("pressure"),
               obj.getFloatValue("size"),
               obj.getIntValue("metaState"),
@@ -2623,15 +2623,15 @@ public class UIAutoApp extends Application {
 
     eventNode.windowX = obj.getIntValue("windowX");
     eventNode.windowY = obj.getIntValue("windowY");
-    eventNode.decorX = obj.getFloatValue("decorX");
-    eventNode.decorY = obj.getFloatValue("decorY");
+    eventNode.decorX = obj.getDoubleValue("decorX");
+    eventNode.decorY = obj.getDoubleValue("decorY");
 
     eventNode.item = event;
 
     return eventNode;
   }
 
-  private float getScale(float ww, float wh, int layoutType, float density) {
+  private double getScale(double ww, double wh, int layoutType, double density) {
 //    if (decorWidth <= 0) {
       if (windowWidth <= 0) {
         windowWidth = screenWidth;
@@ -2645,8 +2645,8 @@ public class UIAutoApp extends Application {
 //      decorHeight = windowHeight;
 //    }
 
-    float curWW = Math.min(windowWidth, windowHeight); //  - (isSeparatedStatus ? 0 : statusHeight)); // decorWidth, decorHeight - statusHeight - navigationHeight);
-    float targetWw = Math.min(ww, wh);
+    double curWW = Math.min(windowWidth, windowHeight); //  - (isSeparatedStatus ? 0 : statusHeight)); // decorWidth, decorHeight - statusHeight - navigationHeight);
+    double targetWw = Math.min(ww, wh);
     if (curWW == targetWw || layoutType == InputUtil.LAYOUT_TYPE_ABSOLUTE) {  // 同宽像素或绝对位置
       return 1.0f;
     }
@@ -2906,7 +2906,7 @@ public class UIAutoApp extends Application {
         bitmap = Bitmap.createBitmap(bitmap, 0, 0, w, h, matrix, false);
 
         // 宽居然不是和高一样等比缩放，貌似没缩放
-        // float scale = 720f/w;
+        // double scale = 720f/w;
         // int nw = 720;
         // int nh = Math.round(h*scale);
         // matrix.postScale(scale, scale);
@@ -3053,7 +3053,7 @@ public class UIAutoApp extends Application {
         Node<InputEvent> prevNode = webView == null || currentEventNode == null || (mke.getX() != null && mke.getY() != null) ? null : currentEventNode.prev;
         InputEvent prevItem = prevNode == null ? null : prevNode.item;
         if (prevItem instanceof MotionEvent) {
-          float ratio = 980f/webView.getWidth();
+          double ratio = 980f/webView.getWidth();
 
           int[] loc = new int[2];
           webView.getLocationOnScreen(loc);
@@ -3076,10 +3076,10 @@ public class UIAutoApp extends Application {
       type = InputUtil.EVENT_TYPE_TOUCH;
       action = event.getAction();
 
-      float x = event.getX();
-      float y = event.getY();
-      float rx = x - windowX - decorX;
-      float ry = y - windowY - decorY - statusHeight; // (isSeparatedStatus ? 0 : statusHeight);
+      double x = event.getX();
+      double y = event.getY();
+      double rx = x - windowX - decorX;
+      double ry = y - windowY - decorY - statusHeight; // (isSeparatedStatus ? 0 : statusHeight);
 
       if (callback instanceof Dialog) {
         Dialog dialog = (Dialog) callback;
@@ -3087,19 +3087,19 @@ public class UIAutoApp extends Application {
       }
 
       View decorView = window.getDecorView();
-      float dx = decorView.getX();
-      float dy = decorView.getY();
-      float dw = decorView.getWidth();
-      float dh = decorView.getHeight();
+      double dx = decorView.getX();
+      double dy = decorView.getY();
+      double dw = decorView.getWidth();
+      double dh = decorView.getHeight();
 
       // 只在回放前一处处理逻辑
       isSplit2Showing = floatBall2 != null && floatBall2.isShowing();
-//      float minX = (isSplit2Showing ? Math.min(floatBall.getX(), floatBall2.getX()) : floatBall.getX()) - splitRadius;
-      float maxX = (isSplit2Showing ? Math.max(floatBall.getX(), floatBall2.getX()) : floatBall.getX()) + splitRadius;
-//      float avgX = (minX + maxX)/2;
-//      float minY = (isSplit2Showing ? Math.min(floatBall.getY(), floatBall2.getY()) : floatBall.getY()) - splitRadius;
-      float maxY = (isSplit2Showing ? Math.max(floatBall.getY(), floatBall2.getY()) : floatBall.getY()) + splitRadius;
-//      float avgY = (minY + maxY)/2;
+//      double minX = (isSplit2Showing ? Math.min(floatBall.getX(), floatBall2.getX()) : floatBall.getX()) - splitRadius;
+      double maxX = (isSplit2Showing ? Math.max(floatBall.getX(), floatBall2.getX()) : floatBall.getX()) + splitRadius;
+//      double avgX = (minX + maxX)/2;
+//      double minY = (isSplit2Showing ? Math.min(floatBall.getY(), floatBall2.getY()) : floatBall.getY()) - splitRadius;
+      double maxY = (isSplit2Showing ? Math.max(floatBall.getY(), floatBall2.getY()) : floatBall.getY()) + splitRadius;
+//      double avgY = (minY + maxY)/2;
 
       obj.put("x", rx < maxX ? rx : rx - windowWidth); // dw + dx); // Math.round(x - windowX - decorX - (x < avgX ? 0 : decorWidth)));
       obj.put("y", ry < maxY ? ry : ry - windowHeight); // + (isSeparatedStatus ? 0 : statusHeight)); // dh + dy + statusHeight + navigationHeight); // Math.round(y - windowY - decorY - (y < avgY ? 0 : decorHeight)));
@@ -3154,14 +3154,14 @@ public class UIAutoApp extends Application {
   private boolean isAlignLeft(MotionEvent event) {
     return ! isAlignRight(event);
   }
-  private boolean isAlignLeft(float x) {
+  private boolean isAlignLeft(double x) {
     return ! isAlignRight(x);
   }
 
   private boolean isAlignRight(MotionEvent event) {
     return event != null && isAlignRight(event.getX());
   }
-  private boolean isAlignRight(float x) {
+  private boolean isAlignRight(double x) {
     if (floatSplitX == null) {
       return isFloatBallShowing() ? floatBall.getX() != 0 && floatBall.getY() != 0 && x > floatBall.getX() + splitSize/2 : false;
     }
@@ -3174,14 +3174,14 @@ public class UIAutoApp extends Application {
   private boolean isAlignTop(MotionEvent event) {
     return ! isAlignBottom(event);
   }
-  private boolean isAlignTop(float y) {
+  private boolean isAlignTop(double y) {
     return ! isAlignBottom(y);
   }
 
   private boolean isAlignBottom(MotionEvent event) {
     return event != null && isAlignBottom(event.getY());
   }
-  private boolean isAlignBottom(float y) {
+  private boolean isAlignBottom(double y) {
     if (floatSplitY == null) {
       return isFloatBallShowing() ? floatBall.getX() != 0 && floatBall.getY() != 0 && y > floatBall.getY() + splitSize/2 : false;
     }
@@ -3222,7 +3222,7 @@ public class UIAutoApp extends Application {
     return view.hasFocus() && (clazz == null || clazz.isAssignableFrom(view.getClass())) ? (V) view : null;
   }
 
-  public <V extends View> V findViewByPoint(View view, Class<V> clazz, float x, float y, boolean onlyFocusable) {
+  public <V extends View> V findViewByPoint(View view, Class<V> clazz, double x, double y, boolean onlyFocusable) {
     if (view == null || x < view.getX() || x > view.getX() + view.getWidth()
             || y < view.getY() || y > view.getY() + view.getHeight()) {
       return null;
@@ -3700,13 +3700,13 @@ public class UIAutoApp extends Application {
     int type;
     int action;
     long time;
-    float splitX, splitX2;
-    float splitY, splitY2;
-    float splitSize;
-    float windowX;
-    float windowY;
-    float decorX;
-    float decorY;
+    double splitX, splitX2;
+    double splitY, splitY2;
+    double splitSize;
+    double windowX;
+    double windowY;
+    double decorX;
+    double decorY;
     int orientation;
     String activity;
     String fragment;
