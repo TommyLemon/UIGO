@@ -19,7 +19,7 @@ import zuo.biao.library.R;
 import zuo.biao.library.util.StringUtil;
 
 import android.app.Activity;
-import android.app.Dialog;
+import uiauto.Dialog;
 import android.content.Context;
 import android.os.Bundle;
 import android.view.View;
@@ -141,16 +141,16 @@ public class AlertDialog extends Dialog implements android.view.View.OnClickList
 		dismiss();
 	}
 
-	@Override
-	public void show() {
-		super.show();
-		UIAutoApp.getInstance().onUIAutoWindowCreate(this, getWindow());
-	}
-
-	@Override
-	public void dismiss() {
-		super.dismiss();
-		UIAutoApp.getInstance().onUIAutoWindowDestroy(this, getWindow());
-	}
+//	@Override
+//	public void show() {
+//		super.show();
+//		UIAutoApp.getInstance().onUIAutoWindowCreate(this, getWindow());
+//	}
+//
+//	@Override
+//	public void dismiss() {
+//		super.dismiss();
+//		UIAutoApp.getInstance().onUIAutoWindowDestroy(this, getWindow());
+//	}
 }
 

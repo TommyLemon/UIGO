@@ -16,7 +16,7 @@ package zuo.biao.library.ui;
 
 import zuo.biao.library.R;
 import zuo.biao.library.util.StringUtil;
-import android.app.Dialog;
+import uiauto.Dialog;
 import android.content.Context;
 import android.os.Bundle;
 import android.view.View;
