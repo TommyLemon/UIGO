@@ -10,6 +10,13 @@
             style="@style/topbar_title"
             android:layout_centerHorizontal="true"
             android:text="详细资料" />
+
+        <ImageView
+            style="@style/topbar_right_btn"
+            android:src="@drawable/menu"
+            android:id="@+id/ivUserMenu"
+            />
+
     </RelativeLayout>
 
     <View style="@style/divider_horizontal_1px" />

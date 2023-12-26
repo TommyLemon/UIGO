@@ -66,6 +66,7 @@ import android.view.accessibility.AccessibilityEvent;
 import android.webkit.ValueCallback;
 import android.webkit.WebView;
 import android.widget.EditText;
+import android.widget.PopupWindow;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -841,6 +842,7 @@ public class UIAutoApp extends Application {
         if (isShowing) {
           onUIAutoActivityCreate(activity);
         }
+        setCurrentPopupWindow(popupWindowMap.get(activity), viewMap.get(activity), null, activity, null);
         onUIEvent(InputUtil.UI_ACTION_RESUME, activity, activity);
       }
 
@@ -877,6 +879,8 @@ public class UIAutoApp extends Application {
         activityList.remove(activity);
         onUIEvent(InputUtil.UI_ACTION_DESTROY, activity, activity);
         ballPositionMap.remove(activity);
+
+        setCurrentPopupWindow(null, null, null, activity, null);
       }
 
     });
@@ -1453,6 +1457,9 @@ public class UIAutoApp extends Application {
     else {
       this.window = activity == null ? null : activity.getWindow();
     }
+
+    this.popupWindow = null;
+    this.view = null;
   }
 
 
@@ -1507,6 +1514,71 @@ public class UIAutoApp extends Application {
     this.fragment = fragment;
     if (fragment != null && (currentFragmentWeakRef == null || ! fragment.equals(currentFragmentWeakRef.get()))) {
       currentFragmentWeakRef = new WeakReference<>(fragment);
+    }
+  }
+
+
+  private Map<Object, PopupWindow> popupWindowMap = new LinkedHashMap<>();
+  private PopupWindow popupWindow;
+  public void setCurrentPopupWindow(PopupWindow pw, View v, Window.Callback callback, @NotNull Activity activity, Fragment fragment) {
+    this.popupWindow = pw;
+
+//    if (activity == null) {
+//      activity = fragment == null ? getCurrentActivity() : fragment.getActivity();
+//    }
+
+    if (pw == null) {
+      popupWindowMap.remove(activity);
+    }
+    else {
+      popupWindowMap.put(activity, pw);
+
+      pw.setTouchInterceptor(new View.OnTouchListener() {
+        @Override
+        public boolean onTouch(View v, MotionEvent event) {
+          addInputEvent(event, callback, activity, fragment);
+//          pw.dismiss();
+
+//          if (event.getAction() == MotionEvent.ACTION_UP) {
+//            setCurrentPopupWindow(null, null, callback, activity, fragment);
+//          }
+          return false;
+        }
+      });
+    }
+
+    setCurrentView(v, callback, activity, fragment);
+  }
+
+
+  private Map<Object, View> viewMap = new LinkedHashMap<>();
+  private View view;
+  public void setCurrentView(View v, Window.Callback callback, Activity activity, Fragment fragment) {
+    this.view = v;
+
+    if (v == null) {
+      viewMap.remove(activity);
+    }
+    else {
+      if (v instanceof WebView == false) {
+        viewMap.put(activity, v);
+      }
+
+      v.setOnTouchListener(new View.OnTouchListener() {
+        @Override
+        public boolean onTouch(View v, MotionEvent event) {
+          if (popupWindow != null) {
+            return false;
+          }
+
+          addInputEvent(event, callback, activity, fragment);
+
+//          if (event.getAction() == MotionEvent.ACTION_UP) {
+//            setCurrentPopupWindow(null, null, callback, activity, fragment);
+//          }
+          return false;
+        }
+      });
     }
   }
 
@@ -2110,7 +2182,7 @@ public class UIAutoApp extends Application {
 //      }
 //    }
 
-    if (callback != null) {
+    if (callback != null || view != null) {
       if (ie instanceof MotionEvent) {
         MotionEvent event = (MotionEvent) ie;
 //        int windowX = getWindowX(activity);
@@ -2121,7 +2193,15 @@ public class UIAutoApp extends Application {
 //          event.offsetLocation(windowX, windowY);
 //        }
         try {
-          callback.dispatchTouchEvent(event);
+          MotionEvent viewEvent = event;
+          if (view != null && popupWindow != null && popupWindow.isShowing()) {
+            viewEvent = MotionEvent.obtain(event);
+            viewEvent.offsetLocation(0f, - (float) statusHeight);
+          }
+
+          if ((view == null || (view.dispatchTouchEvent(viewEvent) == false)) && callback != null) {
+            callback.dispatchTouchEvent(event);
+          }
         } catch (Throwable e) {  // java.lang.IllegalArgumentException: tagerIndex out of range
           e.printStackTrace();
         }
@@ -2265,14 +2345,8 @@ public class UIAutoApp extends Application {
             }
           }
         }
-        else if (webView != null) {
-          if (webView.dispatchKeyEvent((KeyEvent) ie) == false) {
-            callback.dispatchKeyEvent((KeyEvent) ie);
-          }
-        }
-        else {
-          KeyEvent event = (KeyEvent) ie;
-          callback.dispatchKeyEvent(event);
+        else if ((view == null || view.dispatchKeyEvent((KeyEvent) ie) == false) && callback != null) {
+          callback.dispatchKeyEvent((KeyEvent) ie);
         }
       }
     }
@@ -2281,7 +2355,7 @@ public class UIAutoApp extends Application {
       addInputEvent(ie, callback, activity, fragment);
     }
 
-    return callback != null;
+    return callback != null || view != null;
   }
 
 
@@ -2575,7 +2649,7 @@ public class UIAutoApp extends Application {
       }
 
       rx += windowX + decorX;
-      ry += windowY + decorY + statusHeight; // + (isSeparatedStatus ? statusHeight : 0);
+      ry += windowY + decorY + statusHeight; // 此时不知道，放到显示后处理  (popupWindow != null && popupWindow.isShowing() ? 0 : statusHeight); // + (isSeparatedStatus ? statusHeight : 0);
 
       event = MotionEvent.obtain(
               obj.getLongValue("downTime"),
@@ -3078,31 +3152,39 @@ public class UIAutoApp extends Application {
 
       double x = event.getX();
       double y = event.getY();
-      double rx = x - windowX - decorX;
-      double ry = y - windowY - decorY - statusHeight; // (isSeparatedStatus ? 0 : statusHeight);
 
-      if (callback instanceof Dialog) {
-        Dialog dialog = (Dialog) callback;
-        // TODO
+      if (view != null && webView == null) { // PopupWindow 等小窗口不需要分割？
+        obj.put("x", x);
+        obj.put("y", y);
       }
+      else {
+        double rx = x - windowX - decorX;
+        double ry = y - windowY - decorY - (popupWindow != null && popupWindow.isShowing() ? 0 : statusHeight); // (isSeparatedStatus ? 0 : statusHeight);
 
-      View decorView = window.getDecorView();
-      double dx = decorView.getX();
-      double dy = decorView.getY();
-      double dw = decorView.getWidth();
-      double dh = decorView.getHeight();
+        if (callback instanceof Dialog) {
+          Dialog dialog = (Dialog) callback;
+          // TODO
+        }
 
-      // 只在回放前一处处理逻辑
-      isSplit2Showing = floatBall2 != null && floatBall2.isShowing();
+        View decorView = window.getDecorView();
+        double dx = decorView.getX();
+        double dy = decorView.getY();
+        double dw = decorView.getWidth();
+        double dh = decorView.getHeight();
+
+        // 只在回放前一处处理逻辑
+        isSplit2Showing = floatBall2 != null && floatBall2.isShowing();
 //      double minX = (isSplit2Showing ? Math.min(floatBall.getX(), floatBall2.getX()) : floatBall.getX()) - splitRadius;
-      double maxX = (isSplit2Showing ? Math.max(floatBall.getX(), floatBall2.getX()) : floatBall.getX()) + splitRadius;
+        double maxX = (isSplit2Showing ? Math.max(floatBall.getX(), floatBall2.getX()) : floatBall.getX()) + splitRadius;
 //      double avgX = (minX + maxX)/2;
 //      double minY = (isSplit2Showing ? Math.min(floatBall.getY(), floatBall2.getY()) : floatBall.getY()) - splitRadius;
-      double maxY = (isSplit2Showing ? Math.max(floatBall.getY(), floatBall2.getY()) : floatBall.getY()) + splitRadius;
+        double maxY = (isSplit2Showing ? Math.max(floatBall.getY(), floatBall2.getY()) : floatBall.getY()) + splitRadius;
 //      double avgY = (minY + maxY)/2;
 
-      obj.put("x", rx < maxX ? rx : rx - windowWidth); // dw + dx); // Math.round(x - windowX - decorX - (x < avgX ? 0 : decorWidth)));
-      obj.put("y", ry < maxY ? ry : ry - windowHeight); // + (isSeparatedStatus ? 0 : statusHeight)); // dh + dy + statusHeight + navigationHeight); // Math.round(y - windowY - decorY - (y < avgY ? 0 : decorHeight)));
+        obj.put("x", rx < maxX ? rx : rx - windowWidth); // dw + dx); // Math.round(x - windowX - decorX - (x < avgX ? 0 : decorWidth)));
+        obj.put("y", ry < maxY ? ry : ry - windowHeight); // + (isSeparatedStatus ? 0 : statusHeight)); // dh + dy + statusHeight + navigationHeight); // Math.round(y - windowY - decorY - (y < avgY ? 0 : decorHeight)));
+      }
+
       obj.put("rawX", event.getRawX());
       obj.put("rawY", event.getRawY());
 
@@ -3525,8 +3607,9 @@ public class UIAutoApp extends Application {
   }
 
   protected WebView webView;
-  public void setCurrentWebView(WebView webView) {
+  public void setCurrentWebView(WebView webView, @NotNull Activity activity, @Nullable Fragment fragment) {
     this.webView = webView;
+    setCurrentView(view, callback, activity, fragment);
   }
   protected String webUrl;
   public void setCurrentWebUrl(String webUrl) {
@@ -3595,7 +3678,7 @@ public class UIAutoApp extends Application {
   }
 
   public void initWeb(@NotNull Activity activity, @Nullable Fragment fragment, @NotNull WebView webView, String webUrl) {
-    this.webView = webView;
+    setCurrentWebView(webView, activity, fragment);
     this.webUrl = webUrl;
 //    editTextMap = new LinkedHashMap<>();
     if (isReplay == false && Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {

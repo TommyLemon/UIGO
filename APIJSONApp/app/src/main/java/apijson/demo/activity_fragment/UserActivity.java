@@ -19,15 +19,22 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.support.v7.widget.MenuPopupWindow;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.View.OnTouchListener;
 import android.view.ViewGroup;
+import android.widget.Adapter;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.GridView;
+import android.widget.ListAdapter;
+import uiauto.ListPopupWindow;
 import android.widget.TextView;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import apijson.demo.R;
@@ -39,8 +46,10 @@ import apijson.demo.util.HttpRequest;
 import apijson.demo.util.MenuUtil;
 import apijson.demo.view.UserView;
 import apijson.demo.server.model.Privacy;
+import uiauto.DisplayUtil;
 import zuo.biao.apijson.JSONRequest;
 import zuo.biao.apijson.JSONResponse;
+import zuo.biao.library.base.BaseAdapter;
 import zuo.biao.library.base.BaseView.OnDataChangedListener;
 import zuo.biao.library.interfaces.OnBottomDragListener;
 import zuo.biao.library.manager.CacheManager;
@@ -528,7 +537,28 @@ public class UserActivity extends BaseActivity implements OnClickListener, OnBot
 	@Override
 	public void onDragBottom(boolean rightToLeft) {
 		if (rightToLeft) {
+			ListPopupWindow mpw = new ListPopupWindow(context);
+			ArrayAdapter ada = new ArrayAdapter<String>(context, android.R.layout.simple_list_item_1, Arrays.asList("二维码", "发送"));
+			mpw.setAdapter(ada);
+			mpw.setAnchorView(findViewById(R.id.ivUserMenu));
+//			mpw.setContentWidth(ListPopupWindow.MATCH_PARENT);
+			mpw.setWidth(DisplayUtil.dp2px(context, 120));
+			mpw.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+				@Override
+				public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+					switch (position) {
+						case 0:
+							onBottomMenuItemClick(MenuUtil.INTENT_CODE_QRCODE);
+							break;
+						case 1:
+							onBottomMenuItemClick(MenuUtil.INTENT_CODE_SEND);
+							break;
+					}
 
+					mpw.dismiss();
+				}
+			});
+			mpw.show();
 			return;
 		}
 
