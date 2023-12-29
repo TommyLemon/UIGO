@@ -19,12 +19,14 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.support.annotation.StyleRes;
 
+import java.util.Calendar;
+
 /**通用对话框类
  * @author Lemon
- * @use 把业务代码中 android.app.Dialog 换成 uiauto.Dialog
+ * @use 把业务代码中 android.app.DatePickerDialog 换成 uiauto.DatePickerDialog
  */
-public class Dialog extends android.app.Dialog {
-	//	private static final String TAG = "Dialog";
+public class DatePickerDialog extends android.app.DatePickerDialog {
+	//	private static final String TAG = "DatePickerDialog";
 
 	@Override
 	public void show() {
@@ -43,7 +45,7 @@ public class Dialog extends android.app.Dialog {
 					listener.onDismiss(dialog);
 				}
 
-				UIAutoApp.getInstance().onUIAutoWindowDestroy(Dialog.this, getWindow());
+				UIAutoApp.getInstance().onUIAutoWindowDestroy(DatePickerDialog.this, getWindow());
 			}
 		});
 	}
@@ -63,7 +65,7 @@ public class Dialog extends android.app.Dialog {
 	 *
 	 * @param context the context in which the dialog should run
 	 */
-	public Dialog(Context context) {
+	public DatePickerDialog(Context context) {
 		super(context);
 		init(context);
 	}
@@ -83,23 +85,46 @@ public class Dialog extends android.app.Dialog {
 	 * @param themeResId a style resource describing the theme to use for the
 	 *              window, or {@code 0} to use the default dialog theme
 	 */
-	public Dialog(Context context, @StyleRes int themeResId) {
+	public DatePickerDialog(Context context, @StyleRes int themeResId) {
 		super(context, themeResId);
 		init(context);
 	}
 
-//	/**
-//	 * @deprecated
-//	 * @hide
-//	 */
-//	@Deprecated
-//	protected Dialog(Context context, boolean cancelable, Message cancelCallback) {
-//		super(context, cancelable, cancelCallback);
-//		init(context);
-//	}
+	/**
+	 * Creates a new date picker dialog for the specified date using the parent
+	 * context's default date picker dialog theme.
+	 *
+	 * @param context the parent context
+	 * @param listener the listener to call when the user sets the date
+	 * @param year the initially selected year
+	 * @param month the initially selected month (0-11 for compatibility with
+	 *              {@link Calendar#MONTH})
+	 * @param dayOfMonth the initially selected day of month (1-31, depending
+	 *                   on month)
+	 */
+	public DatePickerDialog(Context context, OnDateSetListener listener,
+							int year, int month, int dayOfMonth) {
+		super(context, 0, listener, year, month, dayOfMonth);
+		init(context);
+	}
 
-	protected Dialog(Context context, boolean cancelable, OnCancelListener cancelListener) {
-		super(context, cancelable, cancelListener);
+	/**
+	 * Creates a new date picker dialog for the specified date.
+	 *
+	 * @param context the parent context
+	 * @param themeResId the resource ID of the theme against which to inflate
+	 *                   this dialog, or {@code 0} to use the parent
+	 *                   {@code context}'s default alert dialog theme
+	 * @param listener the listener to call when the user sets the date
+	 * @param year the initially selected year
+	 * @param monthOfYear the initially selected month of the year (0-11 for
+	 *                    compatibility with {@link Calendar#MONTH})
+	 * @param dayOfMonth the initially selected day of month (1-31, depending
+	 *                   on month)
+	 */
+	public DatePickerDialog(Context context, @StyleRes int themeResId,
+							OnDateSetListener listener, int year, int monthOfYear, int dayOfMonth) {
+		super(context, themeResId, listener, year, monthOfYear, dayOfMonth);
 		init(context);
 	}
 

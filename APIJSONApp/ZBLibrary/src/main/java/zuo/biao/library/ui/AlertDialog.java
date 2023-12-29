@@ -30,7 +30,7 @@ import android.widget.TextView;
  * @author Lemon
  * @use new AlertDialog(...).show();
  */
-public class AlertDialog extends Dialog implements android.view.View.OnClickListener {
+public class AlertDialog extends uiauto.AlertDialog implements android.view.View.OnClickListener {
 	//	private static final String TAG = "AlertDialog";  
 
 	/** 
@@ -141,16 +141,5 @@ public class AlertDialog extends Dialog implements android.view.View.OnClickList
 		dismiss();
 	}
 
-//	@Override
-//	public void show() {
-//		super.show();
-//		UIAutoApp.getInstance().onUIAutoWindowCreate(this, getWindow());
-//	}
-//
-//	@Override
-//	public void dismiss() {
-//		super.dismiss();
-//		UIAutoApp.getInstance().onUIAutoWindowDestroy(this, getWindow());
-//	}
 }
 
