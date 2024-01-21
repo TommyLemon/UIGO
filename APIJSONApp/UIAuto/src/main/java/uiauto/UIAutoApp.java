@@ -1164,7 +1164,9 @@ public class UIAutoApp extends Application {
         // FloatWindow.destroy("floatBall2");
         // floatBall2 = null;
         // if (isSplit2Showing) {
-          floatBall2 = showSplit(isSplit2Showing, - floatBall.getX() - splitRadius, - floatBall.getY() - splitSize, "floatBall2", vFloatBall2, floatSplitX2, floatSplitY2);
+          floatBall2 = showSplit(isSplit2Showing, windowWidth - floatBall.getX() - splitRadius
+                  , windowHeight - floatBall.getY() - splitRadius // - (isSeparatedStatus ? statusHeight : 0)
+                  , "floatBall2", vFloatBall2, floatSplitX2, floatSplitY2);
         // }
       }
     });
@@ -2629,9 +2631,13 @@ public class UIAutoApp extends Application {
         rx = windowWidth + ratio*(x < 0 ? x : x - cw);
       }
       else {  //居中，一般是弹窗
-        double mid = (maxSX + minSX)/2f;
+        double mid = (minSX + maxSX)/2f;
 //          rx = x < mid ? ratio*x : decorWidth*mid/cw + ratio*(x - maxSX); // 居中靠左/靠右，例如关闭按钮
-        rx = windowWidth*mid/cw + ratio*(x - mid); // 居中靠左/靠右，例如关闭按钮
+//        rx = windowWidth*mid/cw + ratio*(x - mid); // 居中靠左/靠右，例如关闭按钮
+
+        double maxSX2 = windowWidth + ratio*(maxSX - ww);
+        double mid2 = (ratio*minSX + maxSX2)/2f;
+        rx = mid2 + ratio*(x - mid); // 居中靠上/靠下，例如 取消、确定 按钮
       }
 
       // 不一定这样，例如 小米 12 Pro 因为有摄像头挖孔所以横屏过来会默认不显示左侧摄像头占的宽度 // 进一步简化上面的，横向是所有都一致 rx = ratio*x + decorView.getX();
@@ -2644,8 +2650,12 @@ public class UIAutoApp extends Application {
         ry = windowHeight /* - (isSeparatedStatus ? 0 : statusHeight) */ + ratio*(y < 0 ? y : y - ch); // decorHeight + ratio*(y < 0 ? y : y - ch);
       }
       else {  //居中，一般是弹窗
-        double mid = (maxSY + minSY)/2f;
-        ry = (windowHeight /* - (isSeparatedStatus ? 0 : statusHeight) */)*mid/ch + ratio*(y - mid); // 居中靠上/靠下，例如 取消、确定 按钮
+        double mid = (minSY + maxSY)/2f;
+//        ry = (windowHeight /* - (isSeparatedStatus ? 0 : statusHeight) */)*mid/ch + ratio*(y - mid); // 居中靠上/靠下，例如 取消、确定 按钮
+
+        double maxSY2 = windowHeight + ratio*(maxSY - wh);
+        double mid2 = (ratio*minSY + maxSY2)/2f;
+        ry = mid2 + ratio*(y - mid); // 居中靠上/靠下，例如 取消、确定 按钮
       }
 
       rx += windowX + decorX;
@@ -3425,8 +3435,8 @@ public class UIAutoApp extends Application {
     splitY = Math.round(floatBall.getY() + splitRadius - windowHeight); //  + (isSeparatedStatus ? 0 : statusHeight)); // + navigationHeight); // decorHeight); // - decorY
 
     isSplit2Showing = floatBall2 != null && floatBall2.isShowing();
-    splitX2 = isSplit2Showing ? Math.round(floatBall2.getX() + splitRadius - windowWidth) : 0; // decorWidth) : 0; //  - decorX - decorWidth) : 0;
-    splitY2 = isSplit2Showing ? Math.round(floatBall2.getY() + splitRadius - windowHeight) : 0; // decorHeight) : 0; // - decorY - decorHeight) : 0;
+    splitX2 = isSplit2Showing ? Math.round(floatBall2.getX() + splitRadius) : 0; // decorWidth) : 0; //  - decorX - decorWidth) : 0;
+    splitY2 = isSplit2Showing ? Math.round(floatBall2.getY() + splitRadius) : 0; // decorHeight) : 0; // - decorY - decorHeight) : 0;
 
     long time = System.currentTimeMillis();
     if (lastId < time) {
