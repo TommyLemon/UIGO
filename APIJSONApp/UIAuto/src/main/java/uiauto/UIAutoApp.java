@@ -397,9 +397,24 @@ public class UIAutoApp extends Application {
   TextView tvControllerSetting;
   TextView tvControllerY;
 
+  ViewGroup rlControllerGravity;
+  TextView tvControllerGravityX;
+  TextView tvControllerGravityY;
+  TextView tvControllerGravityContainer;
+
   RecyclerView rvControllerTag;
 
+  private static final int GRAVITY_CENTER = 1;
+  private static final int GRAVITY_RATIO = 3;
+  private static final int GRAVITY_LEFT = 0;
+  private static final int GRAVITY_RIGHT = 2;
+  private static final int GRAVITY_TOP = 0;
+  private static final int GRAVITY_BOTTOM = 2;
+
   // 都取负数，表示相对于最右侧和最下方还差多少
+  private int gravityX = GRAVITY_CENTER;
+  private int gravityY = GRAVITY_CENTER;
+
   private double splitX, splitX2;
   private double splitY, splitY2;
   private double splitSize;
@@ -838,6 +853,8 @@ public class UIAutoApp extends Application {
       public void onActivityResumed(Activity activity) {
         Log.v(TAG, "onActivityResumed  activity = " + activity.getClass().getName());
         setCurrentActivity(activity);
+        curFocusView = null;
+        tvControllerGravityContainer.setText("");
 
         if (isShowing) {
           onUIAutoActivityCreate(activity);
@@ -852,6 +869,7 @@ public class UIAutoApp extends Application {
         // setCurrentActivity(activityList.isEmpty() ? null : activityList.get(activityList.size() - 1));
         onUIEvent(InputUtil.UI_ACTION_PAUSE, activity, activity);
         isSplit2Showing = floatBall2 != null && floatBall2.isShowing();
+        curFocusView = null;
         Point[] points = new Point[]{
                 new Point(
                         floatBall == null ? (int) splitX : (int) (floatBall.getX() + splitRadius - windowWidth)
@@ -932,6 +950,12 @@ public class UIAutoApp extends Application {
     tvControllerForward = vFloatController.findViewById(R.id.tvControllerForward);
     tvControllerSetting = vFloatController.findViewById(R.id.tvControllerSetting);
     tvControllerY = vFloatController.findViewById(R.id.tvControllerY);
+
+    rlControllerGravity = vFloatController.findViewById(R.id.rlControllerGravity);
+    rlControllerGravity.setVisibility(View.GONE);
+    tvControllerGravityX = vFloatController.findViewById(R.id.tvControllerGravityX);
+    tvControllerGravityY = vFloatController.findViewById(R.id.tvControllerGravityY);
+    tvControllerGravityContainer = vFloatController.findViewById(R.id.tvControllerGravityContainer);
 
     rvControllerTag = vFloatController.findViewById(R.id.rvControllerTag);
     tagAdapter = new RecyclerView.Adapter() {
@@ -1160,6 +1184,9 @@ public class UIAutoApp extends Application {
 
         isSplit2Showing = floatBall2 != null && floatBall2.isShowing();
         isSplit2Showing = ! isSplit2Showing;
+        rlControllerGravity.setVisibility(isSplit2Showing ? View.VISIBLE : View.GONE);
+        gravityX = GRAVITY_CENTER;
+        gravityY = GRAVITY_CENTER;
 
         // FloatWindow.destroy("floatBall2");
         // floatBall2 = null;
@@ -1278,9 +1305,81 @@ public class UIAutoApp extends Application {
       }
     });
 
+    setGravity(tvControllerGravityX, false);
+    setGravity(tvControllerGravityY, true);
+
+    tvControllerGravityContainer.setOnClickListener(new View.OnClickListener() {
+      @Override
+      public void onClick(View v) {
+        ViewParent vp = curFocusView == null ? null : curFocusView.getParent();
+        curFocusView = vp instanceof View ? (View) vp : null;
+        if (curFocusView == null) {
+          double focusX = isSplit2Showing ? (floatBall.getX() + floatBall2.getX())/2 : floatBall.getX();
+          double focusY = (isSplit2Showing ? (floatBall.getY() + floatBall2.getY())/2 : floatBall.getY()) + (isSeparatedStatus ? statusHeight : 0);
+          curFocusView = findViewByPoint(getCurrentDecorView(), null, focusX, focusY, false);
+        }
+        if (curFocusView == null) {
+          tvControllerGravityContainer.setText("");
+          return;
+        }
+
+        tvControllerGravityContainer.setText("IN: " + curFocusView.getClass().getSimpleName() + "/" + curFocusView.getId());
+
+        int[] loc = new int[2];
+        curFocusView.getLocationOnScreen(loc);
+
+        splitX2 = loc[0] + curFocusView.getPaddingLeft();
+        splitY2 = loc[1] + curFocusView.getPaddingTop() - (isSeparatedStatus ? statusHeight : 0);
+
+        splitX = loc[0] + curFocusView.getWidth() - curFocusView.getPaddingRight(); // - windowWidth;
+        splitY = loc[1] + curFocusView.getHeight() - curFocusView.getPaddingBottom() - (isSeparatedStatus ? statusHeight : 0); // - windowHeight;
+
+        floatBall.updateX((int) Math.round(splitX - splitRadius));
+        floatBall.updateY((int) Math.round(splitY - splitRadius));
+
+        floatBall2.updateX((int) Math.round(splitX2 - splitRadius));
+        floatBall2.updateY((int) Math.round(splitY2 - splitRadius));
+
+//        floatBall = showSplit(true, splitX, splitY, "floatBall", vFloatBall, floatSplitX, floatSplitY);
+//        floatBall2 = showSplit(true, splitX2, splitY2, "floatBall2", vFloatBall2, floatSplitX2, floatSplitY2);
+      }
+    });
   }
 
-  private void onUIAutoFragmentCreate(Activity activity) {
+  private View curFocusView;
+
+  private void setGravity(TextView tv, boolean isY) {
+    setGravityText(tv, isY, isY ? gravityY : gravityX);
+    tv.setOnClickListener(new View.OnClickListener() {
+      @Override
+      public void onClick(View v) {
+        if (isY) {
+          gravityY = (gravityY + 1) % 4;
+          setGravityText(tv, isY, gravityY);
+        } else {
+          gravityX = (gravityX + 1)%4;
+          setGravityText(tv, isY, gravityX);
+        }
+      }
+    });
+  }
+
+  private void setGravityText(TextView tv, boolean isY, int gravity) {
+    if (isY) {
+      splitY = Math.round((floatBall == null ? 0 : floatBall.getY()) + splitRadius - windowHeight);
+      splitY2 = Math.round((floatBall2 == null ? 0 : floatBall2.getY()) + splitRadius);
+      tv.setText("Y: " + Math.round(splitY2) + ", " + Math.round(splitY) + ", " + (gravity == GRAVITY_RATIO ? "ratio"
+              : (gravity == GRAVITY_TOP ? "top" : (gravity == GRAVITY_BOTTOM ? "bottom" : "center"))));
+    } else {
+      splitX = Math.round((floatBall == null ? 0 : floatBall.getX()) + splitRadius - windowWidth);
+      splitX2 = Math.round((floatBall2 == null ? 0 : floatBall2.getX()) + splitRadius);
+      tv.setText("X: " + Math.round(splitX2) + ", " + Math.round(splitX) + ", " + (gravity == GRAVITY_RATIO ? "ratio"
+              : (gravity == GRAVITY_LEFT ? "left" : (gravity == GRAVITY_RIGHT ? "right" : "center"))));
+    }
+  }
+
+
+    private void onUIAutoFragmentCreate(Activity activity) {
     if (activity instanceof FragmentActivity) {
       FragmentActivity fa = (FragmentActivity) activity;
       FragmentManager sfm = fa.getSupportFragmentManager();
@@ -2050,6 +2149,15 @@ public class UIAutoApp extends Application {
 
             tvControllerX.setText(DECIMAL_FORMAT.format(xr) + "%" + "\n" + DECIMAL_FORMAT.format(yr) + "%");
             tvControllerY.setText(splitX + "\n" + splitY);
+
+            setGravityText(tvControllerGravityX, false, gravityX);
+            setGravityText(tvControllerGravityY, true, gravityY);
+
+//            IFloatWindow floatBall = FloatWindow.get(ballName);
+//            if (x != floatBall.getX() || y != floatBall.getY()) {
+              curFocusView = null;
+              tvControllerGravityContainer.setText("");
+//            }
           }
 
           @Override
@@ -2587,6 +2695,10 @@ public class UIAutoApp extends Application {
         ratio = 1;
       }
 
+      int gravityViewId = obj.getIntValue("gravityViewId");
+      int gravityX = obj.getIntValue("gravityX"); // 数据库字段默认值设置为 - 1;
+      int gravityY = obj.getIntValue("gravityY"); // 数据库字段默认值设置为 - 1;
+
       double x = obj.getDoubleValue("x");
       double y = obj.getDoubleValue("y");
       double sx = obj.getDoubleValue("splitX");
@@ -2624,14 +2736,12 @@ public class UIAutoApp extends Application {
       double maxSY = sy2 <= 0 ? sy : Math.max(sy, sy2);
 
       double rx;
-      if (x >= 0 && x <= minSX) { // 靠左
-        rx = ratio*x;
+      if (gravityX == GRAVITY_RATIO) {
+        double maxSX2 = windowWidth + ratio*(maxSX - ww);
+        rx = minSX + (maxSX2 - minSX)*(x - minSX)/(maxSX - minSX);
       }
-      else if (x < 0 || x >= maxSX) { // 靠右，例如列表项右侧标记已读、添加、删除、数量输入框等按钮
-        rx = windowWidth + ratio*(x < 0 ? x : x - cw);
-      }
-      else {  //居中，一般是弹窗
-        double mid = (minSX + maxSX)/2f;
+      else if (gravityX == GRAVITY_CENTER || (gravityX < 0 && x > minSX && x < maxSX)) { //居中，一般是弹窗
+        double mid = (minSX + maxSX)/2f; // minSX + (maxSX2 - minSX)*(x - minSX)/(maxSX - minSX)
 //          rx = x < mid ? ratio*x : decorWidth*mid/cw + ratio*(x - maxSX); // 居中靠左/靠右，例如关闭按钮
 //        rx = windowWidth*mid/cw + ratio*(x - mid); // 居中靠左/靠右，例如关闭按钮
 
@@ -2639,23 +2749,35 @@ public class UIAutoApp extends Application {
         double mid2 = (ratio*minSX + maxSX2)/2f;
         rx = mid2 + ratio*(x - mid); // 居中靠上/靠下，例如 取消、确定 按钮
       }
+      else if (gravityX == GRAVITY_RIGHT || (gravityX < 0 && (x < 0 || x >= maxSX))) { // 靠右，例如列表项右侧标记已读、添加、删除、数量输入框等按钮
+        rx = windowWidth + ratio*(x < 0 ? x : x - cw);
+      }
+      else { // if (gravityX == GRAVITY_LEFT || (x >= 0 && x <= minSX)) { // 靠左
+        rx = ratio*x;
+      }
+
+
 
       // 不一定这样，例如 小米 12 Pro 因为有摄像头挖孔所以横屏过来会默认不显示左侧摄像头占的宽度 // 进一步简化上面的，横向是所有都一致 rx = ratio*x + decorView.getX();
 
       double ry;
-      if (y >= 0 && y <= minSY) { // 靠上
-        ry = ratio*y;
+      if (gravityY == GRAVITY_RATIO) {
+        double maxSY2 = windowHeight + ratio*(maxSY - wh);
+        ry = minSY + (maxSY2 - minSY)*(y - minSY)/(maxSY - minSY);
       }
-      else if (y < 0 || y >= maxSY) { // 靠下，例如底部 tab、菜单按钮、悬浮按钮等
-        ry = windowHeight /* - (isSeparatedStatus ? 0 : statusHeight) */ + ratio*(y < 0 ? y : y - ch); // decorHeight + ratio*(y < 0 ? y : y - ch);
-      }
-      else {  //居中，一般是弹窗
+      else if (gravityY == GRAVITY_CENTER || (gravityY < 0 && y > minSY && y < maxSY)) { //居中，一般是弹窗
         double mid = (minSY + maxSY)/2f;
 //        ry = (windowHeight /* - (isSeparatedStatus ? 0 : statusHeight) */)*mid/ch + ratio*(y - mid); // 居中靠上/靠下，例如 取消、确定 按钮
 
         double maxSY2 = windowHeight + ratio*(maxSY - wh);
         double mid2 = (ratio*minSY + maxSY2)/2f;
         ry = mid2 + ratio*(y - mid); // 居中靠上/靠下，例如 取消、确定 按钮
+      }
+      else if (gravityY == GRAVITY_BOTTOM || (gravityY < 0 && (y < 0 || y >= maxSY))) { // 靠下，例如底部 tab、菜单按钮、悬浮按钮等
+        ry = windowHeight /* - (isSeparatedStatus ? 0 : statusHeight) */ + ratio*(y < 0 ? y : y - ch); // decorHeight + ratio*(y < 0 ? y : y - ch);
+      }
+      else { // if (gravityY == GRAVITY_TOP || (y >= 0 && y <= minSY)) { // 靠上
+        ry = ratio*y;
       }
 
       rx += windowX + decorX;
@@ -3455,6 +3577,11 @@ public class UIAutoApp extends Application {
     event.put("splitY", splitY);
     event.put("splitX2", splitX2);
     event.put("splitY2", splitY2);
+    if (isSplit2Showing) {
+      event.put("gravityViewId", curFocusView == null ? View.NO_ID : curFocusView.getId());
+      event.put("gravityX", gravityX);
+      event.put("gravityY", gravityY);
+    }
     event.put("windowX", windowX);
     event.put("windowY", windowY);
     event.put("windowWidth", windowWidth);
