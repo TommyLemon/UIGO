@@ -122,7 +122,7 @@ public class UIAutoActivity extends UnitAutoActivity {
 //        showCover(true, context);
 //        finish();
 
-        UIAutoApp.getInstance().onUIAutoActivityCreate(this);
+        UIAutoApp.getInstance().onUIAutoActivityCreate(this, true);
         UIAutoApp.getInstance().prepareRecord();
         finish();
     }

@@ -167,4 +167,89 @@ public class InputUtil {
                 return getTouchActionName(action);
         }
     }
+
+
+    public static final int GRAVITY_DEFAULT = 0; // left|top
+    public static final int GRAVITY_RATIO = 0; // ratio
+
+    public static final int GRAVITY_CENTER = 3; // center
+    public static final int GRAVITY_LEFT = 1; // left
+    public static final int GRAVITY_RIGHT = 2; // right
+    public static final int GRAVITY_TOP = 1; // top
+    public static final int GRAVITY_BOTTOM = 2; // bottom
+
+    public static final int GRAVITY_TOP_LEFT = 1; // top|left
+    public static final int GRAVITY_TOP_RIGHT = 2; // top|right
+    public static final int GRAVITY_BOTTOM_LEFT = 3; //  bottom|left
+    public static final int GRAVITY_BOTTOM_RIGHT = 4; //  bottom|right
+    public static final int GRAVITY_RATIO_LEFT = 5; // ratio|left
+    public static final int GRAVITY_RATIO_RIGHT = 6; // ratio|right
+    public static final int GRAVITY_RATIO_TOP = 7; //  ratio|top
+    public static final int GRAVITY_RATIO_BOTTOM = 8; //  ratio|bottom
+
+    public static final int[] X_GRAVITIES = new int[] {
+            GRAVITY_RATIO, GRAVITY_LEFT, GRAVITY_RIGHT, GRAVITY_CENTER
+    };
+    public static final int[] Y_GRAVITIES = new int[] {
+            GRAVITY_RATIO, GRAVITY_TOP, GRAVITY_BOTTOM, GRAVITY_CENTER
+    };
+    public static final int[] BALL_GRAVITIES = new int[] {
+            GRAVITY_RATIO, GRAVITY_TOP_LEFT, GRAVITY_TOP_RIGHT, GRAVITY_BOTTOM_LEFT, GRAVITY_BOTTOM_RIGHT
+            , GRAVITY_RATIO_LEFT, GRAVITY_RATIO_RIGHT, GRAVITY_RATIO_TOP, GRAVITY_RATIO_BOTTOM
+    };
+
+    public static int getXGravityImageResource(int gravity) {
+        switch (gravity) {
+            case GRAVITY_CENTER:
+                return R.drawable.center_light;
+            case GRAVITY_RATIO:
+                return R.drawable.percent_light;
+            case GRAVITY_LEFT:
+                return R.drawable.back2_light;
+            case GRAVITY_RIGHT:
+                return R.drawable.forward2_light;
+            default:
+                return 0;
+        }
+    }
+
+    public static int getYGravityImageResource(int gravity) {
+        switch (gravity) {
+            case GRAVITY_CENTER:
+                return R.drawable.center_light;
+            case GRAVITY_RATIO:
+                return R.drawable.percent_light;
+            case GRAVITY_TOP:
+                return R.drawable.up2_light;
+            case GRAVITY_BOTTOM:
+                return R.drawable.down2_light;
+            default:
+                return 0;
+        }
+    }
+
+    public static int getBallGravityImageResource(int gravity) {
+        switch (gravity) {
+            case GRAVITY_RATIO:
+                return R.drawable.ratio; // R.drawable.percent_light;
+            case GRAVITY_TOP_LEFT:
+                return R.drawable.top_left;
+            case GRAVITY_TOP_RIGHT: // top|right
+                return R.drawable.top_right;
+            case GRAVITY_BOTTOM_LEFT:
+                return R.drawable.bottom_left;
+            case GRAVITY_BOTTOM_RIGHT: // top|right
+                return R.drawable.bottom_right;
+            case GRAVITY_RATIO_LEFT: // ratio|left
+                return R.drawable.ratio_left;
+            case GRAVITY_RATIO_RIGHT: // ratio|right
+                return R.drawable.ratio_right;
+            case GRAVITY_RATIO_TOP: // ratio|left
+                return R.drawable.ratio_top;
+            case GRAVITY_RATIO_BOTTOM: // ratio|right
+                return R.drawable.ratio_bottom;
+            default:
+                return 0;
+        }
+    }
 }

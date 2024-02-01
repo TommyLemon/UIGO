@@ -52,7 +52,7 @@ public class PopupWindow extends android.widget.PopupWindow {
         app.setCurrentPopupWindow(popupWindow, view, null, context, null);
     }
 
-    private Window getWindow() {
+    public Window getWindow() {
         Activity ctx = view == null ? null : (Activity) view.getContext();
         if (ctx == null) {
             ctx = context;

@@ -14,6 +14,23 @@ limitations under the License.*/
 
 package uiauto;
 
+import static uiauto.InputUtil.GRAVITY_BOTTOM;
+import static uiauto.InputUtil.GRAVITY_BOTTOM_LEFT;
+import static uiauto.InputUtil.GRAVITY_BOTTOM_RIGHT;
+import static uiauto.InputUtil.GRAVITY_CENTER;
+import static uiauto.InputUtil.GRAVITY_LEFT;
+import static uiauto.InputUtil.GRAVITY_RATIO;
+import static uiauto.InputUtil.GRAVITY_RATIO_BOTTOM;
+import static uiauto.InputUtil.GRAVITY_RATIO_LEFT;
+import static uiauto.InputUtil.GRAVITY_RATIO_RIGHT;
+import static uiauto.InputUtil.GRAVITY_RATIO_TOP;
+import static uiauto.InputUtil.GRAVITY_RIGHT;
+import static uiauto.InputUtil.GRAVITY_TOP;
+import static uiauto.InputUtil.GRAVITY_TOP_LEFT;
+import static uiauto.InputUtil.GRAVITY_TOP_RIGHT;
+import static uiauto.InputUtil.X_GRAVITIES;
+import static uiauto.InputUtil.Y_GRAVITIES;
+
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.Application;
@@ -26,6 +43,7 @@ import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.Matrix;
 import android.graphics.Point;
+import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
@@ -110,6 +128,8 @@ import unitauto.apk.UnitAutoApp;
 public class UIAutoApp extends Application {
   public static final String TAG = "UIAutoApp";
 
+  private static final String BALL_GRAVITY = "BALL_GRAVITY";
+  private static final String BALL_GRAVITY2 = "BALL_GRAVITY2";
   private static final String SPLIT_X = "SPLIT_X";
   private static final String SPLIT_Y = "SPLIT_Y";
   private static final String SPLIT_X2 = "SPLIT_X2";
@@ -205,6 +225,7 @@ public class UIAutoApp extends Application {
         }
 
         if (canRefreshUI && curNode.type == InputUtil.EVENT_TYPE_TOUCH && curNode.action == MotionEvent.ACTION_DOWN) {
+          isSplit2Showing = curNode.isSplit2Show;
           splitX = curNode.splitX;
           splitY = curNode.splitY;
           splitX2 = curNode.splitX2;
@@ -225,7 +246,7 @@ public class UIAutoApp extends Application {
 //            }
 
 //            if (isSplit2Showing) {
-              floatBall2 = showSplit(splitX2 > 0 && splitY2 > 0, splitX2, splitY2, "floatBall2", vFloatBall2, floatSplitX2, floatSplitY2);
+              floatBall2 = showSplit(isSplit2Showing, splitX2, splitY2, "floatBall2", vFloatBall2, floatSplitX2, floatSplitY2);
 //            }
 //          }
         }
@@ -380,6 +401,7 @@ public class UIAutoApp extends Application {
   double decorY;
   double decorWidth;
   double decorHeight;
+  double keyboardHeight;
 
   ViewGroup vFloatCover;
   View vFloatController;
@@ -404,16 +426,14 @@ public class UIAutoApp extends Application {
 
   RecyclerView rvControllerTag;
 
-  private static final int GRAVITY_CENTER = 1;
-  private static final int GRAVITY_RATIO = 3;
-  private static final int GRAVITY_LEFT = 0;
-  private static final int GRAVITY_RIGHT = 2;
-  private static final int GRAVITY_TOP = 0;
-  private static final int GRAVITY_BOTTOM = 2;
+
 
   // 都取负数，表示相对于最右侧和最下方还差多少
   private int gravityX = GRAVITY_CENTER;
   private int gravityY = GRAVITY_CENTER;
+
+  private int ballGravity = GRAVITY_BOTTOM_RIGHT;
+  private int ballGravity2 = GRAVITY_TOP_LEFT;
 
   private double splitX, splitX2;
   private double splitY, splitY2;
@@ -449,10 +469,28 @@ public class UIAutoApp extends Application {
 
   private Map<FragmentManager, Boolean> fragmentWatchedMap = new HashMap<>();
   public void onUIAutoActivityCreate(@NonNull Activity activity) {
-    onUIAutoWindowCreate(activity, activity.getWindow());
+    onUIAutoActivityCreate(activity, false);
+  }
+  public void onUIAutoActivityCreate(@NonNull Activity activity, boolean showToolBar) {
+    onUIAutoWindowCreate(activity, activity.getWindow(), showToolBar);
   }
 
   public void onUIAutoWindowCreate(@NonNull Window.Callback callback, @NonNull Window window) {
+    onUIAutoWindowCreate(callback, window, false);
+  }
+  public void onUIAutoWindowCreate(@NonNull Window.Callback callback, @NonNull Window window, boolean showToolBar) {
+//    if (window == null) {
+//      if (callback instanceof Activity) {
+//        window = ((Activity) callback).getWindow();
+//      }
+//      else if (callback instanceof Dialog) {
+//        window = ((Dialog) callback).getWindow();
+//      }
+//      else if (callback instanceof PopupWindow) {
+//        window = ((uiauto.PopupWindow) callback).getWindow();
+//      }
+//    }
+
 //    if (callback instanceof Dialog) {
 ////      onUIAutoActivityDestroy(activity, activity);
 //    }
@@ -474,7 +512,15 @@ public class UIAutoApp extends Application {
       @Override
       public void onGlobalLayout() {
         decorWidth = decorView.getWidth();
+//        keyboardHeight = decorHeight - decorView.getHeight();
         decorHeight = decorView.getHeight();
+
+        Rect rect = new Rect();
+        decorView.getWindowVisibleDisplayFrame(rect);
+        keyboardHeight = decorView.getHeight() - rect.bottom;
+
+        windowWidth = rect.right - rect.left;
+        windowHeight = rect.bottom - rect.top;
       }
     });
 
@@ -647,6 +693,9 @@ public class UIAutoApp extends Application {
     splitSize = cache.getInt(SPLIT_HEIGHT, Math.round(dip2px(36)));
     splitRadius = splitSize/2;
 
+    ballGravity = cache.getInt(BALL_GRAVITY, ballGravity);
+    ballGravity2 = cache.getInt(BALL_GRAVITY2, ballGravity2);
+
     Point[] points = ballPositionMap.get(activity);
     if (points == null || points.length < 1) {
       points = classBallPositionMap.get(activity.getClass().getName());
@@ -654,10 +703,10 @@ public class UIAutoApp extends Application {
     Point p = points == null || points.length < 1 ? null : points[0];
     splitX = p != null && p.x != 0 ? p.x : cache.getInt(SPLIT_X, 0);
     splitY = p != null && p.y != 0 ? p.y : cache.getInt(SPLIT_Y, 0);
-    if (splitX >= 0 || Math.abs(splitX) >= windowWidth) { // decorWidth) {
+    if (splitX == 0 || Math.abs(splitX) >= windowWidth) { // decorWidth) {
       splitX = Math.round(- splitSize - dip2px(30));
     }
-    if (splitY >= 0 || Math.abs(splitY) >= windowHeight) { // decorHeight) {
+    if (splitY == 0 || Math.abs(splitY) >= windowHeight) { // decorHeight) {
       splitY = Math.round(- splitSize - dip2px(30));
     }
 
@@ -671,12 +720,15 @@ public class UIAutoApp extends Application {
     Point p2 = points == null || points.length < 2 ? null : points[1];
     splitX2 = p2 == null ? 0 : p2.x;
     splitY2 = p2 == null ? 0 : p2.y;
-    showCover(true);
-    // if (isSplitShowing) {
+
+    if (showToolBar) {
+      showCover(true);
+      // if (isSplitShowing) {
       floatBall = showSplit(isSplitShowing, splitX, splitY, "floatBall", vFloatBall, floatSplitX, floatSplitY);
       // if (isSplit2Showing) {
-        floatBall2 = showSplit(isSplitShowing && splitX2 > 0 && splitY2 > 0, splitX2, splitY2, "floatBall2", vFloatBall2, floatSplitX2, floatSplitY2);
+      floatBall2 = showSplit(isSplitShowing && isSplit2Showing, splitX2, splitY2, "floatBall2", vFloatBall2, floatSplitX2, floatSplitY2);
       // }
+    }
   }
 
   private Map<EditText, Boolean> editTextWatchedMap = new HashMap<>();
@@ -1195,6 +1247,11 @@ public class UIAutoApp extends Application {
                   , windowHeight - floatBall.getY() - splitRadius // - (isSeparatedStatus ? statusHeight : 0)
                   , "floatBall2", vFloatBall2, floatSplitX2, floatSplitY2);
         // }
+
+        setGravityImageAndText(vFloatBall, ballGravity2, tvControllerGravityX, false, gravityX);
+        setGravityImageAndText(vFloatBall, ballGravity2, tvControllerGravityY, true, gravityY);
+        setGravityImageAndText(vFloatBall, ballGravity, tvControllerGravityX, false, gravityX);
+        setGravityImageAndText(vFloatBall, ballGravity, tvControllerGravityY, true, gravityY);
       }
     });
 
@@ -1329,10 +1386,10 @@ public class UIAutoApp extends Application {
         curFocusView.getLocationOnScreen(loc);
 
         splitX2 = loc[0] + curFocusView.getPaddingLeft();
-        splitY2 = loc[1] + curFocusView.getPaddingTop() - (isSeparatedStatus ? statusHeight : 0);
+        splitY2 = loc[1] + curFocusView.getPaddingTop() - statusHeight; //(isSeparatedStatus ? statusHeight : 0);
 
         splitX = loc[0] + curFocusView.getWidth() - curFocusView.getPaddingRight(); // - windowWidth;
-        splitY = loc[1] + curFocusView.getHeight() - curFocusView.getPaddingBottom() - (isSeparatedStatus ? statusHeight : 0); // - windowHeight;
+        splitY = loc[1] + curFocusView.getHeight() - curFocusView.getPaddingBottom() - statusHeight; // (isSeparatedStatus ? statusHeight : 0); // - windowHeight;
 
         floatBall.updateX((int) Math.round(splitX - splitRadius));
         floatBall.updateY((int) Math.round(splitY - splitRadius));
@@ -1354,10 +1411,10 @@ public class UIAutoApp extends Application {
       @Override
       public void onClick(View v) {
         if (isY) {
-          gravityY = (gravityY + 1) % 4;
+          gravityY = (gravityY + 1)%Y_GRAVITIES.length;
           setGravityText(tv, isY, gravityY);
         } else {
-          gravityX = (gravityX + 1)%4;
+          gravityX = (gravityX + 1)%X_GRAVITIES.length;
           setGravityText(tv, isY, gravityX);
         }
       }
@@ -1366,15 +1423,67 @@ public class UIAutoApp extends Application {
 
   private void setGravityText(TextView tv, boolean isY, int gravity) {
     if (isY) {
-      splitY = Math.round((floatBall == null ? 0 : floatBall.getY()) + splitRadius - windowHeight);
-      splitY2 = Math.round((floatBall2 == null ? 0 : floatBall2.getY()) + splitRadius);
-      tv.setText("Y: " + Math.round(splitY2) + ", " + Math.round(splitY) + ", " + (gravity == GRAVITY_RATIO ? "ratio"
-              : (gravity == GRAVITY_TOP ? "top" : (gravity == GRAVITY_BOTTOM ? "bottom" : "center"))));
+      double sy = floatBall == null ? splitY : floatBall.getY() + splitRadius - windowHeight;
+      Double ratioY = null;
+      if (ballGravity == GRAVITY_RATIO || ballGravity == GRAVITY_RATIO_LEFT || ballGravity == GRAVITY_RATIO_RIGHT) {
+        ratioY = sy/windowHeight;
+      }
+      else if (sy > 0 && (ballGravity == GRAVITY_RATIO_BOTTOM || ballGravity == GRAVITY_BOTTOM_LEFT || ballGravity == GRAVITY_BOTTOM_RIGHT)) {
+        sy -= windowHeight;
+      }
+      else if (sy < 0 && (ballGravity == GRAVITY_RATIO_TOP || ballGravity == GRAVITY_TOP_LEFT || ballGravity == GRAVITY_TOP_RIGHT)) {
+        sy += windowHeight;
+      }
+
+      double sy2 = floatBall2 == null ? splitY2 : floatBall2.getY() + splitRadius - windowHeight;
+      Double ratioY2 = null;
+      if (ballGravity2 == GRAVITY_RATIO || ballGravity2 == GRAVITY_RATIO_LEFT || ballGravity2 == GRAVITY_RATIO_RIGHT) {
+        ratioY2 = sy2/windowHeight;
+      }
+      else if (ballGravity2 == GRAVITY_RATIO_BOTTOM || ballGravity2 == GRAVITY_BOTTOM_LEFT || ballGravity2 == GRAVITY_BOTTOM_RIGHT) {
+        sy2 -= windowHeight;
+      }
+      else if (sy2 < 0 && (ballGravity2 == GRAVITY_RATIO_TOP || ballGravity2 == GRAVITY_TOP_LEFT || ballGravity2 == GRAVITY_TOP_RIGHT)) {
+        sy2 += windowHeight;
+      }
+
+      splitY = sy;
+      splitY2 = sy2;
+
+      tv.setText("Y: " + (ratioY2 == null ? Math.round(splitY2) : DECIMAL_FORMAT.format(ratioY2*100) + "%")
+              + ", " + (ratioY == null ? Math.round(splitY) : DECIMAL_FORMAT.format(ratioY*100) + "%")
+              + ", " + (gravity == GRAVITY_RATIO ? "ratio" : (gravity == GRAVITY_TOP ? "top" : (gravity == GRAVITY_BOTTOM ? "bottom" : "center"))));
     } else {
-      splitX = Math.round((floatBall == null ? 0 : floatBall.getX()) + splitRadius - windowWidth);
-      splitX2 = Math.round((floatBall2 == null ? 0 : floatBall2.getX()) + splitRadius);
-      tv.setText("X: " + Math.round(splitX2) + ", " + Math.round(splitX) + ", " + (gravity == GRAVITY_RATIO ? "ratio"
-              : (gravity == GRAVITY_LEFT ? "left" : (gravity == GRAVITY_RIGHT ? "right" : "center"))));
+      double sx = floatBall == null ? splitX : floatBall.getX() + splitRadius;
+      Double ratioX = null;
+      if (ballGravity == GRAVITY_RATIO || ballGravity == GRAVITY_RATIO_TOP || ballGravity == GRAVITY_RATIO_BOTTOM) {
+        ratioX = sx/windowWidth;
+      }
+      else if (sx > 0 && (ballGravity == GRAVITY_RATIO_RIGHT || ballGravity == GRAVITY_BOTTOM_RIGHT || ballGravity == GRAVITY_BOTTOM_RIGHT)) {
+        sx -= windowWidth;
+      }
+      else if (sx < 0 && (ballGravity == GRAVITY_RATIO_LEFT || ballGravity == GRAVITY_BOTTOM_LEFT || ballGravity == GRAVITY_BOTTOM_LEFT)) {
+        sx += windowWidth;
+      }
+
+      double sx2 = floatBall2 == null ? splitX2 : floatBall2.getX() + splitRadius;
+      Double ratioX2 = null;
+      if (ballGravity2 == GRAVITY_RATIO || ballGravity2 == GRAVITY_RATIO_TOP || ballGravity2 == GRAVITY_RATIO_BOTTOM) {
+        ratioX2 = sx2/windowWidth;
+      }
+      else if (sx2 > 0 && (ballGravity2 == GRAVITY_RATIO_RIGHT || ballGravity2 == GRAVITY_BOTTOM_RIGHT || ballGravity2 == GRAVITY_BOTTOM_RIGHT)) {
+        sx2 -= windowWidth;
+      }
+      else if (sx2 < 0 && (ballGravity2 == GRAVITY_RATIO_LEFT || ballGravity2 == GRAVITY_BOTTOM_LEFT || ballGravity2 == GRAVITY_BOTTOM_LEFT)) {
+        sx2 += windowWidth;
+      }
+
+      splitX = sx;
+      splitX2 = sx2;
+
+      tv.setText("X: " + (ratioX2 == null ? Math.round(splitX2) : DECIMAL_FORMAT.format(ratioX2*100) + "%")
+              + ", " +  (ratioX == null ? Math.round(splitX) : DECIMAL_FORMAT.format(ratioX*100) + "%")
+              + ", " + (gravity == GRAVITY_RATIO ? "ratio" : (gravity == GRAVITY_LEFT ? "left" : (gravity == GRAVITY_RIGHT ? "right" : "center"))));
     }
   }
 
@@ -1496,7 +1605,7 @@ public class UIAutoApp extends Application {
     isSplitShowing = ! isSplitShowing;
     tvControllerPlay.setText(isReplay ? (isSplitShowing ? R.string.replaying : R.string.replay) : (isSplitShowing ? R.string.recording : R.string.record));
     floatBall = showSplit(isSplitShowing, splitX, splitY, "floatBall", vFloatBall, floatSplitX, floatSplitY);
-    floatBall2 = showSplit(isSplitShowing && splitX2 > 0 && splitY2 > 0, splitX2, splitY2, "floatBall2", vFloatBall2, floatSplitX2, floatSplitY2);
+    floatBall2 = showSplit(isSplitShowing && isSplit2Showing, splitX2, splitY2, "floatBall2", vFloatBall2, floatSplitX2, floatSplitY2);
 
     // FloatWindow.destroy("floatBall2");
     // floatBall2 = null;
@@ -1566,6 +1675,10 @@ public class UIAutoApp extends Application {
 
   public void onUIAutoActivityDestroy(Window.Callback callback, Activity activity) {
     cache.edit()
+      .remove(BALL_GRAVITY)
+      .putInt(BALL_GRAVITY, ballGravity)
+      .remove(BALL_GRAVITY2)
+      .putInt(BALL_GRAVITY2, ballGravity2)
       .remove(SPLIT_X)
       // .putInt(SPLIT_X, Math.round(vSplitX.getX() + vSplitX.getWidth()/2 - windowWidth))
       .putInt(SPLIT_X, (int) Math.round(floatSplitX.getX() + vSplitX.getWidth()/2 - windowWidth))
@@ -1749,8 +1862,7 @@ public class UIAutoApp extends Application {
           // if (isSplitShowing) {
             floatBall = showSplit(isSplitShowing, splitX, splitY, "floatBall", vFloatBall, floatSplitX, floatSplitY);
             // if (isSplit2Showing) {
-              floatBall2 = showSplit(isSplitShowing && splitX2 > 0 && splitY2 > 0, splitX2, splitY2, "floatBall2", vFloatBall2, floatSplitX2, floatSplitY);
-
+              floatBall2 = showSplit(isSplitShowing && isSplit2Showing, splitX2, splitY2, "floatBall2", vFloatBall2, floatSplitX2, floatSplitY);
 
         }
       }
@@ -1760,7 +1872,7 @@ public class UIAutoApp extends Application {
   private void showCoverAndSplit(boolean showCover, boolean showSplit) {
     showCover(showCover);
     floatBall = showSplit(showSplit, splitX, splitY, "floatBall", vFloatBall, floatSplitX, floatSplitY);
-    floatBall2 = showSplit(showSplit && splitX2 > 0 && splitY2 > 0, splitX2, splitY2, "floatBall2", vFloatBall2, floatSplitX2, floatSplitY2);
+    floatBall2 = showSplit(showSplit && isSplit2Showing, splitX2, splitY2, "floatBall2", vFloatBall2, floatSplitX2, floatSplitY2);
   }
 
   //TODO 仅在触摸 ball 时显示分割线，重写 onTouchEvent
@@ -1935,6 +2047,9 @@ public class UIAutoApp extends Application {
     return fw;
   }
 
+//  private MotionEvent lastDownEvent, lastUpEvent;
+  private float lastBallDownX, lastBallDownY, lastBallUpX, lastBallUpY;
+
   private boolean isSplitShowing, isSplit2Showing;
   private IFloatWindow showSplit(boolean show, double splitX, double splitY, String ballName, FloatBallView vFloatBall, IFloatWindow floatSplitX_, IFloatWindow floatSplitY_) {
     // vSplitX.setVisibility(View.GONE);
@@ -1949,18 +2064,21 @@ public class UIAutoApp extends Application {
     // showFloatView(true, "splitX2", vSplitX2, ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT, splitX2, 0, MoveType.inactive);
     // showFloatView(true, "splitY2", vSplitY2, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, 0, splitY2, MoveType.inactive);
 
+    boolean isBall2 = "floatBall2".equals(ballName);
+    setGravityImage(vFloatBall, isBall2 ? ballGravity2 : ballGravity);
+
     int x = (int) Math.round(splitX - splitRadius + (splitX > 0 ? 0 : windowWidth)); // 只有贴边才会自动处理 decorWidth); // 已被 FloatWindow 处理 windowX + decorX
     int y = (int) Math.round(splitY - splitRadius + (splitY > 0 ? 0 : windowHeight)); // - (isSeparatedStatus ? 0 : statusHeight))); // + navigationHeight)); // 只有贴边才会自动处理  decorHeight); // 已被 FloatWindow 处理 windowY + decorY
     if (floatSplitX_ != null) {
       try {
-        floatSplitX_.updateX((int) (x + Math.round(splitRadius) - dip2px(0.5f)));
+        floatSplitX_.updateX((int) Math.round(x + splitRadius - dip2px(0.5f)));
       } catch (Throwable e) {
         e.printStackTrace();
       }
     }
     if (floatSplitY_ != null) {
       try {
-        floatSplitY_.updateY((int) (y + Math.round(splitRadius) - dip2px(0.5f)));
+        floatSplitY_.updateY((int) Math.round(y + splitRadius - dip2px(0.5f)));
       } catch (Throwable e) {
         e.printStackTrace();
       }
@@ -1985,6 +2103,10 @@ public class UIAutoApp extends Application {
         @Override
         public boolean onTouch(View v, MotionEvent event) {
           if (event.getAction() == MotionEvent.ACTION_DOWN) {
+//            lastDownEvent = event;
+            lastBallDownX = event.getX();
+            lastBallDownY = event.getY();
+
             // 虽然也能实现，但线条区域拦截了触摸事件
             vSplitX.setVisibility(floatBall != null && floatBall.isShowing() ? vFloatBall.getVisibility() : View.GONE);
             vSplitY.setVisibility(vSplitX.getVisibility());
@@ -2030,6 +2152,10 @@ public class UIAutoApp extends Application {
             // }
           }
           else if (event.getAction() == MotionEvent.ACTION_UP) {
+//            lastUpEvent = event;
+            lastBallUpX = event.getX();
+            lastBallUpY = event.getY();
+
             // floatCover.hide();
 
             // 虽然也能实现，但线条区域拦截了触摸事件
@@ -2064,6 +2190,41 @@ public class UIAutoApp extends Application {
       vFloatBall.setOnClickListener(new View.OnClickListener() {
         @Override
         public void onClick(View v) {
+//          lastDownEvent = null;
+//          lastUpEvent = null;
+          lastBallUpX = lastBallDownX = lastBallUpY = lastBallDownY = 0;
+
+          if (isSplit2Showing == false) {
+            v.performLongClick();
+            return;
+          }
+
+          int[] gravities = InputUtil.BALL_GRAVITIES;
+          if (isBall2) {
+            ballGravity2 = (ballGravity2 + 1)%gravities.length;
+            setGravityImageAndText(vFloatBall, ballGravity2, tvControllerGravityX, false, gravityX);
+            setGravityImageAndText(vFloatBall, ballGravity2, tvControllerGravityY, true, gravityY);
+          } else {
+            ballGravity = (ballGravity + 1)%gravities.length;
+            setGravityImageAndText(vFloatBall, ballGravity, tvControllerGravityX, false, gravityX);
+            setGravityImageAndText(vFloatBall, ballGravity, tvControllerGravityY, true, gravityY);
+          }
+        }
+      });
+      vFloatBall.setOnLongClickListener(new View.OnLongClickListener() {
+        @Override
+        public boolean onLongClick(View v) {
+          double dx = lastBallUpX - lastBallDownX; // lastUpEvent == null ? 0 : lastUpEvent.getX() - (lastDownEvent == null ? lastUpEvent.getRawX() : lastDownEvent.getX());
+          double dy = lastBallUpY - lastBallDownY; // lastUpEvent == null ? 0 : lastUpEvent.getY() - (lastDownEvent == null ? lastUpEvent.getRawY() : lastDownEvent.getY());
+//          lastDownEvent = null;
+//          lastUpEvent = null;
+
+          lastBallUpX = lastBallDownX = lastBallUpY = lastBallDownY = 0;
+
+          if (Math.pow(dx, 2) + Math.pow(dy, 2) > Math.pow(dip2px(8), 2)) {
+            return true;
+          }
+
           dismiss();
 
           new Thread(new Runnable() {
@@ -2107,6 +2268,8 @@ public class UIAutoApp extends Application {
               });
             }
           }).start();
+
+          return true;
         }
       });
 
@@ -2125,8 +2288,34 @@ public class UIAutoApp extends Application {
         .setViewStateListener(new ViewStateListener() {
           @Override
           public void onPositionUpdate(int x, int y) {
-            int splitX = (int) (x + Math.round(splitRadius));
-            int splitY = (int) (y + Math.round(splitRadius));
+            int splitX = (int) Math.round(x + splitRadius);
+            int splitY = (int) Math.round(y + splitRadius);
+
+            boolean out = false;
+            if (splitX > windowWidth) {
+              splitX = (int) windowWidth;
+              out = true;
+            }
+            else if (splitX < 0) {
+              splitX = 0;
+              out = true;
+            }
+
+            if (splitY > windowHeight) {
+              splitY = (int) windowHeight;
+              out = true;
+            }
+            else if (splitY < 0) {
+              splitY = 0;
+              out = true;
+            }
+
+            if (out) {
+              IFloatWindow fb = FloatWindow.get(ballName);
+              fb.updateX((int) Math.round(splitX - splitRadius));
+              fb.updateY((int) Math.round(splitY - splitRadius));
+              return;
+            }
 
             if (floatSplitX_ != null) { //  && floatSplitX_.isShowing()) {
               try {
@@ -2150,14 +2339,58 @@ public class UIAutoApp extends Application {
             tvControllerX.setText(DECIMAL_FORMAT.format(xr) + "%" + "\n" + DECIMAL_FORMAT.format(yr) + "%");
             tvControllerY.setText(splitX + "\n" + splitY);
 
-            setGravityText(tvControllerGravityX, false, gravityX);
-            setGravityText(tvControllerGravityY, true, gravityY);
+            int bg = isBall2 ? ballGravity2 : ballGravity;
+            if (xr <= 50) {
+              if (bg == GRAVITY_TOP_RIGHT) {
+                bg = GRAVITY_TOP_LEFT;
+              } else if (bg == GRAVITY_BOTTOM_RIGHT) {
+                bg = GRAVITY_BOTTOM_LEFT;
+              } else if (bg == GRAVITY_RATIO_RIGHT) {
+                bg = GRAVITY_RATIO_LEFT;
+              }
+            } else {
+              if (bg == GRAVITY_TOP_LEFT) {
+                bg = GRAVITY_TOP_RIGHT;
+              } else if (bg == GRAVITY_BOTTOM_LEFT) {
+                bg = GRAVITY_BOTTOM_RIGHT;
+              } else if (bg == GRAVITY_RATIO_LEFT) {
+                bg = GRAVITY_RATIO_RIGHT;
+              }
+            }
+
+            if (yr <= 50) {
+              if (bg == GRAVITY_BOTTOM_LEFT) {
+                bg = GRAVITY_TOP_LEFT;
+              } else if (bg == GRAVITY_BOTTOM_RIGHT) {
+                bg = GRAVITY_TOP_RIGHT;
+              } else if (bg == GRAVITY_RATIO_BOTTOM) {
+                bg = GRAVITY_RATIO_TOP;
+              }
+            } else {
+              if (bg == GRAVITY_TOP_LEFT) {
+                bg = GRAVITY_BOTTOM_LEFT;
+              } else if (bg == GRAVITY_TOP_RIGHT) {
+                bg = GRAVITY_BOTTOM_RIGHT;
+              } else if (bg == GRAVITY_RATIO_TOP) {
+                bg = GRAVITY_RATIO_BOTTOM;
+              }
+            }
+
+            if (isBall2) {
+              ballGravity2 = bg;
+            } else {
+              ballGravity = bg;
+            }
+
+            setGravityImageAndText(vFloatBall, bg, tvControllerGravityX, false, gravityX);
+            setGravityImageAndText(vFloatBall, bg, tvControllerGravityY, true, gravityY);
 
 //            IFloatWindow floatBall = FloatWindow.get(ballName);
 //            if (x != floatBall.getX() || y != floatBall.getY()) {
               curFocusView = null;
               tvControllerGravityContainer.setText("");
 //            }
+
           }
 
           @Override
@@ -2199,8 +2432,8 @@ public class UIAutoApp extends Application {
     }
 
     ball.show();
-    tvControllerX.setText(splitX + "\n" + (splitX/windowWidth) + "%");
-    tvControllerY.setText(splitY + "\n" + (splitY/windowHeight) + "%");
+    tvControllerX.setText(splitX + "\n" + DECIMAL_FORMAT.format(splitX/windowWidth) + "%");
+    tvControllerY.setText(splitY + "\n" + DECIMAL_FORMAT.format(splitY/windowHeight) + "%");
 
     if (floatSplitX_ != null && floatSplitX_.isShowing()) {
       floatSplitX_.updateX((int) (x + Math.round(splitRadius) - dip2px(0.5f)));
@@ -2212,6 +2445,15 @@ public class UIAutoApp extends Application {
     }
 
     return ball;
+  }
+
+  private void setGravityImageAndText(FloatBallView vFloatBall, int ballGravity, TextView tv, boolean isY, int gravity) {
+    setGravityImage(vFloatBall, ballGravity);
+    setGravityText(tv, isY, gravity);
+  }
+
+  private void setGravityImage(FloatBallView vFloatBall, int ballGravity) {
+    vFloatBall.setImageResource(InputUtil.getBallGravityImageResource(isSplit2Showing ? ballGravity : -1));
   }
 
   public static String toJSONString(Object obj) {
@@ -2695,9 +2937,26 @@ public class UIAutoApp extends Application {
         ratio = 1;
       }
 
-      int gravityViewId = obj.getIntValue("gravityViewId");
-      int gravityX = obj.getIntValue("gravityX"); // 数据库字段默认值设置为 - 1;
-      int gravityY = obj.getIntValue("gravityY"); // 数据库字段默认值设置为 - 1;
+      Long gravityViewId = obj.getLong("gravityViewId");
+      Integer gravityX = obj.getInteger("gravityX"); // 数据库字段默认值设置为 null // - 1;
+      Integer gravityY = obj.getInteger("gravityY"); // 数据库字段默认值设置为 null // - 1;
+      Integer ballGravity = obj.getInteger("ballGravity"); // 数据库字段默认值设置为 null // - 1;
+      Integer ballGravity2 = obj.getInteger("ballGravity2"); // 数据库字段默认值设置为 null // - 1;
+      if (gravityViewId == null) {
+        gravityViewId = -1L;
+      }
+      if (gravityX == null) {
+        gravityX = -1;
+      }
+      if (gravityY == null) {
+        gravityY = -1;
+      }
+      if (ballGravity == null) {
+        ballGravity = -1;
+      }
+      if (ballGravity2 == null) {
+        ballGravity2 = -1;
+      }
 
       double x = obj.getDoubleValue("x");
       double y = obj.getDoubleValue("y");
@@ -2706,23 +2965,16 @@ public class UIAutoApp extends Application {
       double sy = obj.getDoubleValue("splitY");
       double sy2 = obj.getDoubleValue("splitY2");
 
-      if (sx == 0 || Math.abs(sx) > cw) {
-        sx = (sx < 0 ? 0 : cw)/ratio;
-      }
-      else if (sx > 0) {
-        sx -= ww;
-      }
-      if (sy == 0 || Math.abs(sy) > ch) {
-        sy = (sy < 0 ? 0 : ch)/ratio;
-      }
-      else if (sy > 0) {
-        sy -= wh;
-      }
+      sx = transSplitX(sx, cw, ballGravity, ratio);
+      sy = transSplitY(sy, ch, ballGravity, ratio);
+      sx2 = transSplitX(sx2, cw, ballGravity2, ratio);
+      sy2 = transSplitY(sy2, ch, ballGravity2, ratio);
 
-      eventNode.splitX = Math.round(sx*ratio);
-      eventNode.splitY = Math.round(sy*ratio);
-      eventNode.splitX2 = Math.round(sx2*ratio);
-      eventNode.splitY2 = Math.round(sy2*ratio);
+      eventNode.isSplit2Show = obj.getBooleanValue("isSplit2Show");
+      eventNode.splitX = sx;
+      eventNode.splitY = sy;
+      eventNode.splitX2 = sx2;
+      eventNode.splitY2 = sy2;
 
       // double ratio = getScale(ww, ) //  1f*windowWidth/ww;  //始终以显示时宽度比例为准，不管是横屏还是竖屏   1f*Math.min(windowWidth, windowHeight)/Math.min(ww, wh);
 
@@ -2738,7 +2990,7 @@ public class UIAutoApp extends Application {
       double rx;
       if (gravityX == GRAVITY_RATIO) {
         double maxSX2 = windowWidth + ratio*(maxSX - ww);
-        rx = minSX + (maxSX2 - minSX)*(x - minSX)/(maxSX - minSX);
+        rx = minSX + (maxSX2 - ratio*minSX)*(x - minSX)/(maxSX - minSX);
       }
       else if (gravityX == GRAVITY_CENTER || (gravityX < 0 && x > minSX && x < maxSX)) { //居中，一般是弹窗
         double mid = (minSX + maxSX)/2f; // minSX + (maxSX2 - minSX)*(x - minSX)/(maxSX - minSX)
@@ -2757,13 +3009,12 @@ public class UIAutoApp extends Application {
       }
 
 
-
       // 不一定这样，例如 小米 12 Pro 因为有摄像头挖孔所以横屏过来会默认不显示左侧摄像头占的宽度 // 进一步简化上面的，横向是所有都一致 rx = ratio*x + decorView.getX();
 
       double ry;
       if (gravityY == GRAVITY_RATIO) {
         double maxSY2 = windowHeight + ratio*(maxSY - wh);
-        ry = minSY + (maxSY2 - minSY)*(y - minSY)/(maxSY - minSY);
+        ry = minSY + (maxSY2 - ratio*minSY)*(y - minSY)/(maxSY - minSY);
       }
       else if (gravityY == GRAVITY_CENTER || (gravityY < 0 && y > minSY && y < maxSY)) { //居中，一般是弹窗
         double mid = (minSY + maxSY)/2f;
@@ -2835,6 +3086,49 @@ public class UIAutoApp extends Application {
     eventNode.item = event;
 
     return eventNode;
+  }
+
+  private double transSplitX(double sx, double cw, int ballGravity, double ratio) {
+    if (Math.abs(sx) > cw) {
+      sx = cw;
+    }
+
+    if (ballGravity == GRAVITY_TOP_RIGHT || ballGravity == GRAVITY_BOTTOM_RIGHT) {
+      sx = sx < 0 ? sx : sx - cw;
+    }
+    else if (ballGravity == GRAVITY_TOP_LEFT || ballGravity == GRAVITY_BOTTOM_LEFT) {
+      sx = sx < 0 ? sx + cw : sx;
+    }
+
+    Double ratioX = null;
+    if (ballGravity == GRAVITY_RATIO || ballGravity == GRAVITY_RATIO_TOP || ballGravity == GRAVITY_RATIO_BOTTOM) {
+      ratioX = sx/cw;
+    }
+
+    sx = ratioX == null ? sx*ratio : ratioX*windowWidth;
+
+    return sx;
+  }
+  private double transSplitY(double sy, double ch, int ballGravity, double ratio) {
+    if (Math.abs(sy) > ch) {
+      sy = ch;
+    }
+
+    if (ballGravity == GRAVITY_BOTTOM_LEFT || ballGravity == GRAVITY_BOTTOM_RIGHT) {
+      sy = sy < 0 ? sy : sy - ch;
+    }
+    else if (ballGravity == GRAVITY_TOP_LEFT || ballGravity == GRAVITY_TOP_RIGHT) {
+      sy = sy < 0 ? sy + ch : sy;
+    }
+
+    Double ratioY = null;
+    if (ballGravity == GRAVITY_RATIO || ballGravity == GRAVITY_RATIO_LEFT || ballGravity == GRAVITY_RATIO_RIGHT) {
+      ratioY = sy/ch;
+    }
+
+    sy = ratioY == null ? sy*ratio : ratioY*windowHeight;
+
+    return sy;
   }
 
   private double getScale(double ww, double wh, int layoutType, double density) {
@@ -3578,9 +3872,12 @@ public class UIAutoApp extends Application {
     event.put("splitX2", splitX2);
     event.put("splitY2", splitY2);
     if (isSplit2Showing) {
+      event.put("isSplit2Show", 1);
       event.put("gravityViewId", curFocusView == null ? View.NO_ID : curFocusView.getId());
       event.put("gravityX", gravityX);
       event.put("gravityY", gravityY);
+      event.put("ballGravity", ballGravity);
+      event.put("ballGravity2", ballGravity2);
     }
     event.put("windowX", windowX);
     event.put("windowY", windowY);
@@ -3920,6 +4217,7 @@ public class UIAutoApp extends Application {
     int type;
     int action;
     long time;
+    boolean isSplit2Show;
     double splitX, splitX2;
     double splitY, splitY2;
     double splitSize;
