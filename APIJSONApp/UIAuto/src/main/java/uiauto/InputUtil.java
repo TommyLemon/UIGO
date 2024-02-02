@@ -252,4 +252,24 @@ public class InputUtil {
                 return 0;
         }
     }
+
+    public static boolean isRatio(int ballGravity) {
+        return ballGravity == GRAVITY_RATIO || ballGravity == GRAVITY_RATIO_LEFT || ballGravity == GRAVITY_RATIO_RIGHT;
+    }
+
+    public static boolean isBottom(int ballGravity) {
+        return ballGravity == GRAVITY_RATIO_BOTTOM || ballGravity == GRAVITY_BOTTOM_LEFT || ballGravity == GRAVITY_BOTTOM_RIGHT;
+    }
+
+    public static boolean isTop(int ballGravity) {
+        return ballGravity == GRAVITY_RATIO_TOP || ballGravity == GRAVITY_TOP_LEFT || ballGravity == GRAVITY_TOP_RIGHT;
+    }
+
+    public static boolean isRight(int ballGravity) {
+        return ballGravity == GRAVITY_RATIO_RIGHT || ballGravity == GRAVITY_TOP_RIGHT || ballGravity == GRAVITY_BOTTOM_RIGHT;
+    }
+
+    public static boolean isLeft(int ballGravity) {
+        return ballGravity == GRAVITY_RATIO_LEFT || ballGravity == GRAVITY_TOP_LEFT || ballGravity == GRAVITY_BOTTOM_LEFT;
+    }
 }
