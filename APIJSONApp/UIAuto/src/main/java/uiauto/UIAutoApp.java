@@ -322,12 +322,12 @@ public class UIAutoApp extends Application {
 //          }
 // 导致重复添加到 waitMap          handleMessage(msg);
 
-          dispatchEventToCurrentWindow(curItem, false);
+          dispatchEventToCurrentWindow(curNode, curItem, false);
           handleMessage(msg);
         }
         else {
           output(null, curNode, activity);
-          dispatchEventToCurrentWindow(curItem, false);
+          dispatchEventToCurrentWindow(curNode, curItem, false);
 
           long duration = calcDuration(curNode, nextNode);
 
@@ -517,7 +517,7 @@ public class UIAutoApp extends Application {
 
         Rect rect = new Rect();
         decorView.getWindowVisibleDisplayFrame(rect);
-        keyboardHeight = decorView.getHeight() - rect.bottom;
+        keyboardHeight = decorView.getHeight() - rect.bottom - (isNavigationShow ? navigationHeight : 0);
 
         windowWidth = rect.right - rect.left;
         windowHeight = rect.bottom - rect.top;
@@ -2505,7 +2505,10 @@ public class UIAutoApp extends Application {
   }
 
 
-  public boolean dispatchEventToCurrentWindow(InputEvent ie, boolean record) {
+  public boolean dispatchEventToCurrentWindow(Node<InputEvent> node, InputEvent ie, boolean record) {
+    if (ie == null) {
+      ie = node == null ? null : node.item;
+    }
     if (ie == null) {
       return false;
     }
@@ -2546,6 +2549,23 @@ public class UIAutoApp extends Application {
 //        }
         try {
           MotionEvent viewEvent = event;
+          int gy = node == null ? -1 : node.gravityY;
+          double y = node == null ? 0 : node.y;
+          if (gy < 0 && y < 0) {
+            gy = GRAVITY_BOTTOM;
+          }
+
+          // FIXME Dialog/PopupWindow 内输入?
+          if (keyboardHeight > 0 && gy >= 0 && gy != GRAVITY_TOP) { // 重新算能兼容 && (callback instanceof Dialog == false)) {
+            double ny = gy == GRAVITY_BOTTOM ? (y <= 0 ? y : y - node.windowHeight)*node.ratio + windowHeight // 重新计算比这样更可靠  - keyboardHeight
+                    : (gy == GRAVITY_RATIO ? windowHeight*(y >= 0 ? y : node.windowHeight + y)/node.windowHeight
+                    : (gy == GRAVITY_CENTER ? windowHeight/2 : 0));
+            if (ny > 0) { // 基本不会出现键盘把目标位置顶出屏幕的情况
+              event = MotionEvent.obtain(event);
+              event.offsetLocation(0f, (float) (ny + (isSeparatedStatus ? statusHeight : 0) - event.getY()));
+            }
+          }
+
           if (view != null && popupWindow != null && popupWindow.isShowing()) {
             viewEvent = MotionEvent.obtain(event);
             viewEvent.offsetLocation(0f, - (float) statusHeight);
@@ -2922,7 +2942,9 @@ public class UIAutoApp extends Application {
       double wh = obj.getDoubleValue("windowHeight");
 
       double sh = obj.getDoubleValue("statusHeight");
+      double kh = obj.getDoubleValue("keyboardHeight");
       double nh = obj.getDoubleValue("navigationHeight");
+
       double cw = ww; // obj.getDoubleValue("decorWidth");
       double ch = wh; // - sh; // obj.getDoubleValue("decorHeight") - sh - nh;
       if (cw <= 100) {
@@ -2936,6 +2958,11 @@ public class UIAutoApp extends Application {
       if (ratio <= 0.1) {
         ratio = 1;
       }
+
+      eventNode.ratio = ratio;
+      eventNode.windowWidth = wh;
+      eventNode.windowHeight = windowHeight;
+      eventNode.keyboardHeight = ratio*kh;
 
       Long gravityViewId = obj.getLong("gravityViewId");
       Integer gravityX = obj.getInteger("gravityX"); // 数据库字段默认值设置为 null // - 1;
@@ -2970,11 +2997,15 @@ public class UIAutoApp extends Application {
       sx2 = transSplitX(sx2, cw, ballGravity2, ratio);
       sy2 = transSplitY(sy2, ch, ballGravity2, ratio);
 
+      eventNode.x = x;
+      eventNode.y = y;
       eventNode.isSplit2Show = obj.getBooleanValue("isSplit2Show");
       eventNode.splitX = sx;
       eventNode.splitY = sy;
       eventNode.splitX2 = sx2;
       eventNode.splitY2 = sy2;
+      eventNode.gravityX = gravityX;
+      eventNode.gravityY = gravityY;
 
       // double ratio = getScale(ww, ) //  1f*windowWidth/ww;  //始终以显示时宽度比例为准，不管是横屏还是竖屏   1f*Math.min(windowWidth, windowHeight)/Math.min(ww, wh);
 
@@ -3884,6 +3915,7 @@ public class UIAutoApp extends Application {
     event.put("windowWidth", windowWidth);
     event.put("windowHeight", windowHeight); // - (isSeparatedStatus ? 0 : statusHeight));
     event.put("statusHeight", statusHeight);
+    event.put("keyboardHeight", keyboardHeight);
     event.put("navigationHeight", navigationHeight);
     event.put("decorX", decorX);
     event.put("decorY", decorY);
@@ -4225,7 +4257,13 @@ public class UIAutoApp extends Application {
     double windowY;
     double decorX;
     double decorY;
+    double ratio;
+    double windowWidth, windowHeight;
+    double keyboardHeight;
     int orientation;
+    int gravityX, gravityY;
+    double x, y;
+
     String activity;
     String fragment;
     String method;
