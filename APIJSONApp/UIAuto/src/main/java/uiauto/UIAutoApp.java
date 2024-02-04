@@ -2601,20 +2601,33 @@ public class UIAutoApp extends Application {
             gy = GRAVITY_BOTTOM;
           }
 
-          // FIXME Dialog/PopupWindow 内输入?
-          if (keyboardHeight > 0 && gy >= 0 && gy != GRAVITY_TOP) { // 重新算能兼容 && (callback instanceof Dialog == false)) {
-            double ny = gy == GRAVITY_BOTTOM ? (y <= 0 ? y : y - node.windowHeight)*node.ratio + windowHeight // 重新计算比这样更可靠  - keyboardHeight
-                    : (gy == GRAVITY_RATIO ? windowHeight*(y >= 0 ? y : node.windowHeight + y)/node.windowHeight
-                    : (gy == GRAVITY_CENTER ? windowHeight/2 : 0));
-            if (ny > 0) { // 基本不会出现键盘把目标位置顶出屏幕的情况
-              event = MotionEvent.obtain(event);
-              event.offsetLocation(0f, (float) (ny + (isSeparatedStatus ? statusHeight : 0) - event.getY()));
+          JSONObject obj = node == null ? null : node.obj;
+          boolean isKeyboardChange = keyboardHeight > 0 && gy >= 0 && gy != GRAVITY_TOP;
+          boolean isPopupWindow = view != null && popupWindow != null && popupWindow.isShowing();
+
+          if (obj == null || obj.isEmpty()) {
+            // FIXME Dialog/PopupWindow 内输入?
+            if (isKeyboardChange) { // 重新算能兼容 && (callback instanceof Dialog == false)) {
+              // FIXME 不完全一样，要考虑悬浮球位置
+              double ny = gy == GRAVITY_BOTTOM ? (y <= 0 ? y : y - node.windowHeight)*node.ratio + windowHeight // 重新计算比这样更可靠  - keyboardHeight
+                      : (gy == GRAVITY_RATIO ? windowHeight*(y >= 0 ? y : node.windowHeight + y)/node.windowHeight
+                      : (gy == GRAVITY_CENTER ? windowHeight/2 : 0));
+              if (ny > 0) { // 基本不会出现键盘把目标位置顶出屏幕的情况
+                event = MotionEvent.obtain(event);
+                event.offsetLocation(0f, (float) (ny + (isSeparatedStatus ? statusHeight : 0) - event.getY()));
+              }
+            }
+
+            if (isPopupWindow) {
+              viewEvent = MotionEvent.obtain(event);
+              viewEvent.offsetLocation(0f, - (float) statusHeight);
             }
           }
-
-          if (view != null && popupWindow != null && popupWindow.isShowing()) {
-            viewEvent = MotionEvent.obtain(event);
-            viewEvent.offsetLocation(0f, - (float) statusHeight);
+          else if (isKeyboardChange || isPopupWindow) {
+            node = obj2EventNode(obj, node, node.step);
+            if (node.item instanceof MotionEvent) {
+              event = (MotionEvent) node.item;
+            }
           }
 
           if ((view == null || (view.dispatchTouchEvent(viewEvent) == false)) && callback != null) {
@@ -3161,6 +3174,7 @@ public class UIAutoApp extends Application {
     eventNode.decorY = obj.getDoubleValue("decorY");
 
     eventNode.item = event;
+    eventNode.obj = obj;
 
     return eventNode;
   }
@@ -4299,6 +4313,7 @@ public class UIAutoApp extends Application {
     E item;
     Node<E> next;
     Node<E> prev;
+    JSONObject obj;
 
     int step;
 
