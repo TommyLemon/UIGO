@@ -517,10 +517,25 @@ public class UIAutoApp extends Application {
 
         Rect rect = new Rect();
         decorView.getWindowVisibleDisplayFrame(rect);
+
+        double wh = windowHeight;
+
         keyboardHeight = decorView.getHeight() - rect.bottom - (isNavigationShow ? navigationHeight : 0);
 
         windowWidth = rect.right - rect.left;
         windowHeight = rect.bottom - rect.top;
+
+        if (isShowing && wh != windowHeight) {
+          if (splitY < 0 || InputUtil.isBottom(ballGravity)) {
+            splitY += (wh - windowHeight); // -= keyboardHeight;
+            floatBall = showSplit(isSplitShowing, splitX, splitY, "floatBall", vFloatBall, floatSplitX, floatSplitY);
+          }
+
+          if (splitY2 < 0 || InputUtil.isBottom(ballGravity2)) {
+            splitY2 += (wh - windowHeight); // -= keyboardHeight;
+            floatBall2 = showSplit(isSplitShowing && isSplit2Showing, splitX2, splitY2, "floatBall2", vFloatBall2, floatSplitX2, floatSplitY2);
+          }
+        }
       }
     });
 
