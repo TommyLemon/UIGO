@@ -91,6 +91,7 @@ import android.widget.Toast;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson.TypeReference;
 import com.alibaba.fastjson.serializer.PropertyFilter;
 import com.yhao.floatwindow.FloatWindow;
 import com.yhao.floatwindow.IFloatWindow;
@@ -134,8 +135,9 @@ public class UIAutoApp extends Application {
   private static final String SPLIT_Y = "SPLIT_Y";
   private static final String SPLIT_X2 = "SPLIT_X2";
   private static final String SPLIT_Y2 = "SPLIT_Y2";
-  private static final String SPLIT_HEIGHT = "SPLIT_HEIGHT";
+  private static final String SPLIT_SIZE = "SPLIT_SIZE";
   private static final String SPLIT_COLOR = "SPLIT_COLOR";
+  private static final String CLASS_BALL_CACHE_MAP = "CLASS_BALL_CACHE_MAP";
 
   private static double DENSITY = Resources.getSystem().getDisplayMetrics().density;
 
@@ -242,11 +244,11 @@ public class UIAutoApp extends Application {
 //              || floatBall.getY() != (curNode.splitY - splitRadius + windowHeight)) {
               // FloatWindow.destroy("floatBall");
               // floatBall = null;
-              floatBall = showSplit(true, splitX, splitY, "floatBall", vFloatBall, floatSplitX, floatSplitY);
+              floatBall = showSplit(floatBall, true, splitX, splitY, "floatBall", vFloatBall, floatSplitX, floatSplitY);
 //            }
 
 //            if (isSplit2Showing) {
-              floatBall2 = showSplit(isSplit2Showing, splitX2, splitY2, "floatBall2", vFloatBall2, floatSplitX2, floatSplitY2);
+              floatBall2 = showSplit(floatBall2, isSplit2Showing, splitX2, splitY2, "floatBall2", vFloatBall2, floatSplitX2, floatSplitY2);
 //            }
 //          }
         }
@@ -439,6 +441,7 @@ public class UIAutoApp extends Application {
   private double splitY, splitY2;
   private double splitSize;
   private double splitRadius;
+  private int splitColor;
 
   @NotNull
   private JSONArray eventList = new JSONArray();
@@ -528,12 +531,12 @@ public class UIAutoApp extends Application {
         if (isShowing && wh != windowHeight) {
           if (splitY < 0 || InputUtil.isBottom(ballGravity)) {
             splitY += (wh - windowHeight); // -= keyboardHeight;
-            floatBall = showSplit(isSplitShowing, splitX, splitY, "floatBall", vFloatBall, floatSplitX, floatSplitY);
+            floatBall = showSplit(floatBall, isSplitShowing, splitX, splitY, "floatBall", vFloatBall, floatSplitX, floatSplitY);
           }
 
           if (splitY2 < 0 || InputUtil.isBottom(ballGravity2)) {
             splitY2 += (wh - windowHeight); // -= keyboardHeight;
-            floatBall2 = showSplit(isSplitShowing && isSplit2Showing, splitX2, splitY2, "floatBall2", vFloatBall2, floatSplitX2, floatSplitY2);
+            floatBall2 = showSplit(floatBall2, isSplitShowing && isSplit2Showing, splitX2, splitY2, "floatBall2", vFloatBall2, floatSplitX2, floatSplitY2);
           }
         }
       }
@@ -705,46 +708,97 @@ public class UIAutoApp extends Application {
 
     cache = cache != null ? cache : getSharedPreferences(TAG, Context.MODE_PRIVATE);
 
-    splitSize = cache.getInt(SPLIT_HEIGHT, Math.round(dip2px(45)));
+    splitSize = cache.getFloat(SPLIT_SIZE, 0);
+    if (splitSize < 10) {
+      splitSize = dip2px(45);
+    }
     splitRadius = splitSize/2;
 
-    ballGravity = cache.getInt(BALL_GRAVITY, ballGravity);
-    ballGravity2 = cache.getInt(BALL_GRAVITY2, ballGravity2);
-
-    Point[] points = ballPositionMap.get(activity);
+    BallPoint[] points = ballPositionMap.get(activity);
     if (points == null || points.length < 1) {
       points = classBallPositionMap.get(activity.getClass().getName());
     }
-    Point p = points == null || points.length < 1 ? null : points[0];
-    splitX = p != null && p.x != 0 ? p.x : cache.getInt(SPLIT_X, 0);
-    splitY = p != null && p.y != 0 ? p.y : cache.getInt(SPLIT_Y, 0);
-    if (splitX == 0 || Math.abs(splitX) >= windowWidth) { // decorWidth) {
-      splitX = Math.round(- splitSize - dip2px(30));
+    BallPoint p = points == null || points.length < 1 ? null : points[0];
+    if (p != null) {
+      ballGravity = p.gravity;
+      splitX = p.x;
+      splitY = p.y;
     }
-    if (splitY == 0 || Math.abs(splitY) >= windowHeight) { // decorHeight) {
-      splitY = Math.round(- splitSize - dip2px(30));
+    else {
+      ballGravity = cache.getInt(BALL_GRAVITY, GRAVITY_BOTTOM_RIGHT);
+      splitX = cache.getFloat(SPLIT_X, 0);
+      splitY = cache.getFloat(SPLIT_Y, 0);
     }
 
-    // splitX2 = 0;
-    // splitY2 = 0;
-    // isSplit2Showing = false;
+    if (splitX == 0 || Math.abs(splitX) >= windowWidth) { // decorWidth) {
+      splitX = -splitSize - dip2px(30);
+    }
+    if (splitY == 0 || Math.abs(splitY) >= windowHeight) { // decorHeight) {
+      splitY = -splitSize - dip2px(30);
+    }
 
     if (points == null || points.length < 2) {
       points = classBallPositionMap.get(activity.getClass().getName());
     }
-    Point p2 = points == null || points.length < 2 ? null : points[1];
+    BallPoint p2 = points == null || points.length < 2 ? null : points[1];
     isSplit2Showing = p2 != null;
-    splitX2 = p2 == null ? 0 : p2.x;
-    splitY2 = p2 == null ? 0 : p2.y;
+    if (isSplit2Showing) {
+      ballGravity2 = p2.gravity;
+      splitX2 = p2.x;
+      splitY2 = p2.y;
+    }
+    else {
+      ballGravity2 = cache.getInt(BALL_GRAVITY2, GRAVITY_TOP_LEFT);
+      splitX2 = cache.getFloat(SPLIT_X2, 0);
+      splitY2 = cache.getFloat(SPLIT_Y2, 0);
+    }
+
+    if (splitX2 == 0 || Math.abs(splitX2) >= windowWidth) { // decorWidth) {
+      splitX2 = splitSize + dip2px(30);
+    }
+    if (splitY2 == 0 || Math.abs(splitY2) >= windowHeight) { // decorHeight) {
+      splitY2 = splitSize + dip2px(30);
+    }
 
     if (showToolBar) {
       showCover(true);
-      // if (isSplitShowing) {
-      floatBall = showSplit(isSplitShowing, splitX, splitY, "floatBall", vFloatBall, floatSplitX, floatSplitY);
-      // if (isSplit2Showing) {
-      floatBall2 = showSplit(isSplitShowing && isSplit2Showing, splitX2, splitY2, "floatBall2", vFloatBall2, floatSplitX2, floatSplitY2);
-      // }
     }
+
+    rlControllerGravity.setVisibility(isSplit2Showing ? View.VISIBLE : View.GONE);
+
+    // if (isSplitShowing) {
+    floatBall = showSplit(floatBall, isSplitShowing, splitX, splitY, "floatBall", vFloatBall, floatSplitX, floatSplitY);
+    // if (isSplit2Showing) {
+    if (isSplit2Showing == false) {
+//      if (floatBall2 != null) {
+//      floatBall2.hide(); // FIXME 无效，FloatWindow bug，切换 Activity 时 hide 无效
+//      floatSplitX2.hide();
+//      floatSplitY2.hide();
+//      }
+      try {
+        FloatWindow.destroy("floatBall2");
+      } catch (Throwable e) {
+        e.printStackTrace();
+      }
+      try {
+        FloatWindow.destroy("floatSplitX2"); // 这个才生效
+      } catch (Throwable e) {
+        e.printStackTrace();
+      }
+      try {
+        FloatWindow.destroy("floatSplitY2"); // 这个才生效
+      } catch (Throwable e) {
+        e.printStackTrace();
+      }
+
+      floatBall2 = null;
+      floatSplitX2 = null;
+      floatSplitY2 = null;
+    }
+    floatBall2 = showSplit(floatBall2, isSplitShowing && isSplit2Showing, splitX2, splitY2, "floatBall2", vFloatBall2, floatSplitX2, floatSplitY2);
+    // }
+
+    setSplit();
   }
 
   private Map<EditText, Boolean> editTextWatchedMap = new HashMap<>();
@@ -898,6 +952,16 @@ public class UIAutoApp extends Application {
     isProxy = cache.getBoolean(KEY_ENABLE_PROXY, false);
     proxyServer = cache.getString(KEY_PROXY_SERVER, null);
 
+    try {
+      Map<String, BallPoint[]> map = JSON.parseObject(cache.getString(CLASS_BALL_CACHE_MAP, "{}")
+              , new TypeReference<Map<String, BallPoint[]>>() {}.getType());
+      if (map != null && map.isEmpty() == false) {
+        classBallPositionMap.putAll(map);
+      }
+    } catch (Throwable e) {
+      e.printStackTrace();
+    }
+
     app.registerActivityLifecycleCallbacks(new ActivityLifecycleCallbacks() {
 
       @Override
@@ -938,12 +1002,12 @@ public class UIAutoApp extends Application {
         onUIEvent(InputUtil.UI_ACTION_PAUSE, activity, activity);
         isSplit2Showing = floatBall2 != null && floatBall2.isShowing();
         curFocusView = null;
-        Point[] points = new Point[]{
-                new Point(
-                        (int) Math.round(floatBall == null ? splitX : floatBall.getX() + splitRadius - windowWidth)
-                        , (int) Math.round(floatBall == null ? splitY : floatBall.getY() + splitRadius - windowHeight)
-                )
-                , isSplit2Showing == false ? null : new Point(floatBall2.getX(), floatBall2.getY())
+
+        setGravityText(tvControllerGravityX, false, gravityX);
+        setGravityText(tvControllerGravityY, true, gravityY);
+        BallPoint[] points = new BallPoint[] {
+          new BallPoint(ballGravity, splitX, splitY)
+            , isSplit2Showing == false ? null : new BallPoint(ballGravity2, splitX2, splitY2)
         };
         ballPositionMap.put(activity, points);
         classBallPositionMap.put(activity.getClass().getName(), points);
@@ -967,6 +1031,25 @@ public class UIAutoApp extends Application {
         ballPositionMap.remove(activity);
 
         setCurrentPopupWindow(null, null, null, activity, null);
+
+        if (activityList == null || activityList.isEmpty()) { // Application.onTerminate 只在模拟器调用，真机不调用
+          setGravityText(tvControllerGravityX, false, gravityX);
+          setGravityText(tvControllerGravityY, true, gravityY);
+
+          String s = JSON.toJSONString(classBallPositionMap);
+          cache.edit()
+                  .remove(SPLIT_SIZE).putFloat(SPLIT_SIZE, (float) splitSize)
+                  .remove(SPLIT_COLOR).putInt(SPLIT_COLOR, splitColor)
+                  .remove(BALL_GRAVITY).putInt(BALL_GRAVITY, ballGravity)
+                  .remove(BALL_GRAVITY2).putInt(BALL_GRAVITY2, ballGravity2)
+                  .remove(SPLIT_X).putFloat(SPLIT_X, (float) splitX)
+                  .remove(SPLIT_Y).putFloat(SPLIT_Y, (float) splitY)
+                  .remove(SPLIT_X2).putFloat(SPLIT_X2, (float) splitX2)
+                  .remove(SPLIT_Y2).putFloat(SPLIT_Y2, (float) splitY2)
+                  .remove(CLASS_BALL_CACHE_MAP).putString(CLASS_BALL_CACHE_MAP, s)
+                  .commit();
+//                  .apply();
+        }
       }
 
     });
@@ -1259,25 +1342,22 @@ public class UIAutoApp extends Application {
         // FloatWindow.destroy("floatBall2");
         // floatBall2 = null;
         // if (isSplit2Showing) {
-          floatBall2 = showSplit(isSplit2Showing,
-                  floatBall.getX() + dip2px(0.5) // windowWidth - floatBall.getX() - splitRadius
-                  , floatBall.getY() + dip2px(0.5) // windowHeight - floatBall.getY() - splitRadius // - (isSeparatedStatus ? statusHeight : 0)
-                  , "floatBall2", vFloatBall2, floatSplitX2, floatSplitY2
-          );
+        floatBall2 = showSplit(floatBall2, isSplit2Showing,
+                floatBall.getX() + splitRadius - dip2px(0.5)
+                , floatBall.getY() + splitRadius - dip2px(0.5) // - (isSeparatedStatus ? statusHeight : 0)
+                , "floatBall2", vFloatBall2, floatSplitX2, floatSplitY2
+        );
         // }
 
-        setGravityImageAndText(vFloatBall, ballGravity2, tvControllerGravityX, false, gravityX);
-        setGravityImageAndText(vFloatBall, ballGravity2, tvControllerGravityY, true, gravityY);
-        setGravityImageAndText(vFloatBall, ballGravity, tvControllerGravityX, false, gravityX);
-        setGravityImageAndText(vFloatBall, ballGravity, tvControllerGravityY, true, gravityY);
+        setSplit();
 
         if (isSplit2Showing) {
           tvControllerGravityContainer.performClick();
         }
         else if (floatBall2 != null) {
-          showSplit(isSplitShowing,
-                  (floatBall.getX() + floatBall2.getX())/2
-                  , (floatBall.getY() + floatBall2.getY())/2
+          floatBall = showSplit(floatBall, isSplitShowing,
+                  (floatBall.getX() + floatBall2.getX())/2 + splitRadius
+                  , (floatBall.getY() + floatBall2.getY())/2 + splitRadius
                   , "floatBall", vFloatBall, floatSplitX, floatSplitY
           );
         }
@@ -1433,6 +1513,13 @@ public class UIAutoApp extends Application {
         onUpdateBallPosition(floatBall2, vFloatBall2, floatSplitX2, floatSplitY2, true, floatBall2.getX(), floatBall2.getY());
       }
     });
+  }
+
+  private void setSplit() {
+    setGravityImageAndText(vFloatBall, ballGravity2, tvControllerGravityX, false, gravityX);
+    setGravityImageAndText(vFloatBall, ballGravity2, tvControllerGravityY, true, gravityY);
+    setGravityImageAndText(vFloatBall, ballGravity, tvControllerGravityX, false, gravityX);
+    setGravityImageAndText(vFloatBall, ballGravity, tvControllerGravityY, true, gravityY);
   }
 
   private View curFocusView;
@@ -1646,8 +1733,8 @@ public class UIAutoApp extends Application {
   public void onClickPlay() {
     isSplitShowing = ! isSplitShowing;
     tvControllerPlay.setText(isReplay ? (isSplitShowing ? R.string.replaying : R.string.replay) : (isSplitShowing ? R.string.recording : R.string.record));
-    floatBall = showSplit(isSplitShowing, splitX, splitY, "floatBall", vFloatBall, floatSplitX, floatSplitY);
-    floatBall2 = showSplit(isSplitShowing && isSplit2Showing, splitX2, splitY2, "floatBall2", vFloatBall2, floatSplitX2, floatSplitY2);
+    floatBall = showSplit(floatBall, isSplitShowing, splitX, splitY, "floatBall", vFloatBall, floatSplitX, floatSplitY);
+    floatBall2 = showSplit(floatBall2, isSplitShowing && isSplit2Showing, splitX2, splitY2, "floatBall2", vFloatBall2, floatSplitX2, floatSplitY2);
 
     // FloatWindow.destroy("floatBall2");
     // floatBall2 = null;
@@ -1716,19 +1803,6 @@ public class UIAutoApp extends Application {
 
 
   public void onUIAutoActivityDestroy(Window.Callback callback, Activity activity) {
-    cache.edit()
-      .remove(BALL_GRAVITY)
-      .putInt(BALL_GRAVITY, ballGravity)
-      .remove(BALL_GRAVITY2)
-      .putInt(BALL_GRAVITY2, ballGravity2)
-      .remove(SPLIT_X)
-      // .putInt(SPLIT_X, Math.round(vSplitX.getX() + vSplitX.getWidth()/2 - windowWidth))
-      .putInt(SPLIT_X, (int) Math.round(floatSplitX.getX() + vSplitX.getWidth()/2 - windowWidth))
-      .remove(SPLIT_Y)
-      // .putInt(SPLIT_Y, Math.round(vSplitY.getY() + vSplitY.getHeight()/2 - windowHeight))
-      .putInt(SPLIT_Y, (int) Math.round(floatSplitY.getY() + vSplitY.getHeight()/2 - windowHeight))
-      .apply();
-
     onUIAutoWindowDestroy(callback, activity == null ? null : activity.getWindow());
   }
 
@@ -1868,8 +1942,8 @@ public class UIAutoApp extends Application {
 
   private int lastOrientation;
   // LifecycleOwner 只覆盖 Activity, Fragment, 而 Window.Callback 只覆盖 Activity, Dialog
-  private final Map<Object, Point[]> ballPositionMap = new HashMap<>();
-  private final Map<String, Point[]> classBallPositionMap = new HashMap<>();
+  private final Map<Object, BallPoint[]> ballPositionMap = new HashMap<>();
+  private final Map<String, BallPoint[]> classBallPositionMap = new HashMap<>();
   @Override
   public void onConfigurationChanged(Configuration newConfig) {
     super.onConfigurationChanged(newConfig);
@@ -1902,9 +1976,9 @@ public class UIAutoApp extends Application {
 
           showCover(true);
           // if (isSplitShowing) {
-            floatBall = showSplit(isSplitShowing, splitX, splitY, "floatBall", vFloatBall, floatSplitX, floatSplitY);
+            floatBall = showSplit(floatBall, isSplitShowing, splitX, splitY, "floatBall", vFloatBall, floatSplitX, floatSplitY);
             // if (isSplit2Showing) {
-              floatBall2 = showSplit(isSplitShowing && isSplit2Showing, splitX2, splitY2, "floatBall2", vFloatBall2, floatSplitX2, floatSplitY);
+              floatBall2 = showSplit(floatBall2, isSplitShowing && isSplit2Showing, splitX2, splitY2, "floatBall2", vFloatBall2, floatSplitX2, floatSplitY);
 
         }
       }
@@ -1913,8 +1987,8 @@ public class UIAutoApp extends Application {
 
   private void showCoverAndSplit(boolean showCover, boolean showSplit) {
     showCover(showCover);
-    floatBall = showSplit(showSplit, splitX, splitY, "floatBall", vFloatBall, floatSplitX, floatSplitY);
-    floatBall2 = showSplit(showSplit && isSplit2Showing, splitX2, splitY2, "floatBall2", vFloatBall2, floatSplitX2, floatSplitY2);
+    floatBall = showSplit(floatBall, showSplit, splitX, splitY, "floatBall", vFloatBall, floatSplitX, floatSplitY);
+    floatBall2 = showSplit(floatBall2, showSplit && isSplit2Showing, splitX2, splitY2, "floatBall2", vFloatBall2, floatSplitX2, floatSplitY2);
   }
 
   //TODO 仅在触摸 ball 时显示分割线，重写 onTouchEvent
@@ -2053,9 +2127,13 @@ public class UIAutoApp extends Application {
 //      floatSplitY2.updateY(floatBall2.getY() - splitRadius);
 //    }
     floatSplitX.hide();
-    floatSplitX2.hide();
+    if (floatSplitX2 != null) {
+      floatSplitX2.hide();
+    }
     floatSplitY.hide();
-    floatSplitY2.hide();
+    if (floatSplitY2 != null) {
+      floatSplitY2.hide();
+    }
   }
 
   private IFloatWindow showFloatView(boolean show, String tag, View view, int width, int height, int x, int y, int moveType) {
@@ -2093,7 +2171,7 @@ public class UIAutoApp extends Application {
   private float lastBallDownX, lastBallDownY, lastBallUpX, lastBallUpY;
 
   private boolean isSplitShowing, isSplit2Showing;
-  private IFloatWindow showSplit(boolean show, double splitX, double splitY, String ballName, FloatBallView vFloatBall, IFloatWindow floatSplitX_, IFloatWindow floatSplitY_) {
+  private IFloatWindow showSplit(IFloatWindow floatBall_, boolean show, double splitX, double splitY, String ballName, FloatBallView vFloatBall, IFloatWindow floatSplitX_, IFloatWindow floatSplitY_) {
     // vSplitX.setVisibility(View.GONE);
     // vSplitY.setVisibility(View.GONE);
     // vSplitX2.setVisibility(View.GONE);
@@ -2132,7 +2210,7 @@ public class UIAutoApp extends Application {
     if (floatBall2 != null) {
       floatBall2.hide();
     }
-    IFloatWindow ball = FloatWindow.get(ballName);
+    IFloatWindow ball = floatBall_ != null ? floatBall_ : FloatWindow.get(ballName);
     if (show == false) {
       if (ball != null) {
         ball.hide();
@@ -2330,7 +2408,8 @@ public class UIAutoApp extends Application {
         .setViewStateListener(new ViewStateListener() {
           @Override
           public void onPositionUpdate(int x, int y) {
-            onUpdateBallPosition(FloatWindow.get(ballName), vFloatBall, floatSplitX_, floatSplitY_, isBall2, x, y);
+            IFloatWindow fb = floatBall_ != null ? floatBall_ : FloatWindow.get(ballName);
+            onUpdateBallPosition(fb, vFloatBall, floatSplitX_, floatSplitY_, isBall2, x, y);
 
 //            IFloatWindow floatBall = FloatWindow.get(ballName);
 //            if (x != floatBall.getX() || y != floatBall.getY()) {
@@ -2342,8 +2421,8 @@ public class UIAutoApp extends Application {
 
           @Override
           public void onShow() {
-            IFloatWindow floatBall = FloatWindow.get(ballName);
-            onPositionUpdate(floatBall == null ? x : floatBall.getX(), floatBall == null ? y : floatBall.getY());
+            IFloatWindow fb = floatBall_ != null ? floatBall_ : FloatWindow.get(ballName);
+            onPositionUpdate(fb == null ? x : fb.getX(), fb == null ? y : fb.getY());
           }
 
           @Override
@@ -2419,8 +2498,10 @@ public class UIAutoApp extends Application {
     }
 
     if (out) {
-      floatBall.updateX((int) Math.round(splitX - splitRadius));
-      floatBall.updateY((int) Math.round(splitY - splitRadius));
+      if (floatBall != null) {
+        floatBall.updateX((int) Math.round(splitX - splitRadius));
+        floatBall.updateY((int) Math.round(splitY - splitRadius));
+      }
       return;
     }
 
@@ -4309,7 +4390,7 @@ public class UIAutoApp extends Application {
     }
   }
 
-  private static class Node<E> {
+  public static class Node<E> {
     E item;
     Node<E> next;
     Node<E> prev;
@@ -4336,6 +4417,7 @@ public class UIAutoApp extends Application {
     double keyboardHeight;
     int orientation;
     int gravityX, gravityY;
+    int ballGravity, ballGravity2;
     double x, y;
 
     String activity;
@@ -4347,10 +4429,60 @@ public class UIAutoApp extends Application {
 //    String request;
 //    String response;
 
-    Node(Node<E> prev, E element, Node<E> next) {
+    public Node(Node<E> prev, E element, Node<E> next) {
       this.item = element;
       this.next = next;
       this.prev = prev;
+    }
+
+//    public Node(int ballGravity, double splitX, double splitY) {
+//      this.ballGravity = ballGravity;
+//      this.splitX = splitX;
+//      this.splitY = splitY;
+//    }
+//
+//    public Node(int ballGravity, double splitX, double splitY, int ballGravity2, double splitX2, double splitY2) {
+//      this(ballGravity, splitX, splitY);
+//      this.ballGravity2 = ballGravity2;
+//      this.splitX2 = splitX2;
+//      this.splitY2 = splitY2;
+//    }
+
+  }
+
+  public static class BallPoint {
+    int gravity;
+    double x;
+    double y;
+
+    public BallPoint() {
+    }
+
+    public BallPoint(int gravity, double x, double y) {
+      this.gravity = gravity;
+      this.x = x;
+      this.y = y;
+    }
+
+    public int getGravity() {
+      return gravity;
+    }
+    public void setGravity(int gravity) {
+      this.gravity = gravity;
+    }
+
+    public double getX() {
+      return x;
+    }
+    public void setX(double x) {
+      this.x = x;
+    }
+
+    public double getY() {
+      return y;
+    }
+    public void setY(double y) {
+      this.y = y;
     }
   }
 
