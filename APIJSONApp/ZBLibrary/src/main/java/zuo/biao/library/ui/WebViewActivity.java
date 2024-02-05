@@ -26,6 +26,7 @@ import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.ActivityInfo;
 import android.graphics.Bitmap;
 import android.os.Build;
 import android.os.Bundle;
@@ -71,6 +72,7 @@ public class WebViewActivity extends BaseActivity implements OnBottomDragListene
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR); // AndroidManifest 中设置导致 gradle 编译 merge 报错
 		setContentView(R.layout.web_view_activity, this);//传this是为了全局滑动返回
 
 		url = StringUtil.getCorrectUrl(getIntent().getStringExtra(INTENT_URL));
