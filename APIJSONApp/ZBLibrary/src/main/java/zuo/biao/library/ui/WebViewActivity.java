@@ -124,7 +124,12 @@ public class WebViewActivity extends BaseActivity implements OnBottomDragListene
 
 		WebSettings webSettings = wvWebView.getSettings();
 		webSettings.setJavaScriptEnabled(true);
-		
+		webSettings.setUseWideViewPort(true);
+		webSettings.setLoadWithOverviewMode(true);
+		webSettings.setBuiltInZoomControls(true);
+		webSettings.setSupportZoom(true);
+		webSettings.setDisplayZoomControls(false);
+
 		wvWebView.requestFocus();
 
 		// 设置setWebChromeClient对象  
