@@ -795,10 +795,22 @@ public class UIAutoApp extends Application {
       floatSplitX2 = null;
       floatSplitY2 = null;
     }
+
     floatBall2 = showSplit(floatBall2, isSplitShowing && isSplit2Showing, splitX2, splitY2, "floatBall2", vFloatBall2, floatSplitX2, floatSplitY2);
-    // }
 
     setSplit();
+
+    // FIXME 导致意外显示双分割球
+//    if (isSplit2Showing == false) {
+//      new Handler().postDelayed(new Runnable() {
+//        @Override
+//        public void run() {
+//          vFloatBall2.setVisibility(View.GONE);
+//          vSplitX2.setVisibility(View.GONE);
+//          vSplitY2.setVisibility(View.GONE);
+//        }
+//      }, 500);
+//    }
   }
 
   private Map<EditText, Boolean> editTextWatchedMap = new HashMap<>();
@@ -2047,64 +2059,16 @@ public class UIAutoApp extends Application {
 
 
 
-    floatSplitX = FloatWindow.get("floatSplitX");
-    if (floatSplitX == null) {
-      FloatWindow
-        .with(getApplicationContext())
-        .setTag("floatSplitX")
-        .setView(vSplitX)
-        .setHeight(ViewGroup.LayoutParams.MATCH_PARENT)                    //设置控件宽高
-        .setMoveType(MoveType.inactive)
-        .setDesktopShow(true) //必须为 true，否则切换 Activity 就会自动隐藏                        //桌面显示
-        .build();
-
-      floatSplitX = FloatWindow.get("floatSplitX");
-    }
+    floatSplitX = getSplitX(false);
     // floatSplitX.show();
 
-    floatSplitY = FloatWindow.get("floatSplitY");
-    if (floatSplitY == null) {
-      FloatWindow
-        .with(getApplicationContext())
-        .setTag("floatSplitY")
-        .setView(vSplitY)
-        .setWidth(ViewGroup.LayoutParams.MATCH_PARENT)                    //设置控件宽高
-        .setMoveType(MoveType.inactive)
-        .setDesktopShow(true) //必须为 true，否则切换 Activity 就会自动隐藏                        //桌面显示
-        .build();
-
-      floatSplitY = FloatWindow.get("floatSplitY");
-    }
+    floatSplitY = getSplitY(false);
     // floatSplitY.show();
 
-    floatSplitX2 = FloatWindow.get("floatSplitX2");
-    if (floatSplitX2 == null) {
-      FloatWindow
-        .with(getApplicationContext())
-        .setTag("floatSplitX2")
-        .setView(vSplitX2)
-        .setHeight(ViewGroup.LayoutParams.MATCH_PARENT)                    //设置控件宽高
-        .setMoveType(MoveType.inactive)
-        .setDesktopShow(true) //必须为 true，否则切换 Activity 就会自动隐藏                        //桌面显示
-        .build();
-
-      floatSplitX2 = FloatWindow.get("floatSplitX2");
-    }
+    floatSplitX2 = getSplitX(true);
     // floatSplitX2.show();
 
-    floatSplitY2 = FloatWindow.get("floatSplitY2");
-    if (floatSplitY2 == null) {
-      FloatWindow
-        .with(getApplicationContext())
-        .setTag("floatSplitY2")
-        .setView(vSplitY2)
-        .setWidth(ViewGroup.LayoutParams.MATCH_PARENT)                    //设置控件宽高
-        .setMoveType(MoveType.inactive)
-        .setDesktopShow(true) //必须为 true，否则切换 Activity 就会自动隐藏                        //桌面显示
-        .build();
-
-      floatSplitY2 = FloatWindow.get("floatSplitY2");
-    }
+    floatSplitY2 = getSplitY(true);
     // floatSplitY2.show();
 
 
@@ -2135,6 +2099,48 @@ public class UIAutoApp extends Application {
       floatSplitY2.hide();
     }
   }
+
+
+  private IFloatWindow getSplitX(boolean isVice) {
+    return getSplitX(isVice ? "floatSplitX2" : "floatSplitX", isVice ? vSplitX2 : vSplitX);
+  }
+  private IFloatWindow getSplitX(String name, View vSplitX) {
+    IFloatWindow floatSplitX = FloatWindow.get(name);
+    if (floatSplitX == null) {
+      FloatWindow
+              .with(getApplicationContext())
+              .setTag(name)
+              .setView(vSplitX)
+              .setHeight(ViewGroup.LayoutParams.MATCH_PARENT)                    //设置控件宽高
+              .setMoveType(MoveType.inactive)
+              .setDesktopShow(true) //必须为 true，否则切换 Activity 就会自动隐藏                        //桌面显示
+              .build();
+
+      floatSplitX = FloatWindow.get(name);
+    }
+    return floatSplitX;
+  }
+
+  private IFloatWindow getSplitY(boolean isVice) {
+    return getSplitY(isVice ? "floatSplitY2" : "floatSplitY", isVice ? vSplitY2 : vSplitY);
+  }
+  private IFloatWindow getSplitY(String name, View vSplitY) {
+    IFloatWindow floatSplitY = FloatWindow.get(name);
+    if (floatSplitY == null) {
+      FloatWindow
+              .with(getApplicationContext())
+              .setTag(name)
+              .setView(vSplitY)
+              .setWidth(ViewGroup.LayoutParams.MATCH_PARENT)                    //设置控件宽高
+              .setMoveType(MoveType.inactive)
+              .setDesktopShow(true) //必须为 true，否则切换 Activity 就会自动隐藏                        //桌面显示
+              .build();
+
+      floatSplitY = FloatWindow.get(name);
+    }
+    return floatSplitY;
+  }
+
 
   private IFloatWindow showFloatView(boolean show, String tag, View view, int width, int height, int x, int y, int moveType) {
     IFloatWindow fw = FloatWindow.get(tag);
@@ -2208,11 +2214,13 @@ public class UIAutoApp extends Application {
     vSplitX2.setVisibility(View.GONE);
     vSplitY2.setVisibility(View.GONE);
     if (floatBall2 != null) {
+//      floatBall2.show();
       floatBall2.hide();
     }
     IFloatWindow ball = floatBall_ != null ? floatBall_ : FloatWindow.get(ballName);
     if (show == false) {
       if (ball != null) {
+//        ball.show();
         ball.hide();
       }
       return ball;
@@ -2270,6 +2278,13 @@ public class UIAutoApp extends Application {
             //     floatSplitY2.hide();
             //   }
             // }
+
+//            floatSplitX2 = getSplitX(true);
+//            floatSplitX2.hide();
+//            floatSplitX2.show();
+//            floatSplitY2 = getSplitY(true);
+//            floatSplitY2.hide();
+//            floatSplitY2.show();
           }
           else if (event.getAction() == MotionEvent.ACTION_UP) {
 //            lastUpEvent = event;
@@ -2698,17 +2713,17 @@ public class UIAutoApp extends Application {
                 event.offsetLocation(0f, (float) (ny + (isSeparatedStatus ? statusHeight : 0) - event.getY()));
               }
             }
-
-            if (isPopupWindow) {
-              viewEvent = MotionEvent.obtain(event);
-              viewEvent.offsetLocation(0f, - (float) statusHeight);
-            }
           }
-          else if (isKeyboardChange || isPopupWindow) {
+          else if (isKeyboardChange) {
             node = obj2EventNode(obj, node, node.step);
             if (node.item instanceof MotionEvent) {
               event = (MotionEvent) node.item;
             }
+          }
+
+          if (isPopupWindow) {
+            viewEvent = MotionEvent.obtain(event);
+            viewEvent.offsetLocation(0f, - (float) statusHeight);
           }
 
           if ((view == null || (view.dispatchTouchEvent(viewEvent) == false)) && callback != null) {
@@ -3203,7 +3218,7 @@ public class UIAutoApp extends Application {
       }
 
       rx += windowX + decorX;
-      ry += windowY + decorY + statusHeight; // 此时不知道，放到显示后处理  (popupWindow != null && popupWindow.isShowing() ? 0 : statusHeight); // + (isSeparatedStatus ? statusHeight : 0);
+      ry += windowY + decorY + statusHeight; // 此时不能确定 (view != null && popupWindow != null && popupWindow.isShowing() ? 0 : statusHeight); // + (isSeparatedStatus ? statusHeight : 0);
 
       event = MotionEvent.obtain(
               obj.getLongValue("downTime"),
