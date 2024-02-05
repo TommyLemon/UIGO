@@ -157,8 +157,8 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:padding="6dp"
-            android:hint="IN: Click to select"
-            tools:text="IN: RelativeLayout/123"
+            android:hint="[]: Click to select"
+            tools:text="[]: RelativeLayout/123"
             android:textColor="@android:color/white"
             />
 

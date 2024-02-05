@@ -232,6 +232,11 @@ public class UIAutoApp extends Application {
           splitY = curNode.splitY;
           splitX2 = curNode.splitX2;
           splitY2 = curNode.splitY2;
+          ballGravity = curNode.ballGravity;
+          ballGravity2 = curNode.ballGravity2;
+          gravityX = curNode.gravityX;
+          gravityY = curNode.gravityY;
+
 //          if (isSplitShowing) { // && floatBall != null) {
             //居然怎么都不更新 vSplitX 和 vSplitY
             // floatBall.hide();
@@ -769,12 +774,25 @@ public class UIAutoApp extends Application {
     // if (isSplitShowing) {
     floatBall = showSplit(floatBall, isSplitShowing, splitX, splitY, "floatBall", vFloatBall, floatSplitX, floatSplitY);
     // if (isSplit2Showing) {
+
+    floatBall2 = showSplit(floatBall2, isSplitShowing && isSplit2Showing, splitX2, splitY2, "floatBall2", vFloatBall2, floatSplitX2, floatSplitY2);
+    // }
+
     if (isSplit2Showing == false) {
 //      if (floatBall2 != null) {
-//      floatBall2.hide(); // FIXME 无效，FloatWindow bug，切换 Activity 时 hide 无效
-//      floatSplitX2.hide();
-//      floatSplitY2.hide();
+////        floatBall2.show();
+//        floatBall2.hide(); // FIXME 无效，FloatWindow bug，切换 Activity 时 hide 无效
 //      }
+//      if (floatSplitX2 != null) {
+////        floatSplitX2.show();
+//        floatSplitX2.hide();
+//      }
+//      if (floatSplitY2 != null) {
+////        floatSplitY2.show();
+//        floatSplitY2.hide();
+//      }
+
+      // FIXME 导致副悬浮球的分割线一直不显示
       try {
         FloatWindow.destroy("floatBall2");
       } catch (Throwable e) {
@@ -795,8 +813,6 @@ public class UIAutoApp extends Application {
       floatSplitX2 = null;
       floatSplitY2 = null;
     }
-
-    floatBall2 = showSplit(floatBall2, isSplitShowing && isSplit2Showing, splitX2, splitY2, "floatBall2", vFloatBall2, floatSplitX2, floatSplitY2);
 
     setSplit();
 
@@ -1486,6 +1502,15 @@ public class UIAutoApp extends Application {
     setGravity(tvControllerGravityX, false);
     setGravity(tvControllerGravityY, true);
 
+    tvControllerGravityContainer.setOnLongClickListener(new View.OnLongClickListener() {
+      @Override
+      public boolean onLongClick(View v) {
+        curFocusView = null;
+        tvControllerGravityContainer.setText("");
+        return true;
+      }
+    });
+
     tvControllerGravityContainer.setOnClickListener(new View.OnClickListener() {
       @Override
       public void onClick(View v) {
@@ -1501,7 +1526,8 @@ public class UIAutoApp extends Application {
           return;
         }
 
-        tvControllerGravityContainer.setText("IN: " + curFocusView.getClass().getSimpleName() + "/" + curFocusView.getId());
+        String in = getResIdName(curFocusView);
+        tvControllerGravityContainer.setText("[]: " + curFocusView.getClass().getSimpleName() + "/" + (StringUtil.isEmpty(in, true) ? curFocusView.getId() : in));
 
         int[] loc = new int[2];
         curFocusView.getLocationOnScreen(loc);
@@ -2946,11 +2972,11 @@ public class UIAutoApp extends Application {
     if (firstTime <= 0) {
       currentTime = 0;
       Toast.makeText(getApp(), R.string.finished_because_of_no_step, Toast.LENGTH_SHORT).show();
-      tvControllerPlay.setText("replay");
+      tvControllerPlay.setText(R.string.replay);
       showCoverAndSplit(true, false);
     }
     else {
-      tvControllerPlay.setText("replaying");
+      tvControllerPlay.setText(R.string.replaying);
       showCoverAndSplit(true, true);
 
       currentTime = System.currentTimeMillis();
@@ -3119,13 +3145,16 @@ public class UIAutoApp extends Application {
       eventNode.windowHeight = windowHeight;
       eventNode.keyboardHeight = ratio*kh;
 
-      Long gravityViewId = obj.getLong("gravityViewId");
+      boolean isSplit2Show = obj.getBooleanValue("isSplit2Show");
+      Integer gravityViewId = obj.getInteger("gravityViewId");
+      String gravityViewIdName = obj.getString("gravityViewIdName");
+
       Integer gravityX = obj.getInteger("gravityX"); // 数据库字段默认值设置为 null // - 1;
       Integer gravityY = obj.getInteger("gravityY"); // 数据库字段默认值设置为 null // - 1;
       Integer ballGravity = obj.getInteger("ballGravity"); // 数据库字段默认值设置为 null // - 1;
       Integer ballGravity2 = obj.getInteger("ballGravity2"); // 数据库字段默认值设置为 null // - 1;
       if (gravityViewId == null) {
-        gravityViewId = -1L;
+        gravityViewId = -1;
       }
       if (gravityX == null) {
         gravityX = -1;
@@ -3142,19 +3171,39 @@ public class UIAutoApp extends Application {
 
       double x = obj.getDoubleValue("x");
       double y = obj.getDoubleValue("y");
-      double sx = obj.getDoubleValue("splitX");
-      double sx2 = obj.getDoubleValue("splitX2");
-      double sy = obj.getDoubleValue("splitY");
-      double sy2 = obj.getDoubleValue("splitY2");
 
-      sx = transSplitX(sx, cw, ballGravity, ratio);
-      sy = transSplitY(sy, ch, ballGravity, ratio);
-      sx2 = transSplitX(sx2, cw, ballGravity2, ratio);
-      sy2 = transSplitY(sy2, ch, ballGravity2, ratio);
+      boolean isCur = isSplit2Show && (step == this.step || Objects.equals(getCurrentActivity().getClass().getName(), obj.getString("activity")));
+      int id = isCur ? getResId(gravityViewIdName) : 0;
+      View curView = isCur ? findView(id > 0 ? id : gravityViewId) : null;
+//      Rect curRect = curView == null ? null : new Rect();
+
+      int[] loc = curView == null ? null : new int[2];
+      if (loc != null) {
+        // 居然不是 curView，而是窗口的 0, 81 - 1080, 2400  curView.getWindowVisibleDisplayFrame(curRect);
+        curView.getLocationOnScreen(loc);
+      }
+
+      double sx = 0; // loc == null ? obj.getDoubleValue("splitX") : loc[0] + curFocusView.getWidth() - curFocusView.getPaddingRight(); //curRect.right - curView.getPaddingRight();
+      double sy = 0; // = loc == null ? obj.getDoubleValue("splitY") : loc[1] + curFocusView.getHeight() - curFocusView.getPaddingBottom() - statusHeight; //curRect.bottom - curView.getPaddingBottom();
+      double sx2 = 0; // = loc == null ? obj.getDoubleValue("splitX2") : loc[0] + curFocusView.getPaddingLeft(); // curRect.left + curView.getPaddingLeft();
+      double sy2 = 0; // = loc == null ? obj.getDoubleValue("splitY2") : loc[1] + curFocusView.getPaddingTop() - statusHeight; // curRect.top + curView.getPaddingTop();
+      if (loc != null) {
+        sx = loc[0] + curView.getWidth() - curView.getPaddingRight(); //curRect.right - curView.getPaddingRight();
+        sy = loc[1] + curView.getHeight() - curView.getPaddingBottom() - statusHeight; //curRect.bottom - curView.getPaddingBottom();
+        sx2 = loc[0] + curView.getPaddingLeft(); // curRect.left + curView.getPaddingLeft();
+        sy2 = loc[1] + curView.getPaddingTop() - statusHeight; // curRect.top + curView.getPaddingTop();
+      }
+
+      if (sx2 <= 0 || sx >= windowWidth || sy2 <= 0 || sy >= windowHeight || Math.abs(sx - sx2) < 30 || Math.abs(sy - sy2) < 30) {
+        sx = transSplitX(obj.getDoubleValue("splitX"), cw, ballGravity, ratio);
+        sy = transSplitY(obj.getDoubleValue("splitY"), ch, ballGravity, ratio);
+        sx2 = transSplitX(obj.getDoubleValue("splitX2"), cw, ballGravity2, ratio);
+        sy2 = transSplitY(obj.getDoubleValue("splitY2"), ch, ballGravity2, ratio);
+      }
 
       eventNode.x = x;
       eventNode.y = y;
-      eventNode.isSplit2Show = obj.getBooleanValue("isSplit2Show");
+      eventNode.isSplit2Show = isSplit2Show;
       eventNode.splitX = sx;
       eventNode.splitY = sy;
       eventNode.splitX2 = sx2;
@@ -3274,6 +3323,7 @@ public class UIAutoApp extends Application {
 
     return eventNode;
   }
+
 
   private double transSplitX(double sx, double cw, int ballGravity, double ratio) {
     if (Math.abs(sx) > cw) {
@@ -4073,7 +4123,9 @@ public class UIAutoApp extends Application {
     event.put("splitY2", splitY2);
     if (isSplit2Showing) {
       event.put("isSplit2Show", 1);
-      event.put("gravityViewId", curFocusView == null ? View.NO_ID : curFocusView.getId());
+      event.put("gravityViewId", curFocusView == null ? null : curFocusView.getId());
+      event.put("gravityViewIdName", getResIdName(curFocusView));
+
       event.put("gravityX", gravityX);
       event.put("gravityY", gravityY);
       event.put("ballGravity", ballGravity);
@@ -4102,6 +4154,28 @@ public class UIAutoApp extends Application {
     return event;
   }
 
+  private int getResId(String gravityViewIdName) {
+    try {
+      return getResources().getIdentifier(gravityViewIdName, "id", getPackageName());
+    }
+    catch (Throwable e) {
+      e.printStackTrace();
+    }
+    return 0;
+  }
+  private String getResIdName(View v) {
+    return v == null ? null : getResIdName(v.getId());
+  }
+  private String getResIdName(@IdRes int id) {
+    try {
+      return getResources().getResourceEntryName(id);
+    }
+    catch (Throwable e) {
+      e.printStackTrace();
+    }
+    return null;
+  }
+
   public void setEventList(JSONArray eventList) {
     setEventList(eventList, 0);
   }
@@ -4123,7 +4197,7 @@ public class UIAutoApp extends Application {
     duration = 0;
     flowId = - System.currentTimeMillis();
 
-    tvControllerPlay.setText("replay");
+    tvControllerPlay.setText(R.string.replay);
     tvControllerCount.setText(step + "/" + allStep);
     tvControllerTime.setText("0:00");
 
@@ -4184,7 +4258,7 @@ public class UIAutoApp extends Application {
       }
     }
 
-    tvControllerPlay.setText("record");
+    tvControllerPlay.setText(R.string.record);
     tvControllerCount.setText(step + "/" + allStep);
 
     showCover(true);
