@@ -3169,8 +3169,11 @@ public class UIAutoApp extends Application {
         ballGravity2 = -1;
       }
 
+      int pc = obj.getIntValue("pointerCount");
       double x = obj.getDoubleValue("x");
       double y = obj.getDoubleValue("y");
+      double x2 = obj.getDoubleValue("x2");
+      double y2 = obj.getDoubleValue("y2");
 
       boolean isCur = isSplit2Show && (step == this.step || Objects.equals(getCurrentActivity().getClass().getName(), obj.getString("activity")));
       int id = isCur ? getResId(gravityViewIdName) : 0;
@@ -3203,6 +3206,8 @@ public class UIAutoApp extends Application {
 
       eventNode.x = x;
       eventNode.y = y;
+      eventNode.x2 = x2;
+      eventNode.y2 = y2;
       eventNode.isSplit2Show = isSplit2Show;
       eventNode.splitX = sx;
       eventNode.splitY = sy;
@@ -3269,25 +3274,54 @@ public class UIAutoApp extends Application {
       rx += windowX + decorX;
       ry += windowY + decorY + statusHeight; // 此时不能确定 (view != null && popupWindow != null && popupWindow.isShowing() ? 0 : statusHeight); // + (isSeparatedStatus ? statusHeight : 0);
 
-      event = MotionEvent.obtain(
-              obj.getLongValue("downTime"),
-              obj.getLongValue("eventTime"),
-              obj.getIntValue("action"),
+      if (x2 == 0 || y2 == 0) {
+        event = MotionEvent.obtain(
+                obj.getLongValue("downTime"),
+                obj.getLongValue("eventTime"),
+                obj.getIntValue("action"),
 //                            obj.getIntValue("targetCount"),
-              (float) rx,
-              (float) ry,
-              obj.getFloatValue("pressure"),
-              obj.getFloatValue("size"),
-              obj.getIntValue("metaState"),
-              obj.getFloatValue("xPrecision"),
-              obj.getFloatValue("yPrecision"),
-              obj.getIntValue("deviceId"),
-              obj.getIntValue("edgeFlags")
+                (float) rx,
+                (float) ry,
+                obj.getFloatValue("pressure"),
+                obj.getFloatValue("size"),
+                obj.getIntValue("metaState"),
+                obj.getFloatValue("xPrecision"),
+                obj.getFloatValue("yPrecision"),
+                obj.getIntValue("deviceId"),
+                obj.getIntValue("edgeFlags")
 //                            obj.getIntValue("source"),
 //                            obj.getIntValue("displayId")
-      );
-      ((MotionEvent) event).setSource(obj.getIntValue("source"));
+        );
+
+        ((MotionEvent) event).setSource(obj.getIntValue("source"));
 //                    ((MotionEvent) event).setEdgeFlags(obj.getIntValue("edgeFlags"));
+      }
+      else {
+        MotionEvent.PointerCoords p1 = new MotionEvent.PointerCoords();
+        p1.x = (float) rx;
+        p1.y = (float) ry;
+
+        MotionEvent.PointerCoords p2 = new MotionEvent.PointerCoords();
+        p2.x = (float) (rx + x2 - x);
+        p2.y = (float) (ry + y2 - y);
+
+        event = MotionEvent.obtain(
+                obj.getLongValue("downTime"),
+                obj.getLongValue("eventTime"),
+                obj.getIntValue("action"),
+                pc,
+                obj.getObject("pointerIds", int[].class),
+                new MotionEvent.PointerCoords[] {p1, p2},
+                obj.getIntValue("metaState"),
+//                obj.getIntValue("buttonState"),
+                obj.getFloatValue("xPrecision"),
+                obj.getFloatValue("yPrecision"),
+                obj.getIntValue("deviceId"),
+                obj.getIntValue("edgeFlags"),
+                obj.getIntValue("source"),
+                obj.getIntValue("flags")
+        );
+      }
 
     }
     else {
@@ -3816,11 +3850,19 @@ public class UIAutoApp extends Application {
       double x = event.getX();
       double y = event.getY();
 
+      int pc = event.getPointerCount();
+      Float x2 = pc < 2 ? null : event.getX(1);
+      Float y2 = pc < 2 ? null : event.getY(1);
+
+      obj.put("pointerCount", pc);
+      obj.put("pointerIds", pc < 2 ? new int[] {event.getPointerId(0)} : new int[] {event.getPointerId(0), event.getPointerId(1)});
       if (view != null && webView == null) { // PopupWindow 等小窗口不需要分割？
         obj.put("x", x);
         obj.put("y", y);
+        obj.put("x2", x2);
+        obj.put("y2", y2);
       }
-      else {
+      else { // FIXME 根据 ballGravity, ballGravity2 和 gravityX, gravityY 计算
         double rx = x - windowX - decorX;
         double ry = y - windowY - decorY - (popupWindow != null && popupWindow.isShowing() ? 0 : statusHeight); // (isSeparatedStatus ? 0 : statusHeight);
 
@@ -3844,12 +3886,21 @@ public class UIAutoApp extends Application {
         double maxY = (isSplit2Showing ? Math.max(floatBall.getY(), floatBall2.getY()) : floatBall.getY()) + splitRadius;
 //      double avgY = (minY + maxY)/2;
 
-        obj.put("x", rx < maxX ? rx : rx - windowWidth); // dw + dx); // Math.round(x - windowX - decorX - (x < avgX ? 0 : decorWidth)));
-        obj.put("y", ry < maxY ? ry : ry - windowHeight); // + (isSeparatedStatus ? 0 : statusHeight)); // dh + dy + statusHeight + navigationHeight); // Math.round(y - windowY - decorY - (y < avgY ? 0 : decorHeight)));
+        rx = rx < maxX ? rx : rx - windowWidth; // dw + dx); // Math.round(x - windowX - decorX - (x < avgX ? 0 : decorWidth)));
+        ry = ry < maxY ? ry : ry - windowHeight; // + (isSeparatedStatus ? 0 : statusHeight)); // dh + dy + statusHeight + navigationHeight); // Math.round(y - windowY - decorY - (y < avgY ? 0 : decorHeight)));
+
+        obj.put("x", rx);
+        obj.put("y", ry);
+        obj.put("x2", x2 == null ? null : rx + x2 - x);
+        obj.put("y2", y2 == null ? null : ry + y2 - y);
       }
 
       obj.put("rawX", event.getRawX());
       obj.put("rawY", event.getRawY());
+      if (pc >= 2 && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        obj.put("rawX2", event.getRawX(1));
+        obj.put("rawY2", event.getRawY(1));
+      }
 
       // 导致录制不到最初的下拉刷新？
       if (lastItem != null) { // 避免重复，尤其是 ACTION_UP
@@ -3872,7 +3923,7 @@ public class UIAutoApp extends Application {
       obj.put("pressure", event.getPressure());
       obj.put("xPrecision", event.getXPrecision());
       obj.put("yPrecision", event.getYPrecision());
-      obj.put("pointerCount", event.getPointerCount());
+//      obj.put("pointerCount", event.getPointerCount());
       obj.put("edgeFlags", event.getEdgeFlags());
     }
 
@@ -4507,7 +4558,7 @@ public class UIAutoApp extends Application {
     int orientation;
     int gravityX, gravityY;
     int ballGravity, ballGravity2;
-    double x, y;
+    double x, y, x2, y2;
 
     String activity;
     String fragment;
