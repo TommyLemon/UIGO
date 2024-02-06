@@ -2672,7 +2672,10 @@ public class UIAutoApp extends Application {
     // return rectangle.top;
   }
 
-  double deltaX, deltaY, ballDeltaX, ballDeltaY;
+  double deltaX, deltaY, ballDeltaX, ballDeltaY, lastBallDeltaX, lastBallDeltaY;
+  Window.Callback lastDeltaCallback;
+  View lastDeltaView;
+  MotionEvent lastDeltaEvent;
 
   public boolean dispatchEventToCurrentWindow(Node<InputEvent> node, InputEvent ie, boolean record) {
     if (ie == null) {
@@ -2771,21 +2774,60 @@ public class UIAutoApp extends Application {
             deltaX = 0;
             deltaY = 0;
 
+            if (lastDeltaEvent != null && (lastBallDeltaX != 0 || lastBallDeltaY != 0)) { // && (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL)) {
+              double dx = lastBallDeltaX;
+              double dy = lastBallDeltaY;
+
+              MotionEvent event0 = lastDeltaEvent;
+              event0.offsetLocation((float) dx, (float) dy);
+              event0.setAction(MotionEvent.ACTION_DOWN);
+
+//              postDelayed(new Runnable() {
+//                @Override
+//                public void run() {
+                  dispatchTouchEvent(lastDeltaCallback, lastDeltaView, event0, event0);
+
+                  MotionEvent event1 = MotionEvent.obtain(event0);
+                  event1.offsetLocation((float) -dx, (float) -dy);
+                  event1.setAction(MotionEvent.ACTION_MOVE);
+                  dispatchTouchEvent(lastDeltaCallback, lastDeltaView, event1, event1);
+
+                  event1 = MotionEvent.obtain(event1);
+                  dispatchTouchEvent(lastDeltaCallback, lastDeltaView, event1, event1);
+
+                  MotionEvent event2 = MotionEvent.obtain(event1);
+                  event2.setAction(MotionEvent.ACTION_UP);
+                  dispatchTouchEvent(lastDeltaCallback, lastDeltaView, event2, event2);
+
+                  lastBallDeltaX = 0;
+                  lastBallDeltaY = 0;
+                  lastDeltaCallback = null;
+                  lastDeltaView = null;
+                  lastDeltaEvent = null;
+//                }
+//              }, 1);
+            }
+
             if (node != null && node.isSplit2Show == false && obj != null) {
+              double sx = obj.getDoubleValue("splitX");
               double sy = obj.getDoubleValue("splitY");
 
-              double top = floatBall.getY() + splitRadius + (isSeparatedStatus ? statusHeight : 0);
+              double left = floatBall == null ? (splitX >= 0 ? splitX : splitX + windowWidth) : floatBall.getX() + splitRadius;
+              double right = sx >= 0 ? sx : sx + node.windowWidth;
+              double top = floatBall == null ? (splitY >= 0 ? splitY : splitY + windowHeight) : floatBall.getY() + splitRadius + (isSeparatedStatus ? statusHeight : 0);
               double bottom = (sy >= 0 ? sy : sy + node.windowHeight) + (isSeparatedStatus ? statusHeight : 0);
-              if ((ry > top && ry < bottom) || (ry < top && ry > bottom)) {
+
+              if ((rx > left && rx < right) || (rx < left && rx > right) || (ry > top && ry < bottom) || (ry < top && ry > bottom)) {
+                double dx = left - right;
                 double dy = top - bottom;
 
                 MotionEvent event0 = MotionEvent.obtain(isPopupWindow ? viewEvent : event);
-                event0.offsetLocation(0f, (float) dy);
+                event0.offsetLocation((float) dx, (float) dy);
 //                event0.setAction(MotionEvent.ACTION_DOWN);
                 dispatchTouchEvent(callback_, view_, event0, event0);
 
                 MotionEvent event1 = MotionEvent.obtain(event0);
-                event1.offsetLocation(0f, (float) dy);
+                event1.offsetLocation((float) dx, (float) dy);
                 event1.setAction(MotionEvent.ACTION_MOVE);
                 dispatchTouchEvent(callback_, view_, event1, event1);
 
@@ -2796,9 +2838,17 @@ public class UIAutoApp extends Application {
                 event2.setAction(MotionEvent.ACTION_UP);
                 dispatchTouchEvent(callback_, view_, event2, event2);
 
+                ballDeltaX = dx;
                 ballDeltaY = dy;
+                rx += dx;
                 ry += dy;
 //                event = MotionEvent.obtain(event0);
+
+                lastBallDeltaX = dx;
+                lastBallDeltaY = dy;
+                lastDeltaCallback = callback_;
+                lastDeltaView = view_;
+                lastDeltaEvent = MotionEvent.obtain(event0);
               }
             }
 
@@ -2859,36 +2909,38 @@ public class UIAutoApp extends Application {
         catch (Throwable e) {  // java.lang.IllegalArgumentException: tagertIndex out of range
           e.printStackTrace();
         }
-        finally { // 还原位置，避免点击其它区域时错位
-          if (ballDeltaY != 0 && (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL)) {
-            double dy = ballDeltaY;
-
-            MotionEvent event0 = MotionEvent.obtain(isPopupWindow ? viewEvent : event);
-            event0.offsetLocation(0f, (float) dy);
-            event0.setAction(MotionEvent.ACTION_DOWN);
-
-            postDelayed(new Runnable() {
-              @Override
-              public void run() {
-                dispatchTouchEvent(callback_, view_, event0, event0);
-
-                MotionEvent event1 = MotionEvent.obtain(event0);
-                event1.offsetLocation(0f, (float) -dy);
-                event1.setAction(MotionEvent.ACTION_MOVE);
-                dispatchTouchEvent(callback_, view_, event1, event1);
-
-                event1 = MotionEvent.obtain(event1);
-                dispatchTouchEvent(callback_, view_, event1, event1);
-
-                MotionEvent event2 = MotionEvent.obtain(event1);
-                event2.setAction(MotionEvent.ACTION_UP);
-                dispatchTouchEvent(callback_, view_, event2, event2);
-
-                ballDeltaY = 0;
-              }
-            }, 1);
-          }
-        }
+//        finally { // FIXME 惯性划动会被 制止 还原位置，避免点击其它区域时错位
+//          if ((ballDeltaX != 0 || ballDeltaY != 0) && (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL)) {
+//            double dx = ballDeltaX;
+//            double dy = ballDeltaY;
+//
+//            MotionEvent event0 = MotionEvent.obtain(isPopupWindow ? viewEvent : event);
+//            event0.offsetLocation((float) dx, (float) dy);
+//            event0.setAction(MotionEvent.ACTION_DOWN);
+//
+//            postDelayed(new Runnable() {
+//              @Override
+//              public void run() {
+//                dispatchTouchEvent(callback_, view_, event0, event0);
+//
+//                MotionEvent event1 = MotionEvent.obtain(event0);
+//                event1.offsetLocation((float) -dx, (float) -dy);
+//                event1.setAction(MotionEvent.ACTION_MOVE);
+//                dispatchTouchEvent(callback_, view_, event1, event1);
+//
+//                event1 = MotionEvent.obtain(event1);
+//                dispatchTouchEvent(callback_, view_, event1, event1);
+//
+//                MotionEvent event2 = MotionEvent.obtain(event1);
+//                event2.setAction(MotionEvent.ACTION_UP);
+//                dispatchTouchEvent(callback_, view_, event2, event2);
+//
+//                ballDeltaX = 0;
+//                ballDeltaY = 0;
+//              }
+//            }, 1 + calcDuration(node, node == null ? null : node.next)); // FIXME next down event or not motion event
+//          }
+//        }
       }
       else if (ie instanceof KeyEvent) {
         if (ie instanceof EditTextEvent) {
