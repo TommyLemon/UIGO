@@ -2672,6 +2672,7 @@ public class UIAutoApp extends Application {
     // return rectangle.top;
   }
 
+  float deltaX, deltaY;
 
   public boolean dispatchEventToCurrentWindow(Node<InputEvent> node, InputEvent ie, boolean record) {
     if (ie == null) {
@@ -2747,9 +2748,70 @@ public class UIAutoApp extends Application {
             }
           }
 
+          float rx = event.getX();
+          float ry = event.getY();
+
           if (isPopupWindow) {
             viewEvent = MotionEvent.obtain(event);
             viewEvent.offsetLocation(0f, - (float) statusHeight);
+
+            ry = event.getY();
+          }
+
+          boolean isNotDown = event.getAction() != MotionEvent.ACTION_DOWN;
+          if (isNotDown == false) {
+            deltaX = 0;
+            deltaY = 0;
+          }
+
+          View v = isNotDown ? null : findViewByPoint(decorView, null, rx, ry, true);
+          int vid = v == null ? 0 : v.getId();
+          String vidName = isNotDown ? null : getResIdName(vid);
+
+          int tid = isNotDown || obj == null ? 0 : obj.getIntValue("targetId");
+          String tidName = isNotDown || obj == null ? null : obj.getString("targetIdName");
+          int tid2 = isNotDown || tidName == null ? 0 : getResId(tidName);
+          View tv = isNotDown || obj == null || (vid > 0 && vid == tid)
+                  || (vidName != null && Objects.equals(vidName, tidName))
+                  ? null : findView(tid2 > 0 ? tid2 : tid);
+
+          int[] tLoc = tv == null ? null : new int[2];
+          if (tLoc != null) {
+            tv.getLocationOnScreen(tLoc);
+
+            float dx = 0;
+            int l = tLoc[0];
+            if (rx < l) {
+              dx = l + 1 - rx;
+            }
+            else if (rx > l + tv.getWidth()) {
+              dx = l + tv.getWidth() - 1 - rx;
+            }
+
+            float dy = 0;
+            int r = tLoc[1];
+            if (ry < r) {
+              dy = r + 1 - ry;
+            }
+            else if (ry > r + tv.getWidth()) {
+              dy = r + tv.getWidth() - 1 - ry;
+            }
+
+            deltaX = dx;
+            deltaY = dy;
+
+//            if (view == null && obj.getIntValue("pointerCount") <= 1) {
+//              view = tv;
+//            }
+          }
+
+          if (deltaX != 0 || deltaY != 0) {
+            event = MotionEvent.obtain(isPopupWindow ? viewEvent : event);
+            event.offsetLocation(deltaX, deltaY);
+
+            if (isPopupWindow) {
+              viewEvent = event;
+            }
           }
 
           if ((view == null || (view.dispatchTouchEvent(viewEvent) == false)) && callback != null) {
@@ -3274,6 +3336,35 @@ public class UIAutoApp extends Application {
       rx += windowX + decorX;
       ry += windowY + decorY + statusHeight; // 此时不能确定 (view != null && popupWindow != null && popupWindow.isShowing() ? 0 : statusHeight); // + (isSeparatedStatus ? statusHeight : 0);
 
+//      int tid = obj.getIntValue("targetId");
+//      String tidName = obj.getString("targetIdName");
+//      int tid2 = isCur ? getResId(tidName) : 0;
+//      View tv = isCur ? findView(tid2 > 0 ? tid2 : tid) : null;
+//
+//      int[] tLoc = tv == null ? null : new int[2];
+//      if (tLoc != null) {
+//        tv.getLocationOnScreen(tLoc);
+//
+//        int l = tLoc[0];
+//        if (rx < l) {
+//          rx = l + 1;
+//        }
+//        else if (rx > l + tv.getWidth()) {
+//          rx = l + tv.getWidth() - 1;
+//        }
+//
+//        int r = tLoc[1];
+//        if (ry < r) {
+//          ry = r + 1;
+//        }
+//        else if (ry > r + tv.getWidth()) {
+//          ry = r + tv.getWidth() - 1;
+//        }
+//      }
+
+      eventNode.rx = rx;
+      eventNode.ry = ry;
+
       if (x2 == 0 || y2 == 0) {
         event = MotionEvent.obtain(
                 obj.getLongValue("downTime"),
@@ -3305,12 +3396,15 @@ public class UIAutoApp extends Application {
         p2.x = (float) (rx + x2 - x);
         p2.y = (float) (ry + y2 - y);
 
+        eventNode.rx2 = p2.x;
+        eventNode.ry2 = p2.y;
+
         event = MotionEvent.obtain(
                 obj.getLongValue("downTime"),
                 obj.getLongValue("eventTime"),
                 obj.getIntValue("action"),
                 pc,
-                obj.getObject("pointerIds", int[].class),
+                zuo.biao.apijson.JSON.parseObject(obj.getString("pointerIds"), int[].class),
                 new MotionEvent.PointerCoords[] {p1, p2},
                 obj.getIntValue("metaState"),
 //                obj.getIntValue("buttonState"),
@@ -3813,6 +3907,7 @@ public class UIAutoApp extends Application {
         obj.put("edit", true);
         obj.put("target", mke.getTarget());
         obj.put("targetId", mke.getTargetId());
+        obj.put("targetIdName", getResIdName(mke.getTargetId()));
         obj.put("targetWebId", mke.getTargetWebId());
         obj.put("when", mke.getWhen());
         obj.put("s", mke.getS());
@@ -3849,6 +3944,12 @@ public class UIAutoApp extends Application {
 
       double x = event.getX();
       double y = event.getY();
+
+      if (action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_UP) {
+        View v = findViewByPoint(decorView, null, x, y, true);
+        obj.put("targetId", v == null ? null : v.getId());
+        obj.put("targetIdName", getResIdName(v));
+      }
 
       int pc = event.getPointerCount();
       Float x2 = pc < 2 ? null : event.getX(1);
@@ -4041,14 +4142,14 @@ public class UIAutoApp extends Application {
 
       for (int i = vg.getChildCount() - 1; i >= 0; i--) {
         View v = findViewByPoint(vg.getChildAt(i), clazz, x, y, onlyFocusable);
-        if (v != null && (onlyFocusable == false || view.isFocusable() || view.isFocusableInTouchMode())
-                && (clazz == null || clazz.isAssignableFrom(view.getClass()))) {
+        if (v != null && (onlyFocusable == false || v.hasFocus() || v.isFocusable() || v.isFocusableInTouchMode())
+                && (clazz == null || clazz.isAssignableFrom(v.getClass()))) {
           return (V) v;
         }
       }
     }
 
-    return (onlyFocusable == false || view.isFocusable() || view.isFocusableInTouchMode())
+    return (onlyFocusable == false || view.hasFocus() || view.isFocusable() || view.isFocusableInTouchMode())
             && (clazz == null || clazz.isAssignableFrom(view.getClass()))
             ? (V) view : null;
   }
@@ -4559,6 +4660,7 @@ public class UIAutoApp extends Application {
     int gravityX, gravityY;
     int ballGravity, ballGravity2;
     double x, y, x2, y2;
+    double rx, ry, rx2, ry2;
 
     String activity;
     String fragment;
