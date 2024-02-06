@@ -2672,7 +2672,7 @@ public class UIAutoApp extends Application {
     // return rectangle.top;
   }
 
-  float deltaX, deltaY;
+  double deltaX, deltaY, ballDeltaX, ballDeltaY;
 
   public boolean dispatchEventToCurrentWindow(Node<InputEvent> node, InputEvent ie, boolean record) {
     if (ie == null) {
@@ -2706,9 +2706,18 @@ public class UIAutoApp extends Application {
 //      }
 //    }
 
-    if (callback != null || view != null) {
+
+    Window.Callback callback_ = callback;
+    View view_ = view;
+
+    if (callback_ != null || view_ != null) {
       if (ie instanceof MotionEvent) {
         MotionEvent event = (MotionEvent) ie;
+        int action = event.getAction();
+        boolean isPopupWindow = false;
+
+        MotionEvent viewEvent = event;
+
 //        int windowX = getWindowX(activity);
 //        int windowY = getWindowY(activity) + statusHeight;
 //
@@ -2717,7 +2726,6 @@ public class UIAutoApp extends Application {
 //          event.offsetLocation(windowX, windowY);
 //        }
         try {
-          MotionEvent viewEvent = event;
           int gy = node == null ? -1 : node.gravityY;
           double y = node == null ? 0 : node.y;
           if (gy < 0 && y < 0) {
@@ -2726,7 +2734,7 @@ public class UIAutoApp extends Application {
 
           JSONObject obj = node == null ? null : node.obj;
           boolean isKeyboardChange = keyboardHeight > 0 && gy >= 0 && gy != GRAVITY_TOP;
-          boolean isPopupWindow = view != null && popupWindow != null && popupWindow.isShowing();
+          isPopupWindow = view_ != null && popupWindow != null && popupWindow.isShowing();
 
           if (obj == null || obj.isEmpty()) {
             // FIXME Dialog/PopupWindow 内输入?
@@ -2758,10 +2766,42 @@ public class UIAutoApp extends Application {
             ry = event.getY();
           }
 
-          boolean isNotDown = event.getAction() != MotionEvent.ACTION_DOWN;
+          boolean isNotDown = action != MotionEvent.ACTION_DOWN;
           if (isNotDown == false) {
             deltaX = 0;
             deltaY = 0;
+
+            if (node != null && node.isSplit2Show == false && obj != null) {
+              double sy = obj.getDoubleValue("splitY");
+
+              double top = floatBall.getY() + splitRadius + (isSeparatedStatus ? statusHeight : 0);
+              double bottom = (sy >= 0 ? sy : sy + node.windowHeight) + (isSeparatedStatus ? statusHeight : 0);
+              if ((ry > top && ry < bottom) || (ry < top && ry > bottom)) {
+                double dy = top - bottom;
+
+                MotionEvent event0 = MotionEvent.obtain(isPopupWindow ? viewEvent : event);
+                event0.offsetLocation(0f, (float) dy);
+//                event0.setAction(MotionEvent.ACTION_DOWN);
+                dispatchTouchEvent(callback_, view_, event0, event0);
+
+                MotionEvent event1 = MotionEvent.obtain(event0);
+                event1.offsetLocation(0f, (float) dy);
+                event1.setAction(MotionEvent.ACTION_MOVE);
+                dispatchTouchEvent(callback_, view_, event1, event1);
+
+                event1 = MotionEvent.obtain(event1);
+                dispatchTouchEvent(callback_, view_, event1, event1);
+
+                MotionEvent event2 = MotionEvent.obtain(event1);
+                event2.setAction(MotionEvent.ACTION_UP);
+                dispatchTouchEvent(callback_, view_, event2, event2);
+
+                ballDeltaY = dy;
+                ry += dy;
+//                event = MotionEvent.obtain(event0);
+              }
+            }
+
           }
 
           View v = isNotDown ? null : findViewByPoint(decorView, null, rx, ry, true);
@@ -2800,25 +2840,54 @@ public class UIAutoApp extends Application {
             deltaX = dx;
             deltaY = dy;
 
-//            if (view == null && obj.getIntValue("pointerCount") <= 1) {
-//              view = tv;
+//            if (view_ == null && obj.getIntValue("pointerCount") <= 1) {
+//              view_ = tv;
 //            }
           }
 
-          if (deltaX != 0 || deltaY != 0) {
+          if (deltaX + ballDeltaX != 0 || deltaY + ballDeltaY != 0) {
             event = MotionEvent.obtain(isPopupWindow ? viewEvent : event);
-            event.offsetLocation(deltaX, deltaY);
+            event.offsetLocation((float) (deltaX + ballDeltaX), (float) (deltaY + ballDeltaY));
 
             if (isPopupWindow) {
               viewEvent = event;
             }
           }
 
-          if ((view == null || (view.dispatchTouchEvent(viewEvent) == false)) && callback != null) {
-            callback.dispatchTouchEvent(event);
-          }
-        } catch (Throwable e) {  // java.lang.IllegalArgumentException: tagerIndex out of range
+          dispatchTouchEvent(callback_, view_, event, viewEvent);
+        }
+        catch (Throwable e) {  // java.lang.IllegalArgumentException: tagertIndex out of range
           e.printStackTrace();
+        }
+        finally { // 还原位置，避免点击其它区域时错位
+          if (ballDeltaY != 0 && (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL)) {
+            double dy = ballDeltaY;
+
+            MotionEvent event0 = MotionEvent.obtain(isPopupWindow ? viewEvent : event);
+            event0.offsetLocation(0f, (float) dy);
+            event0.setAction(MotionEvent.ACTION_DOWN);
+
+            postDelayed(new Runnable() {
+              @Override
+              public void run() {
+                dispatchTouchEvent(callback_, view_, event0, event0);
+
+                MotionEvent event1 = MotionEvent.obtain(event0);
+                event1.offsetLocation(0f, (float) -dy);
+                event1.setAction(MotionEvent.ACTION_MOVE);
+                dispatchTouchEvent(callback_, view_, event1, event1);
+
+                event1 = MotionEvent.obtain(event1);
+                dispatchTouchEvent(callback_, view_, event1, event1);
+
+                MotionEvent event2 = MotionEvent.obtain(event1);
+                event2.setAction(MotionEvent.ACTION_UP);
+                dispatchTouchEvent(callback_, view_, event2, event2);
+
+                ballDeltaY = 0;
+              }
+            }, 1);
+          }
         }
       }
       else if (ie instanceof KeyEvent) {
@@ -2960,19 +3029,31 @@ public class UIAutoApp extends Application {
             }
           }
         }
-        else if ((view == null || view.dispatchKeyEvent((KeyEvent) ie) == false) && callback != null) {
-          callback.dispatchKeyEvent((KeyEvent) ie);
+        else if ((view_ == null || view_.dispatchKeyEvent((KeyEvent) ie) == false) && callback_ != null) {
+          callback_.dispatchKeyEvent((KeyEvent) ie);
         }
       }
     }
 
     if (record) {
-      addInputEvent(ie, callback, activity, fragment);
+      addInputEvent(ie, callback_, activity, fragment);
     }
 
-    return callback != null || view != null;
+    return callback_ != null || view_ != null;
   }
 
+  private void dispatchTouchEvent(Window.Callback callback_, View view_, MotionEvent event, MotionEvent viewEvent) {
+    if (viewEvent == null) {
+      viewEvent = event;
+    }
+    if (viewEvent == null) {
+      return;
+    }
+
+    if ((view_ == null || (view_.dispatchTouchEvent(viewEvent) == false)) && callback_ != null) {
+      callback_.dispatchTouchEvent(event == null ? viewEvent : event);
+    }
+  }
 
 
   /**
@@ -3203,8 +3284,8 @@ public class UIAutoApp extends Application {
       }
 
       eventNode.ratio = ratio;
-      eventNode.windowWidth = wh;
-      eventNode.windowHeight = windowHeight;
+      eventNode.windowWidth = ww;
+      eventNode.windowHeight = wh;
       eventNode.keyboardHeight = ratio*kh;
 
       boolean isSplit2Show = obj.getBooleanValue("isSplit2Show");
