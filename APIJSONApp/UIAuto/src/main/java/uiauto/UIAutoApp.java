@@ -4350,15 +4350,14 @@ public class UIAutoApp extends Application {
     event.put("step", count);
     event.put("time", time);
     event.put("orientation", orientation);
-    event.put("splitX", splitX);
-    event.put("splitY", splitY);
-    event.put("splitX2", splitX2);
-    event.put("splitY2", splitY2);
+    event.put("splitX", isSplit2Showing || Math.abs(splitX) < windowWidth/2d ? splitX : (splitX < 0 ? splitX + windowWidth : splitX - windowWidth));
+    event.put("splitY", isSplit2Showing || Math.abs(splitY) < windowHeight/2d ? splitY : (splitY < 0 ? splitY + windowHeight : splitX - windowHeight));
     if (isSplit2Showing) {
       event.put("isSplit2Show", 1);
+      event.put("splitX2", splitX2);
+      event.put("splitY2", splitY2);
       event.put("gravityViewId", curFocusView == null ? null : curFocusView.getId());
       event.put("gravityViewIdName", getResIdName(curFocusView));
-
       event.put("gravityX", gravityX);
       event.put("gravityY", gravityY);
       event.put("ballGravity", ballGravity);
