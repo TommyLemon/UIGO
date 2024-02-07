@@ -2886,30 +2886,35 @@ public class UIAutoApp extends Application {
           int tid = isNotDown || obj == null ? 0 : obj.getIntValue("targetId");
           String tidName = isNotDown || obj == null ? null : obj.getString("targetIdName");
           int tid2 = isNotDown || tidName == null ? 0 : getResId(tidName);
-          View tv = isNotDown || obj == null || (vid > 0 && vid == tid)
+          NearestView<View> nv = isNotDown || obj == null || (vid > 0 && vid == tid)
                   || (vidName != null && Objects.equals(vidName, tidName))
-                  ? null : findView(tid2 > 0 ? tid2 : tid);
+                  ? null : findNearestView(decorView, null, rx, ry, true, tid2 > 0 ? tid2 : tid, null);
+          View tv = nv == null ? null : nv.view;
 
-          int[] tLoc = tv == null ? null : new int[2];
-          if (tLoc != null) {
-            tv.getLocationOnScreen(tLoc);
+          if (tv != null) {
+            if (nv.left*nv.right*nv.top*nv.bottom == 0) {
+              int[] tLoc = new int[2];
+              tv.getLocationOnScreen(tLoc);
+              nv.left = tLoc[0];
+              nv.right = nv.left + tv.getWidth();
+              nv.top = tLoc[1];
+              nv.bottom = nv.top + tv.getHeight();
+            }
 
             float dx = 0;
-            int l = tLoc[0];
-            if (rx < l) {
-              dx = l + 1 - rx;
+            if (rx < nv.left) {
+              dx = nv.left + 1 - rx;
             }
-            else if (rx > l + tv.getWidth()) {
-              dx = l + tv.getWidth() - 1 - rx;
+            else if (rx > nv.right) {
+              dx = nv.right - 1 - rx;
             }
 
             float dy = 0;
-            int t = tLoc[1];
-            if (ry < t) {
-              dy = t + 1 - ry;
+            if (ry < nv.top) {
+              dy = nv.top + 1 - ry;
             }
-            else if (ry > t + tv.getHeight()) {
-              dy = t + tv.getHeight() - 1 - ry;
+            else if (ry > nv.bottom) {
+              dy = nv.bottom - 1 - ry;
             }
 
             deltaX = dx;
@@ -4320,6 +4325,52 @@ public class UIAutoApp extends Application {
             ? (V) view : null;
   }
 
+  public <V extends View> NearestView<V> findNearestView(View view, Class<V> clazz, double x, double y, boolean onlyFocusable, int id, NearestView<V> nearestView) {
+    if (view instanceof ViewGroup) {
+      ViewGroup vg = (ViewGroup) view;
+
+      for (int i = vg.getChildCount() - 1; i >= 0; i--) {
+        NearestView<V> nv = findNearestView(vg.getChildAt(i), clazz, x, y, onlyFocusable, id, nearestView);
+        if (nv != null) {
+          nearestView = nv;
+        }
+      }
+    }
+
+    if (nearestView != null && nearestView.distance <= 0) {
+      return nearestView;
+    }
+
+    if (view != null && (id <= 0 || view.getId() == id) && (clazz == null || clazz.isAssignableFrom(view.getClass()))
+            && (onlyFocusable == false || view.hasFocus() || view.isFocusable() || view.isFocusableInTouchMode())
+    ) {
+      int[] loc = new int[2];
+      view.getLocationOnScreen(loc); // nearestView.getLocationInWindow(loc);
+
+      int l = loc[0];
+      int r = l + view.getWidth();
+      int t = loc[1];
+      int b = t + view.getHeight();
+
+      double d = Math.sqrt(
+              Math.pow(Math.min(Math.abs(x - l), Math.abs(x - r)), 2)
+                      + Math.pow(Math.min(Math.abs(y - t), Math.abs(y - b)), 2)
+      );
+
+      if (x >= l && x <= r && y >= t && y <= b && (nearestView == null || nearestView.distance > 0 || nearestView.z < view.getZ())) {
+        nearestView = new NearestView<>((V) view, 0, l, r, t, b);
+      }
+      else {
+        if (nearestView == null || (nearestView.distance > d && nearestView.z <= view.getZ())) {
+          nearestView = new NearestView<>((V) view, d, l, r, t, b);
+        }
+      }
+    }
+
+    return nearestView;
+  }
+
+
   int count = 0;
 
   public synchronized JSONObject addEvent(JSONObject event) {
@@ -4895,6 +4946,31 @@ public class UIAutoApp extends Application {
     public void setY(double y) {
       this.y = y;
     }
+  }
+
+  public static class NearestView<V extends View> {
+    V view;
+    float z;
+    int left, right, top, bottom;
+    double distance;
+
+    public NearestView(V view) {
+      this(view, 0);
+    }
+
+    public NearestView(V view, double distance) {
+      this(view, distance, 0, 0, 0, 0);
+    }
+    public NearestView(V view, double distance, int left, int right, int top, int bottom) {
+      this.view = view;
+      this.distance = distance;
+      this.z = view.getZ();
+      this.left = left;
+      this.right = right;
+      this.top = top;
+      this.bottom = bottom;
+    }
+
   }
 
 }
