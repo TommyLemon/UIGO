@@ -2769,6 +2769,8 @@ public class UIAutoApp extends Application {
             ry = event.getY();
           }
 
+//          double nry = ry;
+
           boolean isNotDown = action != MotionEvent.ACTION_DOWN;
           if (isNotDown == false) {
             deltaX = 0;
@@ -2777,47 +2779,69 @@ public class UIAutoApp extends Application {
             if (lastDeltaEvent != null && (lastBallDeltaX != 0 || lastBallDeltaY != 0)) { // && (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL)) {
               double dx = lastBallDeltaX;
               double dy = lastBallDeltaY;
+              Window.Callback dcb = lastDeltaCallback;
+              View dv = lastDeltaView;
 
               MotionEvent event0 = lastDeltaEvent;
               event0.offsetLocation((float) dx, (float) dy);
               event0.setAction(MotionEvent.ACTION_DOWN);
 
-//              postDelayed(new Runnable() {
-//                @Override
-//                public void run() {
-                  dispatchTouchEvent(lastDeltaCallback, lastDeltaView, event0, event0);
+              dispatchTouchEvent(dcb, dv, event0, event0);
 
-                  MotionEvent event1 = MotionEvent.obtain(event0);
-                  event1.offsetLocation((float) -dx, (float) -dy);
-                  event1.setAction(MotionEvent.ACTION_MOVE);
-                  dispatchTouchEvent(lastDeltaCallback, lastDeltaView, event1, event1);
+              MotionEvent event1 = MotionEvent.obtain(event0);
+              event1.offsetLocation((float) -dx, (float) -dy);
+              event1.setAction(MotionEvent.ACTION_MOVE);
+              dispatchTouchEvent(dcb, dv, event1, event1);
 
-                  event1 = MotionEvent.obtain(event1);
-                  dispatchTouchEvent(lastDeltaCallback, lastDeltaView, event1, event1);
+              event1 = MotionEvent.obtain(event1);
+              dispatchTouchEvent(dcb, dv, event1, event1);
 
-                  MotionEvent event2 = MotionEvent.obtain(event1);
-                  event2.setAction(MotionEvent.ACTION_UP);
-                  dispatchTouchEvent(lastDeltaCallback, lastDeltaView, event2, event2);
+              MotionEvent event2 = MotionEvent.obtain(event1);
+              event2.setAction(MotionEvent.ACTION_UP);
+              dispatchTouchEvent(dcb, dv, event2, event2);
 
-                  lastBallDeltaX = 0;
-                  lastBallDeltaY = 0;
-                  lastDeltaCallback = null;
-                  lastDeltaView = null;
-                  lastDeltaEvent = null;
-//                }
-//              }, 1);
+//              ballDeltaX = - dx;
+//              ballDeltaY = - dy;
+//              rx -= dx;
+//              ry -= dy;
+
+              lastBallDeltaX = 0;
+              lastBallDeltaY = 0;
+              lastDeltaCallback = null;
+              lastDeltaView = null;
+              lastDeltaEvent = null;
+
+//              try {
+//                Thread.sleep(1);
+//              } catch (Throwable e) {
+//                e.printStackTrace();
+//              }
             }
 
             if (node != null && node.isSplit2Show == false && obj != null) {
               double sx = obj.getDoubleValue("splitX");
               double sy = obj.getDoubleValue("splitY");
 
-              double left = floatBall == null ? (splitX >= 0 ? splitX : splitX + windowWidth) : floatBall.getX() + splitRadius;
-              double right = sx >= 0 ? sx : sx + node.windowWidth;
-              double top = floatBall == null ? (splitY >= 0 ? splitY : splitY + windowHeight) : floatBall.getY() + splitRadius + (isSeparatedStatus ? statusHeight : 0);
-              double bottom = (sy >= 0 ? sy : sy + node.windowHeight) + (isSeparatedStatus ? statusHeight : 0);
+              double ratio = getScale(node.windowWidth, node.windowHeight, node.layoutType, node.density);
+              if (ratio <= 0.1) {
+                ratio = 1;
+              }
 
-              if ((rx > left && rx < right) || (rx < left && rx > right) || (ry > top && ry < bottom) || (ry < top && ry > bottom)) {
+              double x = node.x;
+//              double left = floatBall == null ? (splitX >= 0 ? splitX - windowWidth : splitX + windowWidth) : floatBall.getX() + splitRadius;
+              double left = (splitX > 0 ? splitX - windowWidth : splitX + windowWidth) + (x >= 0 ? 0 : windowWidth);
+              double right = ratio*(sx > 0 ? sx - node.windowWidth : sx + node.windowWidth) + (x >= 0 ? 0 : windowWidth);
+//              double top = floatBall == null ? (splitY >= 0 ? splitY - windowHeight : splitY + windowHeight) : floatBall.getY() + splitRadius + (isSeparatedStatus ? statusHeight : 0);
+              double top = (splitY > 0 ? splitY - windowHeight : splitY + windowHeight) + (y >= 0 ? 0 : windowHeight) + (isSeparatedStatus ? statusHeight : 0);
+              double bottom = ratio*(sy > 0 ? sy - node.windowHeight : sy + node.windowHeight) + (y >= 0 ? 0 : windowHeight) + (isSeparatedStatus ? statusHeight : 0);
+//
+//              double oy = (isSeparatedStatus ? statusHeight : 0);
+//              double dx = rx >= 0 && rx <= windowWidth ? 0 : (windowWidth - ratio*node.windowWidth)*(rx < 0 ? -1 : 1);
+//              double dy = ry >= oy && ry <= windowHeight + oy ? 0 : (windowHeight - ratio*node.windowHeight)*(ry < oy ? -1 : 1);
+
+              // 本质上都是超出了当前 Window 显示区域
+               if ((rx > left && rx < right) || (rx < left && rx > right) || (ry > top && ry < bottom) || (ry < top && ry > bottom)) {
+//              if (dx != 0 || dy != 0) {
                 double dx = left - right;
                 double dy = top - bottom;
 
@@ -2838,8 +2862,9 @@ public class UIAutoApp extends Application {
                 event2.setAction(MotionEvent.ACTION_UP);
                 dispatchTouchEvent(callback_, view_, event2, event2);
 
-                ballDeltaX = dx;
-                ballDeltaY = dy;
+                ballDeltaX += dx;
+                ballDeltaY += dy;
+
                 rx += dx;
                 ry += dy;
 //                event = MotionEvent.obtain(event0);
@@ -2879,12 +2904,12 @@ public class UIAutoApp extends Application {
             }
 
             float dy = 0;
-            int r = tLoc[1];
-            if (ry < r) {
-              dy = r + 1 - ry;
+            int t = tLoc[1];
+            if (ry < t) {
+              dy = t + 1 - ry;
             }
-            else if (ry > r + tv.getWidth()) {
-              dy = r + tv.getWidth() - 1 - ry;
+            else if (ry > t + tv.getHeight()) {
+              dy = t + tv.getHeight() - 1 - ry;
             }
 
             deltaX = dx;
@@ -2906,11 +2931,11 @@ public class UIAutoApp extends Application {
 
           dispatchTouchEvent(callback_, view_, event, viewEvent);
         }
-        catch (Throwable e) {  // java.lang.IllegalArgumentException: tagertIndex out of range
+        catch (Throwable e) {  // java.lang.IllegalArgumentException: targetIndex out of range
           e.printStackTrace();
         }
-//        finally { // FIXME 惯性划动会被 制止 还原位置，避免点击其它区域时错位
-//          if ((ballDeltaX != 0 || ballDeltaY != 0) && (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL)) {
+        finally { // FIXME 惯性划动会被 制止 还原位置，避免点击其它区域时错位
+          if ((ballDeltaX != 0 || ballDeltaY != 0) && (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL)) {
 //            double dx = ballDeltaX;
 //            double dy = ballDeltaY;
 //
@@ -2935,12 +2960,12 @@ public class UIAutoApp extends Application {
 //                event2.setAction(MotionEvent.ACTION_UP);
 //                dispatchTouchEvent(callback_, view_, event2, event2);
 //
-//                ballDeltaX = 0;
-//                ballDeltaY = 0;
+                ballDeltaX = 0;
+                ballDeltaY = 0;
 //              }
 //            }, 1 + calcDuration(node, node == null ? null : node.next)); // FIXME next down event or not motion event
-//          }
-//        }
+          }
+        }
       }
       else if (ie instanceof KeyEvent) {
         if (ie instanceof EditTextEvent) {
@@ -3174,6 +3199,12 @@ public class UIAutoApp extends Application {
       tvControllerPlay.setText(R.string.replaying);
       showCoverAndSplit(true, true);
 
+      lastBallDeltaX = 0;
+      lastBallDeltaY = 0;
+      lastDeltaCallback = null;
+      lastDeltaView = null;
+      lastDeltaEvent = null;
+
       currentTime = System.currentTimeMillis();
 
       //通过递归链表来实现
@@ -3335,7 +3366,9 @@ public class UIAutoApp extends Application {
         ratio = 1;
       }
 
+      eventNode.layoutType = layoutType;
       eventNode.ratio = ratio;
+      eventNode.density = density;
       eventNode.windowWidth = ww;
       eventNode.windowHeight = wh;
       eventNode.keyboardHeight = ratio*kh;
@@ -4100,16 +4133,16 @@ public class UIAutoApp extends Application {
         double rx = x - windowX - decorX;
         double ry = y - windowY - decorY - (popupWindow != null && popupWindow.isShowing() ? 0 : statusHeight); // (isSeparatedStatus ? 0 : statusHeight);
 
-        if (callback instanceof Dialog) {
-          Dialog dialog = (Dialog) callback;
-          // TODO
-        }
-
-        View decorView = window.getDecorView();
-        double dx = decorView.getX();
-        double dy = decorView.getY();
-        double dw = decorView.getWidth();
-        double dh = decorView.getHeight();
+//        if (callback instanceof Dialog) {
+//          Dialog dialog = (Dialog) callback;
+//          // TODO
+//        }
+//
+//        View decorView = window.getDecorView();
+//        double dx = decorView.getX();
+//        double dy = decorView.getY();
+//        double dw = decorView.getWidth();
+//        double dh = decorView.getHeight();
 
         // 只在回放前一处处理逻辑
         isSplit2Showing = floatBall2 != null && floatBall2.isShowing();
@@ -4785,7 +4818,11 @@ public class UIAutoApp extends Application {
     double windowY;
     double decorX;
     double decorY;
+
+    int layoutType;
     double ratio;
+    double density;
+
     double windowWidth, windowHeight;
     double keyboardHeight;
     int orientation;
