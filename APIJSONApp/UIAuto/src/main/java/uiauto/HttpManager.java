@@ -69,7 +69,7 @@ public class HttpManager {
 
     public synchronized static HttpManager getInstance() {
         if (instance == null) {
-            instance = new HttpManager(UIAutoApp.getInstance());
+            instance = new HttpManager(UIAutoApp.getApp());
         }
         return instance;
     }

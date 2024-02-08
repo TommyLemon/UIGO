@@ -38,6 +38,7 @@ import android.app.Dialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.res.AssetManager;
 import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
@@ -126,7 +127,7 @@ import unitauto.apk.UnitAutoApp;
 /**Application
  * @author Lemon
  */
-public class UIAutoApp extends Application {
+public class UIAutoApp { // extends Application {
   public static final String TAG = "UIAutoApp";
 
   private static final String BALL_GRAVITY = "BALL_GRAVITY";
@@ -144,12 +145,25 @@ public class UIAutoApp extends Application {
 
   private static UIAutoApp instance;
   public static UIAutoApp getInstance() {
+    if (instance == null) {
+      instance = new UIAutoApp();
+    }
     return instance;
   }
 
   private static Application APP;
   public static Application getApp() {
     return APP;
+  }
+  public Context getApplicationContext() {
+    return getApp().getApplicationContext();
+  }
+
+  public String getPackageName() {
+    return getApp().getPackageName();
+  }
+  public AssetManager getAssets() {
+    return getApp().getAssets();
   }
 
 
@@ -457,16 +471,19 @@ public class UIAutoApp extends Application {
   private long flowId = 0;
 
   File parentDirectory;
-  @Override
-  public void onCreate() {
-    super.onCreate();
-    instance = this;
-    initUIAuto(this);
+//  @Override
+//  public void onCreate() {
+//    super.onCreate();
+//    instance = this;
+//    initUIAuto(this);
+//  }
+
+
+  public Resources getResources() {
+    return getApp().getResources();
   }
-
-
   public SharedPreferences getSharedPreferences() {
-    return getSharedPreferences(TAG, Context.MODE_PRIVATE);
+    return getApp().getSharedPreferences(TAG, Context.MODE_PRIVATE);
   }
 
 
@@ -711,7 +728,7 @@ public class UIAutoApp extends Application {
 
     updateScreenWindowContentSize();
 
-    cache = cache != null ? cache : getSharedPreferences(TAG, Context.MODE_PRIVATE);
+    cache = cache != null ? cache : getSharedPreferences();
 
     splitSize = cache.getFloat(SPLIT_SIZE, 0);
     if (splitSize < 10) {
@@ -976,7 +993,7 @@ public class UIAutoApp extends Application {
       }
     }
 
-    cache = getSharedPreferences(TAG, Context.MODE_PRIVATE);
+    cache = getSharedPreferences();
     isProxy = cache.getBoolean(KEY_ENABLE_PROXY, false);
     proxyServer = cache.getString(KEY_PROXY_SERVER, null);
 
@@ -990,7 +1007,7 @@ public class UIAutoApp extends Application {
       e.printStackTrace();
     }
 
-    app.registerActivityLifecycleCallbacks(new ActivityLifecycleCallbacks() {
+    app.registerActivityLifecycleCallbacks(new Application.ActivityLifecycleCallbacks() {
 
       @Override
       public void onActivityStarted(Activity activity) {
@@ -1495,7 +1512,7 @@ public class UIAutoApp extends Application {
       @Override
       public void onClick(View v) {
         dismiss();
-        startActivity(UIAutoActivity.createIntent(getInstance()));
+        startActivity(UIAutoActivity.createIntent(getApp()));
       }
     });
 
@@ -1848,7 +1865,7 @@ public class UIAutoApp extends Application {
   public LayoutInflater getLayoutInflater() {
     if (inflater == null) {
       try {
-        inflater = LayoutInflater.from(this);
+        inflater = LayoutInflater.from(getApp());
       }
       catch (Exception e) {
         inflater = LayoutInflater.from(activity);
@@ -1982,9 +1999,9 @@ public class UIAutoApp extends Application {
   // LifecycleOwner 只覆盖 Activity, Fragment, 而 Window.Callback 只覆盖 Activity, Dialog
   private final Map<Object, BallPoint[]> ballPositionMap = new HashMap<>();
   private final Map<String, BallPoint[]> classBallPositionMap = new HashMap<>();
-  @Override
+//  @Override
   public void onConfigurationChanged(Configuration newConfig) {
-    super.onConfigurationChanged(newConfig);
+//    super.onConfigurationChanged(newConfig);
 
     if (newConfig == null || lastOrientation == newConfig.orientation) {
       return;
@@ -3856,7 +3873,14 @@ public class UIAutoApp extends Application {
   public JSONArray getOutputList() {
     return outputList;
   }
+  public static List<Object> getOutputList(int limit, int offset) {
+    return getOutputList(null, limit, offset);
+  }
   public static List<Object> getOutputList(UIAutoApp app, int limit, int offset) {
+    if (app == null) {
+      app = getInstance();
+    }
+
     JSONArray outputList = app.getOutputList();
     int size = outputList == null ? 0 : outputList.size();
     if (size <= 0) {
@@ -4637,11 +4661,11 @@ public class UIAutoApp extends Application {
   public void startUIAutoActivity() {
     startActivity(UIAutoActivity.createIntent(getCurrentActivity()));
   }
-  @Override
+//  @Override
   public void startActivity(Intent intent) {
     getCurrentActivity().startActivity(intent);
   }
-  @Override
+//  @Override
   public void startActivity(Intent intent, Bundle options) {
     getCurrentActivity().startActivity(intent, options);
   }

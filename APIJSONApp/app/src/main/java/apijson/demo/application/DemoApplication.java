@@ -18,6 +18,7 @@ import apijson.demo.manager.DataManager;
 import apijson.demo.model.User;
 
 import android.app.Application;
+import android.content.res.Configuration;
 import android.support.annotation.NonNull;
 import apijson.demo.BuildConfig;
 import apijson.demo.R;
@@ -46,7 +47,7 @@ public class DemoApplication extends BaseApplication {
 		super.onCreate();
 		context = this;
 		
-//		UIAutoApp.init(this);	
+		UIAutoApp.getInstance().initUIAuto(this);
 	
 		Thread.UncaughtExceptionHandler handler = Thread.currentThread().getUncaughtExceptionHandler();
 		Thread.currentThread().setUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
@@ -66,10 +67,21 @@ public class DemoApplication extends BaseApplication {
 		});
 	}
 
-	public static List<Object> getOutputList(DemoApplication app, int limit, int offset) {
-		return getOutputList(UIAutoApp.getInstance(), limit, offset);
+	public static List<Object> getOutputList(int limit, int offset) {
+		return getOutputList(null, limit, offset);
+	}
+	public static List<Object> getOutputList(UIAutoApp app, int limit, int offset) {
+		if (app == null) {
+			app = UIAutoApp.getInstance();
+		}
+		return UIAutoApp.getOutputList(app, limit, offset);
 	}
 
+	@Override
+	public void onConfigurationChanged(@NonNull Configuration newConfig) {
+		super.onConfigurationChanged(newConfig);
+		UIAutoApp.getInstance().onConfigurationChanged(newConfig);
+	}
 
 	/**获取当前用户id
 	 * @return

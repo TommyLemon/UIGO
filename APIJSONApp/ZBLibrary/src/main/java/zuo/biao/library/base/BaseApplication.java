@@ -13,16 +13,16 @@ import android.app.Application;
  * @see #init
  * @use extends BaseApplication 或 在你的Application的onCreate方法中BaseApplication.init(this);
  */
-public class BaseApplication extends UIAutoApp {
+public class BaseApplication extends Application {
 	private static final String TAG = "BaseApplication";
 
 	public BaseApplication() {
 	}
 
 	private static Application instance;
-//	public static Application getInstance() {
-//		return instance;
-//	}
+	public static Application getInstance() {
+		return instance;
+	}
 	
 	@Override
 	public void onCreate() {
