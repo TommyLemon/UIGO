@@ -406,6 +406,7 @@ public class UIAutoApp { // extends Application {
   Window.Callback callback;
   Window window;
   View decorView;
+  View contentView;
 
   double windowWidth;
   double windowHeight;
@@ -565,6 +566,8 @@ public class UIAutoApp { // extends Application {
     });
 
     addTextChangedListener(decorView);
+
+    contentView = decorView.findViewById(android.R.id.content);
 
     Window.Callback windowCallback = window.getCallback();
 
@@ -1536,7 +1539,7 @@ public class UIAutoApp { // extends Application {
         if (curFocusView == null) {
           double focusX = (isSplit2Showing ? (floatBall.getX() + floatBall2.getX())/2 : floatBall.getX()) + splitRadius;
           double focusY = (isSplit2Showing ? (floatBall.getY() + floatBall2.getY())/2 : floatBall.getY()) + splitRadius + (isSeparatedStatus ? statusHeight : 0);
-          curFocusView = findViewByPoint(getCurrentDecorView(), null, focusX, focusY, false);
+          curFocusView = findViewByPoint(callback instanceof Dialog ? getCurrentContentView() : getCurrentDecorView(), null, focusX, focusY, false);
         }
         if (curFocusView == null) {
           tvControllerGravityContainer.setText("");
@@ -2896,7 +2899,8 @@ public class UIAutoApp { // extends Application {
 
           }
 
-          View v = isNotDown ? null : findViewByPoint(decorView, null, rx, ry, true);
+          boolean isDialog = callback_ instanceof Dialog;
+          View v = isDialog || isNotDown ? null : findViewByPoint(isDialog ? contentView : decorView, null, rx, ry, true);
           int vid = v == null ? 0 : v.getId();
           String vidName = isNotDown ? null : getResIdName(vid);
 
@@ -2905,8 +2909,8 @@ public class UIAutoApp { // extends Application {
           int tid2 = isNotDown || tidName == null ? 0 : getResId(tidName);
           NearestView<View> nv = isNotDown || obj == null || (vid > 0 && vid == tid)
                   || (vidName != null && Objects.equals(vidName, tidName))
-                  ? null : findNearestView(decorView, null, rx, ry, true, tid2 > 0 ? tid2 : tid, null);
-          View tv = nv == null ? null : nv.view;
+                  ? null : findNearestView(isDialog ? contentView : decorView, null, rx, ry, true, tid2 > 0 ? tid2 : tid, null);
+          View tv = isDialog || nv == null ? null : nv.view;
 
           if (tv != null) {
             if (nv.left*nv.right*nv.top*nv.bottom == 0) {
@@ -4144,7 +4148,7 @@ public class UIAutoApp { // extends Application {
       double y = event.getY();
 
       if (action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_UP) {
-        View v = findViewByPoint(decorView, null, x, y, true);
+        View v = findViewByPoint(callback instanceof Dialog ? contentView : decorView, null, x, y, true);
         obj.put("targetId", v == null ? null : v.getId());
         obj.put("targetIdName", getResIdName(v));
       }
@@ -4244,6 +4248,12 @@ public class UIAutoApp { // extends Application {
       decorView = getCurrentWindow().getDecorView();
     }
     return decorView;
+  }
+  public View getCurrentContentView() {
+    if (contentView == null) {
+      contentView = getCurrentDecorView().findViewById(android.R.id.content);
+    }
+    return contentView;
   }
 
   private boolean isAlignLeft(MotionEvent event) {
