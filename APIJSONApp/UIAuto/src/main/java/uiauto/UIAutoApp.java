@@ -3587,12 +3587,15 @@ public class UIAutoApp { // extends Application {
         eventNode.rx2 = p2.x;
         eventNode.ry2 = p2.y;
 
+        Object pointerIds = obj.get("pointerIds"); // 有时 getString 取出来是 "L[I@123" 这种内存地址
+        int[] ids = pointerIds instanceof int[] ? (int[]) pointerIds : zuo.biao.apijson.JSON.parseObject(JSON.toJSONString(pointerIds), int[].class);
+
         event = MotionEvent.obtain(
                 obj.getLongValue("downTime"),
                 obj.getLongValue("eventTime"),
                 obj.getIntValue("action"),
                 pc,
-                zuo.biao.apijson.JSON.parseObject(obj.getString("pointerIds"), int[].class),
+                ids != null && ids.length >= 2 ? ids : new int[]{0, 1},
                 new MotionEvent.PointerCoords[] {p1, p2},
                 obj.getIntValue("metaState"),
 //                obj.getIntValue("buttonState"),
