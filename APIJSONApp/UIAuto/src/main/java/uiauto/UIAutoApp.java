@@ -1539,7 +1539,7 @@ public class UIAutoApp { // extends Application {
         if (curFocusView == null) {
           double focusX = (isSplit2Showing ? (floatBall.getX() + floatBall2.getX())/2 : floatBall.getX()) + splitRadius;
           double focusY = (isSplit2Showing ? (floatBall.getY() + floatBall2.getY())/2 : floatBall.getY()) + splitRadius + (isSeparatedStatus ? statusHeight : 0);
-          curFocusView = findViewByPoint(callback instanceof Dialog ? getCurrentContentView() : getCurrentDecorView(), null, focusX, focusY, false);
+          curFocusView = findViewByPoint(callback instanceof Dialog ? getCurrentContentView() : getCurrentDecorView(), null, focusX, focusY);
         }
         if (curFocusView == null) {
           tvControllerGravityContainer.setText("");
@@ -2900,17 +2900,38 @@ public class UIAutoApp { // extends Application {
           }
 
           boolean isDialog = callback_ instanceof Dialog;
-          View v = isDialog || isNotDown ? null : findViewByPoint(isDialog ? contentView : decorView, null, rx, ry, true);
+          View rv = isDialog && contentView != null ? contentView : decorView;
+
+          View v = isDialog || isNotDown ? null : findViewByPoint(rv, null, rx, ry, FOCUS_ANY, true);
           int vid = v == null ? 0 : v.getId();
           String vidName = isNotDown ? null : getResIdName(vid);
 
           int tid = isNotDown || obj == null ? 0 : obj.getIntValue("targetId");
           String tidName = isNotDown || obj == null ? null : obj.getString("targetIdName");
           int tid2 = isNotDown || tidName == null ? 0 : getResId(tidName);
-          NearestView<View> nv = isNotDown || obj == null || (vid > 0 && vid == tid)
-                  || (vidName != null && Objects.equals(vidName, tidName))
-                  ? null : findNearestView(isDialog ? contentView : decorView, null, rx, ry, true, tid2 > 0 ? tid2 : tid, null);
-          View tv = isDialog || nv == null ? null : nv.view;
+
+          boolean ignore = isDialog || isNotDown || obj == null || (vid > 0 && vid == tid)
+                  || (vidName != null && Objects.equals(vidName, tidName));
+          NearestView<View> nv = ignore ? null : findNearestView(rv, null, rx, ry, true, tid2 > 0 ? tid2 : tid, null);
+
+          View tv = nv == null ? null : nv.view;
+          if (ignore == false && tv == null) {
+            int fid = obj.getIntValue("focusId");
+            String fidName = obj.getString("focusIdName");
+            int fid2 = fidName == null ? 0 : getResId(fidName);
+            nv = findNearestView(rv, null, rx, ry, true, fid2 > 0 ? fid2 : fid, null);
+
+            tv = nv == null ? null : nv.view;
+
+            if (tv == null) {
+              int pid = obj.getIntValue("parentId");
+              String pidName = obj.getString("parentIdName");
+              int pid2 = pidName == null ? 0 : getResId(pidName);
+              nv = findNearestView(rv, null, rx, ry, true, pid2 > 0 ? pid2 : pid, null);
+
+              tv = nv == null ? null : nv.view;
+            }
+          }
 
           if (tv != null) {
             if (nv.left*nv.right*nv.top*nv.bottom == 0) {
@@ -4147,10 +4168,24 @@ public class UIAutoApp { // extends Application {
       double x = event.getX();
       double y = event.getY();
 
-      if (action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_UP) {
-        View v = findViewByPoint(callback instanceof Dialog ? contentView : decorView, null, x, y, true);
+      if (action == MotionEvent.ACTION_DOWN) { // || action == MotionEvent.ACTION_UP) {
+        View rv = contentView != null && callback instanceof Dialog ? contentView : decorView;
+
+        View v = findViewByPoint(rv, null, x, y, FOCUS_ANY, true);
         obj.put("targetId", v == null ? null : v.getId());
         obj.put("targetIdName", getResIdName(v));
+
+        ViewParent p = v == null ? null : v.getParent();
+        while (p instanceof View && ((View) p).getId() <= 0) {
+          p = p.getParent();
+        }
+        View pv = p instanceof View ? (View) p : null;
+        obj.put("parentId", pv == null ? null : pv.getId());
+        obj.put("parentIdName", getResIdName(pv));
+
+        View fv = findViewByPoint(rv, null, x, y, FOCUS_ABLE, true); // FOCUS_HAS 找不到
+        obj.put("focusId", fv == null ? null : fv.getId());
+        obj.put("focusIdName", getResIdName(fv));
       }
 
       int pc = event.getPointerCount();
@@ -4327,7 +4362,18 @@ public class UIAutoApp { // extends Application {
     return view.hasFocus() && (clazz == null || clazz.isAssignableFrom(view.getClass())) ? (V) view : null;
   }
 
+  public <V extends View> V findViewByPoint(View view, Class<V> clazz, double x, double y) {
+    return findViewByPoint(view, clazz, x, y, false);
+  }
   public <V extends View> V findViewByPoint(View view, Class<V> clazz, double x, double y, boolean onlyFocusable) {
+    return findViewByPoint(view, clazz, x, y, onlyFocusable ? FOCUS_HAS : FOCUS_ANY, false);
+  }
+
+  private static final int FOCUS_ANY = 0;
+  private static final int FOCUS_ABLE = 1;
+  private static final int FOCUS_HAS = 2;
+
+  public <V extends View> V findViewByPoint(View view, Class<V> clazz, double x, double y, int focus, boolean hasId) {
 //    if (view == null || x < view.getX() || x > view.getX() + view.getWidth()
 //            || y < view.getY() || y > view.getY() + view.getHeight()) {
 //      return null;
@@ -4349,16 +4395,17 @@ public class UIAutoApp { // extends Application {
       ViewGroup vg = (ViewGroup) view;
 
       for (int i = vg.getChildCount() - 1; i >= 0; i--) {
-        View v = findViewByPoint(vg.getChildAt(i), clazz, x, y, onlyFocusable);
-        if (v != null && (onlyFocusable == false || v.hasFocus() || v.isFocusable() || v.isFocusableInTouchMode())
-                && (clazz == null || clazz.isAssignableFrom(v.getClass()))) {
+        View v = findViewByPoint(vg.getChildAt(i), clazz, x, y, focus, hasId);
+        if (v != null) {
           return (V) v;
         }
       }
     }
 
-    return (onlyFocusable == false || view.hasFocus() || view.isFocusable() || view.isFocusableInTouchMode())
-            && (clazz == null || clazz.isAssignableFrom(view.getClass()))
+    // FIXME view.getId() > 0  some resource types set top bit which turns the value negative
+    return (hasId == false || view.getId() > 0) // (view.getId() != View.NO_ID && view.getId() != 0))
+            && (focus == FOCUS_ANY || view.hasFocus() || (focus == FOCUS_ABLE && (view.isFocusable() || view.isFocusableInTouchMode()))
+            && (clazz == null || clazz.isAssignableFrom(view.getClass())))
             ? (V) view : null;
   }
 
