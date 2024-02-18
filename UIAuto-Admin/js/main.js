@@ -3253,8 +3253,8 @@
           }
 
           App.request(false, REQUEST_TYPE_JSON, App.project + '/method/invoke', {
-            "package": 'apijson.demo.application', // 'uiauto',
-            "class": 'DemoApplication', // 'UIAutoApp',
+            "package": 'uiauto', // 'uiauto',
+            "class": 'UIAutoApp', // 'UIAutoApp',
             "constructor": 'getInstance',
             "method": isRecord ? 'prepareRecord' : 'prepareReplay',
             "methodArgs": isRecord ? null : [ inputList ]
@@ -3274,8 +3274,8 @@
 
             App.testRandomProcess = '正在' + (isRecord ? '录制' : '回放') + '...'
             App.request(false, REQUEST_TYPE_JSON, App.project + '/method/invoke', {
-              "package": 'apijson.demo.application', // 'uiauto',
-              "class": 'DemoApplication', // 'UIAutoApp',
+              "package": 'uiauto', // 'uiauto',
+              "class": 'UIAutoApp', // 'UIAutoApp',
               "constructor": 'getInstance',
               "method": 'onClickPlay',
               "static": false
@@ -3328,13 +3328,13 @@
       loopRandomTestResult: function (list, inputList, allCount, offset, header) {
         App.request(false, REQUEST_TYPE_JSON, App.project + '/method/invoke', {
           "static": true,
-          "package": 'apijson.demo.application', // 'uiauto',
-          "class": 'DemoApplication', // 'UIAutoApp',
+          "package": 'uiauto', // 'uiauto',
+          "class": 'UIAutoApp', // 'UIAutoApp',
           "method": 'getOutputList',
-          "methodArgs": [{  // DemoApplication app
-            "type": "apijson.demo.application.DemoApplication",
-            "value": null  // TODO 可能要 {}
-          },{  // int limit
+          "methodArgs": [{  // UIAutoApp app
+          //   "type": "uiauto.UIAutoApp",
+          //   "value": null  // TODO 可能要 {}
+          // },{  // int limit
             "type": "int",
             "value": 100
           },{  // int offset

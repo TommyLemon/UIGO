@@ -69,23 +69,23 @@ public class DemoApplication extends BaseApplication {
 		});
 	}
 
-	public static List<Object> getOutputList(int limit, int offset) {
-		return getOutputList(UIAutoApp.getInstance(), limit, offset);
-	}
-	public static List<Object> getOutputList(DemoApplication app, int limit, int offset) {
-		return UIAutoApp.getOutputList(UIAutoApp.getInstance(), limit, offset);
-	}
-
-	public static List<Object> getOutputList(UIAutoApp app, int limit, int offset) {
-		if (app == null) {
-			app = UIAutoApp.getInstance();
-		}
-		return UIAutoApp.getOutputList(app, limit, offset);
-	}
-
-	public static void prepareReplay(JSONArray eventList) {
-		UIAutoApp.getInstance().prepareReplay(eventList);
-	}
+//	public static List<Object> getOutputList(int limit, int offset) {
+//		return getOutputList(UIAutoApp.getInstance(), limit, offset);
+//	}
+//	public static List<Object> getOutputList(DemoApplication app, int limit, int offset) {
+//		return UIAutoApp.getOutputList(UIAutoApp.getInstance(), limit, offset);
+//	}
+//
+//	public static List<Object> getOutputList(UIAutoApp app, int limit, int offset) {
+//		if (app == null) {
+//			app = UIAutoApp.getInstance();
+//		}
+//		return UIAutoApp.getOutputList(app, limit, offset);
+//	}
+//
+//	public static void prepareReplay(JSONArray eventList) {
+//		UIAutoApp.getInstance().prepareReplay(eventList);
+//	}
 
 	@Override
 	public void onConfigurationChanged(@NonNull Configuration newConfig) {
