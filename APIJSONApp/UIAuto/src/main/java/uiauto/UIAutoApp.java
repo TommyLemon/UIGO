@@ -228,15 +228,16 @@ public class UIAutoApp { // extends Application {
 
         // output(null, curNode, activity);
 
-        boolean canRefreshUI = curNode == null || curNode.type != InputUtil.EVENT_TYPE_TOUCH || curNode.action != MotionEvent.ACTION_MOVE;
+        boolean isOver = step > allStep || curNode == null;
+        boolean canRefreshUI = isOver || curNode.type != InputUtil.EVENT_TYPE_TOUCH || curNode.action != MotionEvent.ACTION_MOVE;
 
         if (canRefreshUI) {
           tvControllerCount.setText(step + "/" + allStep);
+          updateTime();
           onEventChange(step - 1, curNode == null ? 0 : curNode.type);  // move 时刷新容易卡顿
         }
 
-        if (step > allStep || curNode == null) {
-          tvControllerCount.setText(step + "/" + allStep);
+        if (isOver) {
           tvControllerPlay.setText(R.string.replay);
           showCoverAndSplit(true, false);
           isSplitShowing = false;
@@ -263,11 +264,6 @@ public class UIAutoApp { // extends Application {
           isTimeout = true;
           mainHandler.postDelayed(timeoutRunnable, timeout);
           return;
-        }
-
-        Node<InputEvent> prevNode = curNode.prev;
-        if (canRefreshUI && prevNode != null) {
-          updateTime();
         }
 
         if (canRefreshUI && curNode.type == InputUtil.EVENT_TYPE_TOUCH && curNode.action == MotionEvent.ACTION_DOWN) {
@@ -1612,7 +1608,7 @@ public class UIAutoApp { // extends Application {
       @Override
       public void onClick(View v) {
 //        handler.removeMessages(0);
-        if (step < allStep) {
+        if (step <= allStep) {
           step ++;
           tvControllerCount.setText(step + "/" + allStep);
           onEventChange(step - 1, 0L);
@@ -1954,7 +1950,7 @@ public class UIAutoApp { // extends Application {
 
     if (isSplitShowing) {
       if (isReplay) {
-        replay();
+        replay(step);
       }
       else {
         record();
