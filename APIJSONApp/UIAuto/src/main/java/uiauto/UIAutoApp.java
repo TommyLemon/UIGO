@@ -253,14 +253,21 @@ public class UIAutoApp { // extends Application {
         //暂停，等待时机
         if (curItem == null || (waitMap.isEmpty() == false && curNode.type == InputUtil.EVENT_TYPE_HTTP)) { // curNode.type == InputUtil.EVENT_TYPE_UI || curNode.type == InputUtil.EVENT_TYPE_HTTP) {
           long timeout = curNode.timeout;
+          if (timeout <= 0) {
+            timeout = STEP_TIMEOUT;
+          }
+          if (timeout <= 0) {
+            return;
+          }
+
           isTimeout = true;
-          mainHandler.postDelayed(timeoutRunnable, timeout > 0 ? timeout : STEP_TIMEOUT);
+          mainHandler.postDelayed(timeoutRunnable, timeout);
           return;
         }
 
         Node<InputEvent> prevNode = curNode.prev;
         if (canRefreshUI && prevNode != null) {
-            updateTime();
+          updateTime();
         }
 
         if (canRefreshUI && curNode.type == InputUtil.EVENT_TYPE_TOUCH && curNode.action == MotionEvent.ACTION_DOWN) {
@@ -3359,11 +3366,14 @@ public class UIAutoApp { // extends Application {
   public void replay(int step) {
     isReplay = true;
 //        List<InputEvent> list = new LinkedList<>();
-    if (step >= allStep) {
+    if (step <= 0 || step >= allStep || currentEventNode == null) {
       step = 0;
+      duration = 0;
+      startTime = System.currentTimeMillis();
+
       currentEventNode = firstEventNode;
     }
-    else {
+    else if (step != currentEventNode.step){
       Node<InputEvent> curNode = firstEventNode;
       for (int i = 0; i < step; i++) {
         curNode = curNode == null ? null : curNode.next;
@@ -3378,8 +3388,7 @@ public class UIAutoApp { // extends Application {
     }
 
     this.step = step;
-    startTime = currentTime = System.currentTimeMillis();
-    duration = 0;
+    currentTime = System.currentTimeMillis();
 
     JSONObject first = allStep <= 0 ? null : eventList.getJSONObject(0);
     long firstTime = first == null ? 0 : first.getLongValue("time");
