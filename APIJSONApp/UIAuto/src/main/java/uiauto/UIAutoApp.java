@@ -119,6 +119,7 @@ import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
@@ -258,11 +259,8 @@ public class UIAutoApp { // extends Application {
         }
 
         Node<InputEvent> prevNode = curNode.prev;
-        if (prevNode != null) {
-          if (canRefreshUI) {
-//            long duration = calcDuration(prevNode, curNode);
-            tvControllerTime.setText(TIME_FORMAT.format(duration));
-          }
+        if (canRefreshUI && prevNode != null) {
+            updateTime();
         }
 
         if (canRefreshUI && curNode.type == InputUtil.EVENT_TYPE_TOUCH && curNode.action == MotionEvent.ACTION_DOWN) {
@@ -1720,6 +1718,12 @@ public class UIAutoApp { // extends Application {
     setGravityImageAndText(vFloatBall, ballGravity2, tvControllerGravityY, true, gravityY);
     setGravityImageAndText(vFloatBall, ballGravity, tvControllerGravityX, false, gravityX);
     setGravityImageAndText(vFloatBall, ballGravity, tvControllerGravityY, true, gravityY);
+  }
+
+  private void updateTime() {
+    currentTime = System.currentTimeMillis();
+    duration = currentTime - startTime;
+    tvControllerTime.setText(TIME_FORMAT.format(new Date(duration)));
   }
 
   private View curFocusView;
@@ -3348,7 +3352,7 @@ public class UIAutoApp { // extends Application {
   private int lastStep = 0;
 //  private int lastWaitStep = 0;
 
-  private long currentTime = 0;
+  private long startTime, currentTime;
   public void replay() {
     replay(0);
   }
@@ -3374,12 +3378,13 @@ public class UIAutoApp { // extends Application {
     }
 
     this.step = step;
+    startTime = currentTime = System.currentTimeMillis();
+    duration = 0;
 
     JSONObject first = allStep <= 0 ? null : eventList.getJSONObject(0);
     long firstTime = first == null ? 0 : first.getLongValue("time");
 
     if (firstTime <= 0) {
-      currentTime = 0;
       Toast.makeText(getApp(), R.string.finished_because_of_no_step, Toast.LENGTH_SHORT).show();
       tvControllerPlay.setText(R.string.replay);
       showCoverAndSplit(true, false);
@@ -3393,8 +3398,6 @@ public class UIAutoApp { // extends Application {
       lastDeltaCallback = null;
       lastDeltaView = null;
       lastDeltaEvent = null;
-
-      currentTime = System.currentTimeMillis();
 
       //通过递归链表来实现
       Message msg = handler.obtainMessage();
@@ -4659,11 +4662,7 @@ public class UIAutoApp { // extends Application {
     allStep ++;
     tvControllerCount.setText(step + "/" + allStep);
 
-    long curTime = System.currentTimeMillis();
-    duration += curTime - currentTime;
-    currentTime = curTime;
-
-    tvControllerTime.setText(TIME_FORMAT.format(duration));
+    updateTime();
 
     // if (eventList == null) {
     //     eventList = new JSONArray();
@@ -4702,7 +4701,7 @@ public class UIAutoApp { // extends Application {
     duration -= curTime - currentTime;
     currentTime = curTime;
 
-    tvControllerTime.setText(TIME_FORMAT.format(duration));
+    tvControllerTime.setText(TIME_FORMAT.format(new Date(duration)));
 
     // if (eventList == null) {
     //     eventList = new JSONArray();
@@ -4838,7 +4837,7 @@ public class UIAutoApp { // extends Application {
 
     tvControllerPlay.setText(R.string.replay);
     tvControllerCount.setText(step + "/" + allStep);
-    tvControllerTime.setText("0:00");
+    tvControllerTime.setText("00:00");
 
     waitMap = new LinkedHashMap<>();
 
@@ -4884,8 +4883,9 @@ public class UIAutoApp { // extends Application {
 	    step = 0;
 	    allStep = 0;
 	    duration = 0;
-	    flowId = - System.currentTimeMillis();
-        tvControllerTime.setText("0:00");
+        currentTime = startTime = System.currentTimeMillis();
+	    flowId = - currentTime;
+        tvControllerTime.setText("00:00");
     }
     else {
       if (currentEventNode == null) {
