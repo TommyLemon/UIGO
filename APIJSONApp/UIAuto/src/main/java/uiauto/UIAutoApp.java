@@ -61,6 +61,8 @@ import android.support.annotation.RequiresApi;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentManager;
+import android.support.v7.widget.GridLayoutManager;
+import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -84,8 +86,13 @@ import android.view.WindowManager;
 import android.view.accessibility.AccessibilityEvent;
 import android.webkit.ValueCallback;
 import android.webkit.WebView;
+import android.widget.AdapterView;
 import android.widget.EditText;
+import android.widget.FrameLayout;
+import android.widget.HorizontalScrollView;
+import android.widget.ListView;
 import android.widget.PopupWindow;
+import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -105,6 +112,7 @@ import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.lang.annotation.Annotation;
 import java.lang.ref.WeakReference;
+import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.net.URLEncoder;
 import java.text.DecimalFormat;
@@ -905,6 +913,122 @@ public class UIAutoApp { // extends Application {
 
     if (view instanceof ViewGroup) {
       ViewGroup vg = (ViewGroup) view;
+
+      if (canScroll(vg)) {
+        vg.getViewTreeObserver().addOnScrollChangedListener(new ViewTreeObserver.OnScrollChangedListener() {
+          @Override
+          public void onScrollChanged() {
+//            if (vg != lastScrollableView) {
+//              return;
+//            }
+            if (isReplay) { // onScrollChanged 只在触屏时回调  || lastDownEvent != null) {
+              return;
+            }
+
+            boolean isMinLeft = ! vg.canScrollHorizontally(-1);
+            boolean isMaxRight = ! vg.canScrollHorizontally(1);
+            boolean isMinTop = ! vg.canScrollVertically(-1);
+            boolean isMaxBottom = ! vg.canScrollVertically(1);
+            if (isMinLeft == isMaxRight && isMinTop == isMaxBottom) {
+              return;
+            }
+
+            ViewGroup sv = vg; // lastScrollableView; // findViewByPoint(decorView, null, event.getHistoricalX(0), event.getHistoricalY(0), FOCUS_ANY, false, CAN_SCROLL_UNSPECIFIED);
+            ViewGroup pv = sv;
+            if (pv instanceof ScrollView || pv instanceof HorizontalScrollView) {
+              View v = pv.getChildCount() <= 0 ? null : pv.getChildAt(0);
+              if (v instanceof ViewGroup) {
+                pv = (ViewGroup) v;
+              }
+              else {
+                return;
+              }
+            }
+
+            int cc = pv.getChildCount();
+            int lp = cc - 1;
+
+//            double dx = sv.getScrollX() - lastScrollX; // FIXME 必须等停下来
+//            double dy = sv.getScrollY() - lastScrollY; // FIXME 必须等停下来
+//          if (dx <= 0 && dy <= 0 && lastDownEvent != null) {
+//            dx = event.getX() - lastDownEvent.getX();
+//            dy = event.getY() - lastDownEvent.getY();
+//          }
+
+            boolean canScrollHorizontally = isMinLeft != isMaxRight; // dx > dip2px(2); // && canScrollHorizontally(sv);
+            boolean canScrollVertically = isMinTop != isMaxBottom; // dy > dip2px(2); // && canScrollVertically(sv);
+
+            View fv = pv.getChildAt(0);
+            View lv = pv.getChildAt(lp);
+
+            int svl = sv.getPaddingLeft();
+            int svr = sv.getWidth() - sv.getPaddingRight();
+            int svt = sv.getPaddingTop();
+            int svb = sv.getHeight() - sv.getPaddingBottom();
+
+            boolean change = false;
+
+            if (isSplit2Showing) {
+              if (canScrollHorizontally) {
+                if (isMinLeft || (gravityX == GRAVITY_RIGHT && fv != null && fv.getLeft() == svl)) {
+                  gravityX = GRAVITY_LEFT;
+                  change = true;
+                }
+                else if (gravityX == GRAVITY_LEFT && lv != null && lv.getRight() == svr) {
+                  gravityX = GRAVITY_RIGHT;
+                  change = true;
+                }
+              }
+
+              if (canScrollVertically) {
+                if (isMinTop || (gravityY == GRAVITY_BOTTOM && fv != null && fv.getTop() == svt)) {
+                  gravityY = GRAVITY_TOP;
+                  change = true;
+                }
+                else if (gravityY == GRAVITY_TOP && lv != null && lv.getBottom() == svb) {
+                  gravityY = GRAVITY_BOTTOM;
+                  change = true;
+                }
+              }
+
+              if (change) {
+                setGravityText(tvControllerGravityX, false, gravityX);
+                setGravityText(tvControllerGravityY, true, gravityY);
+              }
+            }
+            else {
+              int[] loc = new int[2];
+              sv.getLocationOnScreen(loc);
+
+              if (canScrollHorizontally) {
+                if (isMinLeft || (fv != null && (fv.getLeft() == svl || fv.getRight() == svl))) { // XListView 等 Header
+                  splitX = loc[0] + svr - windowWidth;
+                  change = true;
+                }
+                else if (splitX < 0 && lv != null && (lv.getRight() == svr || lv.getLeft() == svr)) { // XListView 等 Footer
+                  splitX = loc[0] + svl;
+                  change = true;
+                }
+              }
+
+              if (canScrollVertically) {
+                if (isMinTop || (fv != null && (fv.getTop() == svt || fv.getBottom() == svt))) { // XListView 等 Header
+                  splitY = loc[1] + svb - windowHeight - (isSeparatedStatus ? statusHeight : 0);
+                  change = true;
+                }
+                else if (lv != null && (lv.getBottom() == svb || lv.getTop() == svb)) { // XListView 等 Footer
+                  splitY = loc[1] + svt - (isSeparatedStatus ? statusHeight : 0);
+                  change = true;
+                }
+              }
+
+              if (change) {
+                floatBall = showSplit(floatBall, isSplitShowing, splitX, splitY, "floatBall", vFloatBall, floatSplitX, floatSplitY);
+              }
+            }
+          }
+        });
+      }
       for (int i = 0; i < vg.getChildCount(); i++) {
         View cv = vg.getChildAt(i);
         addTextChangedListener(cv);
@@ -4373,7 +4497,16 @@ public class UIAutoApp { // extends Application {
   private static final int FOCUS_ABLE = 1;
   private static final int FOCUS_HAS = 2;
 
+  private static final int CAN_SCROLL_ANY = 0;
+  private static final int CAN_SCROLL_UNSPECIFIED = 1;
+  private static final int CAN_SCROLL_VERTICALLY = 2;
+  private static final int CAN_SCROLL_HORIZONTALLY = 3;
+
+
   public <V extends View> V findViewByPoint(View view, Class<V> clazz, double x, double y, int focus, boolean hasId) {
+    return findViewByPoint(view, clazz, x, y, focus, hasId, CAN_SCROLL_ANY);
+  }
+  public <V extends View> V findViewByPoint(View view, Class<V> clazz, double x, double y, int focus, boolean hasId, int scrollable) {
 //    if (view == null || x < view.getX() || x > view.getX() + view.getWidth()
 //            || y < view.getY() || y > view.getY() + view.getHeight()) {
 //      return null;
@@ -4395,7 +4528,7 @@ public class UIAutoApp { // extends Application {
       ViewGroup vg = (ViewGroup) view;
 
       for (int i = vg.getChildCount() - 1; i >= 0; i--) {
-        View v = findViewByPoint(vg.getChildAt(i), clazz, x, y, focus, hasId);
+        View v = findViewByPoint(vg.getChildAt(i), clazz, x, y, focus, hasId, scrollable);
         if (v != null) {
           return (V) v;
         }
@@ -4406,6 +4539,9 @@ public class UIAutoApp { // extends Application {
     return (hasId == false || view.getId() > 0) // (view.getId() != View.NO_ID && view.getId() != 0))
             && (focus == FOCUS_ANY || view.hasFocus() || (focus == FOCUS_ABLE && (view.isFocusable() || view.isFocusableInTouchMode()))
             && (clazz == null || clazz.isAssignableFrom(view.getClass())))
+            && (scrollable == CAN_SCROLL_ANY || (scrollable == CAN_SCROLL_UNSPECIFIED && canScroll(view))
+            || (scrollable == CAN_SCROLL_VERTICALLY && canScrollVertically(view))
+            || (scrollable == CAN_SCROLL_HORIZONTALLY && canScrollHorizontally(view)))
             ? (V) view : null;
   }
 
@@ -4454,6 +4590,38 @@ public class UIAutoApp { // extends Application {
     return nearestView;
   }
 
+
+  private boolean canScroll(View view) {
+    return view != null && (view instanceof AdapterView || view instanceof RecyclerView || view instanceof ScrollView || view instanceof HorizontalScrollView);
+    // && (view.canScrollHorizontally(View.LAYOUT_DIRECTION_UNDEFINED) || view.canScrollHorizontally(View.LAYOUT_DIRECTION_RTL) || view.canScrollHorizontally(View.LAYOUT_DIRECTION_LTR)
+    // || view.canScrollVertically(View.LAYOUT_DIRECTION_UNDEFINED) || view.canScrollVertically(View.LAYOUT_DIRECTION_INHERIT) || view.canScrollVertically(View.LAYOUT_DIRECTION_LOCALE));
+  }
+  private boolean canScrollHorizontally(View view) {
+    if (view instanceof HorizontalScrollView) {
+      return true;
+    }
+
+    if (view instanceof RecyclerView) {
+      RecyclerView.LayoutManager lm = ((RecyclerView) view).getLayoutManager();
+      return lm.canScrollHorizontally();
+    }
+
+    return false;
+    // && (view.canScrollHorizontally(View.LAYOUT_DIRECTION_RTL) || view.canScrollHorizontally(View.LAYOUT_DIRECTION_LTR));
+  }
+  private boolean canScrollVertically(View view) {
+    if (view instanceof AdapterView || view instanceof ScrollView) {
+      return true;
+    }
+
+    if (view instanceof RecyclerView) {
+      RecyclerView.LayoutManager lm = ((RecyclerView) view).getLayoutManager();
+      return lm.canScrollVertically();
+    }
+
+    return false;
+    // && (view.canScrollVertically(View.LAYOUT_DIRECTION_INHERIT) || view.canScrollVertically(View.LAYOUT_DIRECTION_LOCALE));
+  }
 
   int count = 0;
 
