@@ -149,14 +149,19 @@ public final class CameraManager {
 	 * @return
 	 */
 	public boolean switchLight(boolean open) {
-		parameter = camera.getParameters();  
-		if (open) {
-			parameter.setFlashMode(Parameters.FLASH_MODE_TORCH); 
-			camera.setParameters(parameter);
-			return true;
-		} else {
-			parameter.setFlashMode(Parameters.FLASH_MODE_OFF); 
-			camera.setParameters(parameter);
+		try {
+			parameter = camera.getParameters();
+			if (open) {
+				parameter.setFlashMode(Parameters.FLASH_MODE_TORCH);
+				camera.setParameters(parameter);
+				return true;
+			} else {
+				parameter.setFlashMode(Parameters.FLASH_MODE_OFF);
+				camera.setParameters(parameter);
+				return false;
+			}
+		} catch (Throwable e) {
+			e.printStackTrace();
 			return false;
 		}
 	}
