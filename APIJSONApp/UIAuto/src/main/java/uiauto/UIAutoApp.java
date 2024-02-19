@@ -150,6 +150,8 @@ public class UIAutoApp { // extends Application {
 
   private static double DENSITY = Resources.getSystem().getDisplayMetrics().density;
 
+  public static long STEP_TIMEOUT = 30*1000;
+
 
   private static UIAutoApp instance;
   public static UIAutoApp getInstance() {
@@ -174,6 +176,15 @@ public class UIAutoApp { // extends Application {
     return getApp().getAssets();
   }
 
+  private boolean isTimeout = false;
+  private final Runnable timeoutRunnable = new Runnable() {
+    @Override
+    public void run() {
+      if (isTimeout && isShowing && isReplay && tvControllerForward != null) {
+        tvControllerForward.performClick();
+      }
+    }
+  };
 
   private static final SimpleDateFormat TIME_FORMAT = new SimpleDateFormat("mm:ss");
 
@@ -233,17 +244,23 @@ public class UIAutoApp { // extends Application {
           return;
         }
 
-
         InputEvent curItem = curNode.item;
+
+        isTimeout = false;
+        mainHandler.removeCallbacks(timeoutRunnable);
+
         //暂停，等待时机
         if (curItem == null || (waitMap.isEmpty() == false && curNode.type == InputUtil.EVENT_TYPE_HTTP)) { // curNode.type == InputUtil.EVENT_TYPE_UI || curNode.type == InputUtil.EVENT_TYPE_HTTP) {
+          long timeout = curNode.timeout;
+          isTimeout = true;
+          mainHandler.postDelayed(timeoutRunnable, timeout > 0 ? timeout : STEP_TIMEOUT);
           return;
         }
 
         Node<InputEvent> prevNode = curNode.prev;
         if (prevNode != null) {
           if (canRefreshUI) {
-            long duration = calcDuration(prevNode, curNode);
+//            long duration = calcDuration(prevNode, curNode);
             tvControllerTime.setText(TIME_FORMAT.format(duration));
           }
         }
@@ -921,7 +938,7 @@ public class UIAutoApp { // extends Application {
 //            if (vg != lastScrollableView) {
 //              return;
 //            }
-            if (isReplay) { // onScrollChanged 只在触屏时回调  || lastDownEvent != null) {
+            if (isShowing == false || isReplay) { // onScrollChanged 只在触屏时回调  || lastDownEvent != null) {
               return;
             }
 
@@ -1023,12 +1040,13 @@ public class UIAutoApp { // extends Application {
               }
 
               if (change) {
-                floatBall = showSplit(floatBall, isSplitShowing, splitX, splitY, "floatBall", vFloatBall, floatSplitX, floatSplitY);
+                floatBall = showSplit(floatBall,  isSplitShowing, splitX, splitY, "floatBall", vFloatBall, floatSplitX, floatSplitY);
               }
             }
           }
         });
       }
+
       for (int i = 0; i < vg.getChildCount(); i++) {
         View cv = vg.getChildAt(i);
         addTextChangedListener(cv);
@@ -1588,7 +1606,7 @@ public class UIAutoApp { // extends Application {
     tvControllerForward.setOnClickListener(new View.OnClickListener() {
       @Override
       public void onClick(View v) {
-        handler.removeMessages(0);
+//        handler.removeMessages(0);
         if (step < allStep) {
           step ++;
           tvControllerCount.setText(step + "/" + allStep);
@@ -3772,6 +3790,7 @@ public class UIAutoApp { // extends Application {
     eventNode.type = type;
     eventNode.action = action;
     eventNode.time = obj.getLongValue("time");
+    eventNode.timeout = obj.getLongValue("timeout");
     eventNode.activity = obj.getString("activity");
     eventNode.fragment = obj.getString("fragment");
     eventNode.method = obj.getString("method");
@@ -5113,6 +5132,7 @@ public class UIAutoApp { // extends Application {
     int type;
     int action;
     long time;
+    long timeout;
     boolean isSplit2Show;
     double splitX, splitX2;
     double splitY, splitY2;
