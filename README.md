@@ -148,9 +148,9 @@ dependencies {
         android:textAllCaps="false"
         />
 ```
-参考 [layout/activity_main](https://github.com/TommyLemon/UIGO/blob/master/APIJSONApp/app/src/main/res/layout/activity_main.xml) <br />
+参考 [layout/main_tab_activity](https://github.com/TommyLemon/UIGO/blob/master/APIJSONApp/app/src/main/res/layout/main_tab_activity.xml) <br />
 <br />
-点击这个入口跳转到 [UIAutoActivity](https://github.com/TommyLemon/UIGO/blob/master/APIJSONApp/uiauto/src/main/java/uiauto/UIAutoActivity.java)
+点击这个入口跳转到 [UIAutoActivity](https://github.com/TommyLemon/UIGO/blob/master/APIJSONApp/UIAuto/src/main/java/uiauto/UIAutoActivity.java)
 ```java
     public void onClickUI(View v) {
         startActivity(UIAutoActivity.createIntent(this));
