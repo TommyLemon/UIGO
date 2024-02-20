@@ -5,9 +5,9 @@
 <p align="center">📱 零代码快准稳 UI 智能录制回放平台 🚀</p>
 <p align="center">自动兼容任意宽高比分辨率屏幕，自动精准等待网络请求，录制回放快、准、稳！</p>
 <p align="center" >
-  <a href="https://github.com/TommyLemon/UIGO/tree/master/UIAuto-Android"><img src="https://img.shields.io/badge/Demo-26%2B-brightgreen.svg?style=flat"></a>
-  <a href="https://github.com/TommyLemon/UIGO/tree/master/APIJSONApp"><img src="https://img.shields.io/badge/App-26%2B-brightgreen.svg?style=flat"></a>
-  <a href="https://github.com/APIJSON/APIJSON-Demo/tree/master/APIJSON-Java-Server/APIJSONBoot"><img src="https://img.shields.io/badge/Server-brightgreen.svg?style=flat"></a>
+  <a href="https://github.com/TommyLemon/UIGO/tree/master/UIAuto-Android"><img src="https://img.shields.io/badge/Demo-Android26%2B-brightgreen.svg?style=flat"></a>
+  <a href="https://github.com/TommyLemon/UIGO/tree/master/APIJSONApp"><img src="https://img.shields.io/badge/App-Android26%2B-brightgreen.svg?style=flat"></a>
+  <a href="https://github.com/APIJSON/APIJSON-Demo/tree/master/APIJSON-Java-Server/APIJSONBoot"><img src="https://img.shields.io/badge/Server-Java1.8%2B-brightgreen.svg?style=flat"></a>
   <a href="https://github.com/TommyLemon/UIGO/tree/master/MySQL"><img src="https://img.shields.io/badge/MySQL-5.7%2B-brightgreen.svg?style=flat"></a>
 </p>
 <p align="center" >
