@@ -22,7 +22,7 @@
 ---
 <br />
 
-<img width="240" src="https://github.com/TommyLemon/UIGO/assets/5738175/ef03bb7d-f3a5-497f-8087-fbc1ee7594f9" /><img width="240" src="https://github.com/TommyLemon/UIGO/assets/5738175/02797088-aebb-4ddc-a9e9-630d0ddb8978" /><img width="240" src="https://github.com/TommyLemon/UIGO/assets/5738175/db71c22f-00a4-41f2-ad3b-28cb0fe5c55f" />
+<img width="240" src="https://github.com/TommyLemon/UIGO/assets/5738175/ef03bb7d-f3a5-497f-8087-fbc1ee7594f9" /><img width="240" src="https://github.com/TommyLemon/UIGO/assets/5738175/d3ffbdaa-1b35-426a-9c4d-6124a2e63550" /><img width="240" src="https://github.com/TommyLemon/UIGO/assets/5738175/e994d333-05a1-4102-b0dc-e1671ecde2e1" />
 
 ### 支持功能
 * 零代码录制和回放 触屏、按键、键盘、数据 等
