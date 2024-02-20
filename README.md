@@ -70,7 +70,7 @@ Activity, Fragment, Dialog, PopupWindow 等各种组件的生命周期 等，<br
 
 #### 集成到被测项目 Android 客户端 App
 ##### 1.依赖 UnitAuto-Apk
-把 [UnitAuto-Apk](https://github.com/TommyLemon/UIGO/tree/master/APIJSONApp/UnitAuto-Apk) 导入到你项目 [app moudule 所在目录](https://github.com/TommyLemon/UIGO/tree/master/UnitAuto-Android)，[settings.gradle](https://github.com/TommyLemon/UIGO/tree/master/APIJSONApp/settings.gradle) 中
+把 [UnitAuto-Apk](https://github.com/TommyLemon/UIGO/tree/master/APIJSONApp/UnitAuto-Apk) 导入到你项目 [app moudule 所在目录](https://github.com/TommyLemon/UIGO/tree/master/UIAuto-Android)，[settings.gradle](https://github.com/TommyLemon/UIGO/tree/master/APIJSONApp/settings.gradle) 中
 ```groovy
 include ':UnitAuto-Apk'
 ```
