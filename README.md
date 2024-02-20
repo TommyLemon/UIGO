@@ -21,7 +21,8 @@
 
 ---
 <br />
-零代码快准稳 UI 智能录制回放平台，自动兼容任意宽高比分辨率屏幕，自动精准等待网络请求，录制回放快、准、稳！<br />
+
+<img width="240" src="https://github.com/TommyLemon/UIGO/assets/5738175/ef03bb7d-f3a5-497f-8087-fbc1ee7594f9" /><img width="240" src="https://github.com/TommyLemon/UIGO/assets/5738175/02797088-aebb-4ddc-a9e9-630d0ddb8978" /><img width="240" src="https://github.com/TommyLemon/UIGO/assets/5738175/e994d333-05a1-4102-b0dc-e1671ecde2e1" />
 
 ### 支持功能
 * 零代码录制和回放 触屏、按键、键盘、数据 等
@@ -46,25 +47,23 @@ UIGO 则能很好地支持 16:9, 19.5:9 等各种不同屏幕录制，然后在 
 UIGO 则会自动精准等待 App 发送的各种 HTTP API 网路请求，像专业的测试工程师一样精准高效地等待后端接口响应并执行 点击、长按、滑动、缩放 等每一步触屏操作！<br />
 <br />
 
-<br />
-
 ### 原理说明
 被测项目不需要写任何用例脚本代码(逻辑代码、注解代码、配置代码等全都不要)，<br />
-UIGO 会自动录制 UI 触屏操作、虚拟+实体按键操作、HTTP API 网络请求与响应、
+UIGO 会自动录制 UI 触屏操作、虚拟+实体按键操作、HTTP API 网络请求与响应、<br />
 Activity, Fragment, Dialog, PopupWindow 等各种组件的生命周期 等，<br />
 回放时根据录制触摸点所在被分割球划分的 上、下、左、右、居中 等对应区域<br />
 以及 屏幕分辨率、状态栏高度、导航栏高度、键盘高度 等来自动计算出回放触摸点，<br />
 再加上 id(如果有) 相同且距离最近的 View 位置来辅助微调，高度精准回放触屏操作！<br />
 对 返回按键、键盘按键 甚至 输入框编辑过程的每个变化的字符 也都能精准无误地还原！<br />
+
 <br />
 
 ### 示例项目
 [UIGO Java 后端 Server](https://github.com/APIJSON/APIJSON-Demo/blob/master/APIJSON-Java-Server/APIJSONBoot)    在线 [测试](http://apijson.cn/ui/) <br />
 [UIGO Android 简单测试 App](https://github.com/TommyLemon/UIGO-Demo/tree/main/UIAuto-Android)    直接 [下载](https://github.com/TommyLemon/UIGO/releases/download/0.9.0/UIGODemo.apk) （第一次可能失败，返回报错 JSON，一般重试一次就可以）<br />
 [UIGO Android 复杂客户端 App](https://github.com/TommyLemon/UIGO-Demo/tree/main/APIJSONApp)    直接 [下载](https://github.com/TommyLemon/UIGO/releases/download/0.9.0/APIJSONApp.apk) （第一次可能失败，返回报错 JSON，一般重试一次就可以）
-<br />
-<br />
 
+<br />
 
 ### 快速上手
 
