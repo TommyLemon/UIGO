@@ -59,8 +59,8 @@ Activity, Fragment, Dialog, PopupWindow 等各种组件的生命周期 等，<br
 <br />
 
 ### 示例项目
-[UIGO Android 简单测试 App](https://github.com/TommyLemon/UIGO-Demo/tree/main/UIAuto-Android)    直接 [下载](https://github.com/TommyLemon/UIGO/releases/download/0.9.0/UIGODemo.apk) （第一次可能失败，返回报错 JSON，一般重试一次就可以）<br />
-[UIGO Android 复杂客户端 App](https://github.com/TommyLemon/UIGO-Demo/tree/main/APIJSONApp)    直接 [下载](https://github.com/TommyLemon/UIGO/releases/download/0.9.0/APIJSONApp.apk) （第一次可能失败，返回报错 JSON，一般重试一次就可以）
+[UIGO Android 简单测试 App](https://github.com/TommyLemon/UIGO/tree/main/UIAuto-Android)    直接 [下载](https://github.com/TommyLemon/UIGO/releases/download/0.9.0/UIGODemo.apk) （第一次可能失败，返回报错 JSON，一般重试一次就可以）<br />
+[UIGO Android 复杂客户端 App](https://github.com/TommyLemon/UIGO/tree/main/APIJSONApp)    直接 [下载](https://github.com/TommyLemon/UIGO/releases/download/0.9.0/APIJSONApp.apk) （第一次可能失败，返回报错 JSON，一般重试一次就可以）
 
 <br />
 
@@ -96,7 +96,7 @@ dependencies {
 <br />
 
 ##### 2.初始化 UIAuto
-在 [Application onCreate 方法](https://github.com/TommyLemon/UIGO/blob/master/APIJSONApp/app/src/main/java/APIJSONApp/apijson/demo/application/DemoApplication.java) 中初始化
+在 [Application onCreate 方法](https://github.com/TommyLemon/UIGO/blob/master/APIJSONApp/app/src/main/java/apijson/demo/application/DemoApplication.java) 中初始化
 ```java
     @Override
     public void onCreate() {
