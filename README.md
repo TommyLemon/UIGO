@@ -59,7 +59,6 @@ Activity, Fragment, Dialog, PopupWindow 等各种组件的生命周期 等，<br
 <br />
 
 ### 示例项目
-[UIGO Java 后端 Server](https://github.com/APIJSON/APIJSON-Demo/blob/master/APIJSON-Java-Server/APIJSONBoot)    在线 [测试](http://apijson.cn/ui/) <br />
 [UIGO Android 简单测试 App](https://github.com/TommyLemon/UIGO-Demo/tree/main/UIAuto-Android)    直接 [下载](https://github.com/TommyLemon/UIGO/releases/download/0.9.0/UIGODemo.apk) （第一次可能失败，返回报错 JSON，一般重试一次就可以）<br />
 [UIGO Android 复杂客户端 App](https://github.com/TommyLemon/UIGO-Demo/tree/main/APIJSONApp)    直接 [下载](https://github.com/TommyLemon/UIGO/releases/download/0.9.0/APIJSONApp.apk) （第一次可能失败，返回报错 JSON，一般重试一次就可以）
 
