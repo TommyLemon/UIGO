@@ -22,7 +22,7 @@
 ---
 <br />
 
-<img width="240" src="https://github.com/TommyLemon/UIGO/assets/5738175/ef03bb7d-f3a5-497f-8087-fbc1ee7594f9" /><img width="240" src="https://github.com/TommyLemon/UIGO/assets/5738175/02797088-aebb-4ddc-a9e9-630d0ddb8978" /><img width="240" src="https://github.com/TommyLemon/UIGO/assets/5738175/e994d333-05a1-4102-b0dc-e1671ecde2e1" />
+<img width="240" src="https://github.com/TommyLemon/UIGO/assets/5738175/ef03bb7d-f3a5-497f-8087-fbc1ee7594f9" /><img width="240" src="https://github.com/TommyLemon/UIGO/assets/5738175/02797088-aebb-4ddc-a9e9-630d0ddb8978" /><img width="240" src="https://github.com/TommyLemon/UIGO/assets/5738175/db71c22f-00a4-41f2-ad3b-28cb0fe5c55f" />
 
 ### 支持功能
 * 零代码录制和回放 触屏、按键、键盘、数据 等
@@ -163,9 +163,9 @@ dependencies {
 
 
 #### Java 后端 Server
-可先跳过，使用 http://apijson.cn:8080 或 http://apijson.cn:9090 代替
+可先跳过，使用 http://apijson.cn:8080 或 http://apijson.cn:9090 代替 <br />
 
-见 APIJSON-Demo 后端上手
+见 APIJSON-Demo 后端上手 <br />
 https://github.com/APIJSON/APIJSON-Demo?tab=readme-ov-file#1%E5%90%8E%E7%AB%AF%E4%B8%8A%E6%89%8B
 
 
