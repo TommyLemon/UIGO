@@ -13,4 +13,23 @@
     <string name="replay_finished">Replay finished</string>
     <string name="remains_step_needs_uploading">Here remains step needs uploading!</string>
     <string name="admin">Admin</string>
+    <string name="click_ball_to_finish">Click ball to finish</string>
+    <string name="long_press_ball_to_finish">Long press ball to finish</string>
+    <string name="center">center</string>
+    <string name="ratio">ratio</string>
+    <string name="top">top</string>
+    <string name="bottom">bottom</string>
+    <string name="left">left</string>
+    <string name="right">right</string>
+    <string name="top_left">top left</string>
+    <string name="top_right">top right</string>
+    <string name="bottom_left">bottom left</string>
+    <string name="bottom_right">bottom right</string>
+    <string name="ratio_left">ratio left</string>
+    <string name="ratio_right">ratio right</string>
+    <string name="ratio_top">ratio top</string>
+    <string name="ratio_bottom">ratio bottom</string>
+    <string name="unselected_touch_scope">Unselected touch scope</string>
+    <string name="selected_touch_scope_long_press_to_unselect">Selected touch scope, long press to unselect</string>
+    <string name="click_sharp_to_double_ball_click_dollar_to_go_settings">Click # to double ball, click $ to go settings</string>
 </resources>

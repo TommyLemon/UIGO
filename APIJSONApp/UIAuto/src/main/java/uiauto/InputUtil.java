@@ -253,6 +253,31 @@ public class InputUtil {
         }
     }
 
+
+    public static int getBallGravityNameResId(int gravity) {
+        switch (gravity) {
+            case GRAVITY_RATIO:
+                return R.string.ratio; // R.drawable.percent_light;
+            case GRAVITY_TOP_LEFT:
+                return R.string.top_left;
+            case GRAVITY_TOP_RIGHT: // top|right
+                return R.string.top_right;
+            case GRAVITY_BOTTOM_LEFT:
+                return R.string.bottom_left;
+            case GRAVITY_BOTTOM_RIGHT: // top|right
+                return R.string.bottom_right;
+            case GRAVITY_RATIO_LEFT: // ratio|left
+                return R.string.ratio_left;
+            case GRAVITY_RATIO_RIGHT: // ratio|right
+                return R.string.ratio_right;
+            case GRAVITY_RATIO_TOP: // ratio|left
+                return R.string.ratio_top;
+            case GRAVITY_RATIO_BOTTOM: // ratio|right
+                return R.string.ratio_bottom;
+            default:
+                return 0;
+        }
+    }
     public static boolean isRatio(int ballGravity) {
         return ballGravity == GRAVITY_RATIO || ballGravity == GRAVITY_RATIO_LEFT || ballGravity == GRAVITY_RATIO_RIGHT;
     }
@@ -272,4 +297,5 @@ public class InputUtil {
     public static boolean isLeft(int ballGravity) {
         return ballGravity == GRAVITY_RATIO_LEFT || ballGravity == GRAVITY_TOP_LEFT || ballGravity == GRAVITY_BOTTOM_LEFT;
     }
+
 }

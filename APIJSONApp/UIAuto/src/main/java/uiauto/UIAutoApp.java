@@ -1552,6 +1552,8 @@ public class UIAutoApp { // extends Application {
                   , "floatBall", vFloatBall, floatSplitX, floatSplitY
           );
         }
+
+        toast(isSplit2Showing ? R.string.long_press_ball_to_finish : R.string.click_ball_to_finish);
       }
     });
 
@@ -1670,6 +1672,7 @@ public class UIAutoApp { // extends Application {
       public boolean onLongClick(View v) {
         curFocusView = null;
         tvControllerGravityContainer.setText("");
+        toast(R.string.unselected_touch_scope);
         return true;
       }
     });
@@ -1712,6 +1715,8 @@ public class UIAutoApp { // extends Application {
 
         onUpdateBallPosition(floatBall, vFloatBall, floatSplitX, floatSplitY, false, floatBall.getX(), floatBall.getY());
         onUpdateBallPosition(floatBall2, vFloatBall2, floatSplitX2, floatSplitY2, true, floatBall2.getX(), floatBall2.getY());
+
+        toast(R.string.selected_touch_scope_long_press_to_unselect);
       }
     });
   }
@@ -1783,7 +1788,7 @@ public class UIAutoApp { // extends Application {
 
       tv.setText("Y: " + (ratioY2 == null ? (isBottom2 && rsy2 == 0 ? "-" : "") + rsy2 : DECIMAL_FORMAT.format(ratioY2*100) + "%")
               + "/" + (ratioY == null ? (isBottom && rsy == 0 ? "-" : "") + rsy : DECIMAL_FORMAT.format(ratioY*100) + "%")
-              + ", " + (gravity == GRAVITY_RATIO ? "ratio" : (gravity == GRAVITY_TOP ? "top" : (gravity == GRAVITY_BOTTOM ? "bottom" : "center"))));
+              + ", " + getResources().getString(gravity == GRAVITY_RATIO ? R.string.ratio : (gravity == GRAVITY_TOP ? R.string.top : (gravity == GRAVITY_BOTTOM ? R.string.bottom : R.string.center))));
     } else {
       double sx = floatBall == null ? splitX : floatBall.getX() + splitRadius;
       boolean isRight = InputUtil.isRight(ballGravity);
@@ -1819,7 +1824,7 @@ public class UIAutoApp { // extends Application {
 
       tv.setText("X: " + (ratioX2 == null ? (isRight2 && rsx2 == 0 ? "-" : "") + rsx2 : DECIMAL_FORMAT.format(ratioX2*100) + "%")
               + "/" +  (ratioX == null ? (isRight && rsx == 0 ? "-" : "") + rsx : DECIMAL_FORMAT.format(ratioX*100) + "%")
-              + ", " + (gravity == GRAVITY_RATIO ? "ratio" : (gravity == GRAVITY_LEFT ? "left" : (gravity == GRAVITY_RIGHT ? "right" : "center"))));
+              + ", " + getResources().getString(gravity == GRAVITY_RATIO ? R.string.ratio : (gravity == GRAVITY_LEFT ? R.string.left : (gravity == GRAVITY_RIGHT ? R.string.right : R.string.center))));
     }
   }
 
@@ -1954,9 +1959,27 @@ public class UIAutoApp { // extends Application {
       }
       else {
         record();
+        toast(isSplit2Showing ? R.string.long_press_ball_to_finish : R.string.click_ball_to_finish);
       }
     }
+  }
 
+  private void toast(int id) {
+    toast(getResources().getString(id));
+  }
+  private void toast(String s) {
+    toast(s, false);
+  }
+  private void toast(String s, boolean isLong) {
+    if (StringUtil.isEmpty(s, true)) {
+      return;
+    }
+    mainHandler.post(new Runnable() {
+      @Override
+      public void run() {
+        Toast.makeText(getApp(), s, Toast.LENGTH_SHORT).show();
+      }
+    });
   }
 
   private void dismiss() {
@@ -2530,15 +2553,18 @@ public class UIAutoApp { // extends Application {
           }
 
           int[] gravities = InputUtil.BALL_GRAVITIES;
+          int gty;
           if (isBall2) {
-            ballGravity2 = (ballGravity2 + 1)%gravities.length;
+            gty = ballGravity2 = (ballGravity2 + 1)%gravities.length;
             setGravityImageAndText(vFloatBall, ballGravity2, tvControllerGravityX, false, gravityX);
             setGravityImageAndText(vFloatBall, ballGravity2, tvControllerGravityY, true, gravityY);
           } else {
-            ballGravity = (ballGravity + 1)%gravities.length;
+            gty = ballGravity = (ballGravity + 1)%gravities.length;
             setGravityImageAndText(vFloatBall, ballGravity, tvControllerGravityX, false, gravityX);
             setGravityImageAndText(vFloatBall, ballGravity, tvControllerGravityY, true, gravityY);
           }
+
+          toast(InputUtil.getBallGravityNameResId(gty));
         }
       });
       vFloatBall.setOnLongClickListener(new View.OnLongClickListener() {
@@ -4906,6 +4932,7 @@ public class UIAutoApp { // extends Application {
     tvControllerCount.setText(step + "/" + allStep);
 
     showCover(true);
+    toast(R.string.click_sharp_to_double_ball_click_dollar_to_go_settings);
   }
 
 
