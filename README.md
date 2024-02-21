@@ -11,8 +11,9 @@
   <a href="https://github.com/TommyLemon/UIGO/tree/master/MySQL"><img src="https://img.shields.io/badge/MySQL-5.7%2B-brightgreen.svg?style=flat"></a>
 </p>
 <p align="center" >
-  <a href="https://github.com/TommyLemon/UIGO#%E5%BF%AB%E9%80%9F%E4%B8%8A%E6%89%8B">使用文档</a>
-  <a href="http://apijson.cn/ui">在线体验</a>
+  <a href="https://github.com/TommyLemon/UIGO#%E7%A4%BA%E4%BE%8B%E9%A1%B9%E7%9B%AE">录制回放</a>
+  <a href="https://github.com/TommyLemon/UIGO#%E5%BF%AB%E9%80%9F%E4%B8%8A%E6%89%8B">快速上手</a>
+  <a href="http://apijson.cn/ui">在线工具</a>
 </p>
 
 <p align="center" >
@@ -77,6 +78,18 @@ Activity, Fragment, Dialog, PopupWindow 等各种组件(控件)元素的生命�
 
 <br />
 
+#### 早期零代码单机录制不同分辨率双机同时回放视频
+https://www.bilibili.com/video/BV1CK4218788 <br />
+<img width="1280" src="https://github.com/TommyLemon/UIGO/assets/5738175/3bb97384-72d9-4b45-ab2c-b0916291ef9f" href="https://www.bilibili.com/video/BV1CK4218788" />
+
+#### 早期管理端网页工具零代码远程控制手机录制回放视频
+https://www.bilibili.com/video/BV1wA4m137ha
+<img width="1280" src="https://github.com/TommyLemon/UIGO/assets/5738175/e50d00a1-22e8-4908-9d88-579a178965f1" href="https://www.bilibili.com/video/BV1wA4m137ha" />
+
+#### 早期仿微信朋友圈复杂 App 录制回放，弹窗、输入、网页、滑动、点击等
+https://www.bilibili.com/video/BV1fH4y1E7gD
+<img width="1280" src="https://github.com/TommyLemon/UIGO/assets/5738175/bed421fa-f1a9-47ea-a265-e34853b2d1c8" href="https://www.bilibili.com/video/BV1fH4y1E7gD" />
+
 ### 录制用例
 1.按业务 App 提供的方式打开 UIAuto 管理首页，例如 APIJSONApp 是登录后点击首页标题，UIAuto-Android 是点击首页 [自动 UI 测试] 按钮 <br />
 
@@ -92,6 +105,7 @@ Activity, Fragment, Dialog, PopupWindow 等各种组件(控件)元素的生命�
 3.点击顶部悬浮长条中间的 Replay 回放 按钮开始回放，观察每步操作前后，App 的 UI 展示、界面数据、界面跳转、弹窗显示、键盘输入等是否符合预期(和录制时表现一样) <br />
 
 <br />
+
 
 ### 快速上手
 
