@@ -23,7 +23,11 @@
 ---
 <br />
 
+<p align="center" >
 <img width="240" src="https://github.com/TommyLemon/UIGO/assets/5738175/ef03bb7d-f3a5-497f-8087-fbc1ee7594f9" /><img width="240" src="https://github.com/TommyLemon/UIGO/assets/5738175/d3ffbdaa-1b35-426a-9c4d-6124a2e63550" /><img width="240" src="https://github.com/TommyLemon/UIGO/assets/5738175/e994d333-05a1-4102-b0dc-e1671ecde2e1" />
+</p>
+
+<img width="1280" src="https://github.com/TommyLemon/UIGO/assets/5738175/54cf82d0-99b0-4085-ab89-d54ff95ef4c4" href="https://www.bilibili.com/video/BV1wA4m137ha" />
 
 ## UIGO - 📱 零代码快准稳 UI 智能录制回放平台 🚀 
 **自动兼容任意宽高比分辨率屏幕，自动精准等待网络请求，录制回放快、准、稳！**<br />
