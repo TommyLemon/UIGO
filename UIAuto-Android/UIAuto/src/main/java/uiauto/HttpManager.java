@@ -69,7 +69,7 @@ public class HttpManager {
 
     public synchronized static HttpManager getInstance() {
         if (instance == null) {
-            instance = new HttpManager(UIAutoApp.getInstance());
+            instance = new HttpManager(UIAutoApp.getApp());
         }
         return instance;
     }
@@ -169,14 +169,13 @@ public class HttpManager {
                             .addHeader(KEY_TOKEN, token).url(url)
                             .post(requestBody).build();
 
-                    httpRequestString = toHttpJSONString(httpRequest == null ? null : httpRequest.headers().toString(), request);
-
                     UIAutoApp.getInstance().post(new Runnable() {
                         @Override
                         public void run() {
                             UIAutoApp.getInstance().onHTTPEvent(
-                                    InputUtil.HTTP_ACTION_REQUEST, "JSON"
-                                    , url_, httpRequestString, null
+                                    InputUtil.HTTP_ACTION_POST, "JSON"
+                                    , "POST", "http://apijson.cn:8080", url_
+                                    , httpRequest == null ? null : httpRequest.headers().toString(), request, null
                                     , getActivity(listener), getFragment(listener)
                             );
                         }
@@ -205,8 +204,9 @@ public class HttpManager {
                     @Override
                     public void run() {
                         UIAutoApp.getInstance().onHTTPEvent(
-                                InputUtil.HTTP_ACTION_RESPONSE, e == null ? ("" + responseCode) : e.getClass().getSimpleName()
-                                , url_, httpRequestString, toHttpJSONString(responseHeaders == null ? null : responseHeaders.toString(), responseBody)
+                                - InputUtil.HTTP_ACTION_POST, e == null ? ("" + responseCode) : e.getClass().getSimpleName()
+                                , "POST", "http://apijson.cn:8080", url_
+                                , responseHeaders == null ? null : responseHeaders.toString(), httpRequestString, responseBody
                                 , getActivity(listener), getFragment(listener)
                         );
                     }

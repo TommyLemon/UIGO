@@ -185,7 +185,7 @@ public class UIAutoListActivity extends Activity implements HttpManager.OnHttpRe
                 if (array != null) {
                     JSONObject obj = array.getJSONObject(position);
                     if (isTouch) {
-//                        setResult(RESULT_OK, new Intent().putExtra(RESULT_LIST, JSON.toJSONString(obj)));
+//                        setResult(RESULT_OK, new Intent().putExtra(RESULT_LIST, UIAutoApp.toJSONString(obj)));
 //                        finish();
                     }
                     else {
@@ -264,9 +264,9 @@ public class UIAutoListActivity extends Activity implements HttpManager.OnHttpRe
                                             + "\n[" + obj.getIntValue("selectStart") + ", " + obj.getIntValue("selectEnd") + "] " + obj.getString("text")
                                     );
                                 } else {
-                                list.add("[" + state + "]  " + new Date(obj.getLongValue("time")).toLocaleString() + "    " + InputUtil.getKeyActionName(action)
-                                        + "\nrepeatCount: " + obj.getString("repeatCount") + ", scanCode: " + InputUtil.getScanCodeName(obj.getIntValue("scanCode")) + "         " + InputUtil.getKeyCodeName(obj.getIntValue("keyCode"))
-                                );
+                                    list.add("[" + state + "]  " + new Date(obj.getLongValue("time")).toLocaleString() + "    " + InputUtil.getKeyActionName(action)
+                                            + "\nrepeatCount: " + obj.getString("repeatCount") + ", scanCode: " + InputUtil.getScanCodeName(obj.getIntValue("scanCode")) + "         " + InputUtil.getKeyCodeName(obj.getIntValue("keyCode"))
+                                    );
                                 }
                             }
                             else if (type == InputUtil.EVENT_TYPE_UI) {

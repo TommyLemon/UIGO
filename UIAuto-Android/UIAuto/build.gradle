@@ -1,4 +1,5 @@
 apply plugin: 'com.android.library'
+//apply plugin: 'org.jetbrains.kotlin.android'
 
 android {
     compileSdkVersion 29
@@ -27,9 +28,10 @@ dependencies {
     api fileTree(include: ['*.jar'], dir: 'libs')
     api 'com.android.support:recyclerview-v7:27.1.1'
     api 'com.squareup.okhttp:okhttp:2.1.0'
-    api 'com.alibaba:fastjson:1.2.61'
+    api 'com.alibaba:fastjson:1.2.74'
     api 'com.github.APIJSON:apijson-orm:3.9.0'
     api 'com.github.yhaolpz:FloatWindow:1.0.9'
+    api 'org.jsoup:jsoup:1.7.2'
 //    api 'com.github.TommyLemon:UnitAuto:2.7.2'
     api project(':UnitAuto-Apk')
 }

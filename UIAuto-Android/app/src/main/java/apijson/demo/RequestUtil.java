@@ -34,7 +34,7 @@ public class RequestUtil {
 
 	private static Context context;
 	static {
-		context = UIAutoApp.getInstance();
+		context = UIAutoApp.getApp();
 	}
 
 	public static final long DEFAULT_MOMENT_ID = 15;

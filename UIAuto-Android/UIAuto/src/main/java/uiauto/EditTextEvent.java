@@ -42,7 +42,11 @@ public class EditTextEvent extends KeyEvent {
 
     public EditText getTarget() {
         UIAutoApp app = UIAutoApp.getInstance();
-        if (target == null || target.isAttachedToWindow() == false) {
+        boolean isWeb = StringUtil.isNotEmpty(targetWebId, true);
+        if (target == null && isWeb) {
+            target = app.findView(targetWebId);
+        }
+        if (target == null || (isWeb == false && target.isAttachedToWindow() == false)) {
             target = app.findView(targetId);
         }
         if (target == null) {
@@ -57,6 +61,32 @@ public class EditTextEvent extends KeyEvent {
             targetId = target == null ? targetId : target.getId();
         }
         return targetId;
+    }
+
+    String targetWebId;
+    public String getTargetWebId() {
+        return targetWebId;
+    }
+    public EditTextEvent setTargetWebId(String targetWebId) {
+        this.targetWebId = targetWebId;
+        return this;
+    }
+
+    Integer x;
+    Integer y;
+    public Integer getX() {
+        return x;
+    }
+    public EditTextEvent setX(Integer x) {
+        this.x = x;
+        return this;
+    }
+    public Integer getY() {
+        return y;
+    }
+    public EditTextEvent setY(Integer y) {
+        this.y = y;
+        return this;
     }
 
     int when;

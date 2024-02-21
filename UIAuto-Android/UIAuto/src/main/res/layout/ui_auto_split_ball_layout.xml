@@ -10,4 +10,7 @@
     android:layout_centerInParent="true"
     android:background="@drawable/oval_alpha_with_stroke"
     android:scaleType="centerInside"
+    android:src="@drawable/minus_light"
+    tools:src="@drawable/add_light"
+    android:alpha="0.8"
     />

@@ -18,8 +18,6 @@ package apijson.demo.application;
 import android.app.Application;
 import android.support.annotation.NonNull;
 
-import java.util.List;
-
 import apijson.demo.BuildConfig;
 import apijson.demo.R;
 import uiauto.UIAutoApp;
@@ -28,14 +26,13 @@ import uiauto.UIAutoApp;
  * @author Lemon
  */
 
-public class DemoApplication extends UIAutoApp {
+public class DemoApplication extends Application {
 	private static final String TAG = "DemoApplication";
 
-	// 暂时以继承方式实现，后续改为支持静态调用（需要把 UIAutoApp 成员变量全改为 static）
 	@Override
 	public void onCreate() {
 		super.onCreate();
-//		UIAutoApp.init(this);
+		UIAutoApp.getInstance().initUIAuto(this);
 		Thread.UncaughtExceptionHandler handler = Thread.currentThread().getUncaughtExceptionHandler();
 		Thread.currentThread().setUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
 			@Override
@@ -53,11 +50,6 @@ public class DemoApplication extends UIAutoApp {
 			}
 		});
 	}
-
-	public static List<Object> getOutputList(DemoApplication app, int limit, int offset) {
-		return getOutputList(UIAutoApp.getInstance(), limit, offset);
-	}
-
 
 	/**获取应用名
 	 * @return

@@ -11,10 +11,9 @@
     >
 
     <RelativeLayout
-        android:id="@+id/rlGaiawySplitX"
+        android:id="@+id/rlControllerSplitX"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
         android:background="#3000"
         android:gravity="center_vertical"
         >
@@ -118,6 +117,52 @@
             tools:visibility="visible" />
 
     </RelativeLayout>
+
+    <LinearLayout
+        android:id="@+id/rlControllerGravity"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:background="#3000"
+        android:visibility="gone"
+        tools:visibility="visible"
+        >
+
+        <TextView
+            android:id="@+id/tvControllerGravityX"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:padding="6dp"
+            android:text="X: 0, -0, ratio"
+            android:textColor="@android:color/white"
+            />
+
+        <TextView
+            android:id="@+id/tvControllerGravityY"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:padding="6dp"
+            android:text="Y: 0, -0, top"
+            android:textColor="@android:color/white"
+            />
+
+<!--        <View-->
+<!--            android:layout_height="1px"-->
+<!--            android:layout_width="match_parent"-->
+<!--            android:layout_weight="1"-->
+<!--            />-->
+
+        <TextView
+            android:id="@+id/tvControllerGravityContainer"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:padding="6dp"
+            android:hint="[]: Click to select"
+            tools:text="[]: RelativeLayout/123"
+            android:textColor="@android:color/white"
+            />
+
+    </LinearLayout>
 
     <RelativeLayout
         android:layout_width="match_parent"

@@ -73,13 +73,30 @@ public class InputUtil {
 
     public static final int HTTP_ACTION_REQUEST = 0;
     public static final int HTTP_ACTION_RESPONSE = 1;
+    public static final int HTTP_ACTION_GET = 2;
+    public static final int HTTP_ACTION_POST = 3;
+    public static final int HTTP_ACTION_PUT = 4;
+    public static final int HTTP_ACTION_DELETE = 5;
+    public static final int HTTP_ACTION_HEAD = 6;
+    public static final int HTTP_ACTION_OPTION = 7;
+    public static final int HTTP_ACTION_TRACE = 8;
     public static final String HTTP_ACTION_REQUEST_NAME = "REQUEST";
     public static final String HTTP_ACTION_RESPONSE_NAME = "RESPONSE";
+    public static final String HTTP_ACTION_GET_NAME = "GET";
+    public static final String HTTP_ACTION_POST_NAME = "POST";
+    public static final String HTTP_ACTION_PUT_NAME = "PUT";
+    public static final String HTTP_ACTION_DELETE_NAME = "DELETE";
+    public static final String HTTP_ACTION_HEAD_NAME = "HEAD";
+    public static final String HTTP_ACTION_OPTION_NAME = "OPTION";
+    public static final String HTTP_ACTION_TRACE_NAME = "TRACE";
+
     public static final String HTTP_HEADER_NAME = "HEADER";
     public static final String HTTP_CONTENT_NAME = "CONTENT";
 
     public static final String[] HTTP_ACTION_NAMES = new String[] {
-            HTTP_ACTION_REQUEST_NAME, HTTP_ACTION_RESPONSE_NAME
+            HTTP_ACTION_REQUEST_NAME, HTTP_ACTION_RESPONSE_NAME, HTTP_ACTION_GET_NAME, HTTP_ACTION_POST_NAME
+            , HTTP_ACTION_PUT_NAME, HTTP_ACTION_DELETE_NAME, HTTP_ACTION_HEAD_NAME, HTTP_ACTION_OPTION_NAME
+            , HTTP_ACTION_TRACE_NAME
     };
     public static final List<String> HTTP_ACTION_NAME_LIST = Arrays.asList(HTTP_ACTION_NAMES);
 
@@ -87,7 +104,7 @@ public class InputUtil {
         return HTTP_ACTION_NAME_LIST.indexOf(action);
     }
     public static String getHTTPActionName(int action) {
-        return HTTP_ACTION_NAME_LIST.get(action);
+        return HTTP_ACTION_NAME_LIST.get(action > 0 ? action : -action);
     }
 
 
@@ -150,4 +167,135 @@ public class InputUtil {
                 return getTouchActionName(action);
         }
     }
+
+
+    public static final int GRAVITY_DEFAULT = 0; // left|top
+    public static final int GRAVITY_RATIO = 0; // ratio
+
+    public static final int GRAVITY_CENTER = 3; // center
+    public static final int GRAVITY_LEFT = 1; // left
+    public static final int GRAVITY_RIGHT = 2; // right
+    public static final int GRAVITY_TOP = 1; // top
+    public static final int GRAVITY_BOTTOM = 2; // bottom
+
+    public static final int GRAVITY_TOP_LEFT = 1; // top|left
+    public static final int GRAVITY_TOP_RIGHT = 2; // top|right
+    public static final int GRAVITY_BOTTOM_LEFT = 3; //  bottom|left
+    public static final int GRAVITY_BOTTOM_RIGHT = 4; //  bottom|right
+    public static final int GRAVITY_RATIO_LEFT = 5; // ratio|left
+    public static final int GRAVITY_RATIO_RIGHT = 6; // ratio|right
+    public static final int GRAVITY_RATIO_TOP = 7; //  ratio|top
+    public static final int GRAVITY_RATIO_BOTTOM = 8; //  ratio|bottom
+
+    public static final int[] X_GRAVITIES = new int[] {
+            GRAVITY_RATIO, GRAVITY_LEFT, GRAVITY_RIGHT, GRAVITY_CENTER
+    };
+    public static final int[] Y_GRAVITIES = new int[] {
+            GRAVITY_RATIO, GRAVITY_TOP, GRAVITY_BOTTOM, GRAVITY_CENTER
+    };
+    public static final int[] BALL_GRAVITIES = new int[] {
+            GRAVITY_RATIO, GRAVITY_TOP_LEFT, GRAVITY_TOP_RIGHT, GRAVITY_BOTTOM_LEFT, GRAVITY_BOTTOM_RIGHT
+            , GRAVITY_RATIO_LEFT, GRAVITY_RATIO_RIGHT, GRAVITY_RATIO_TOP, GRAVITY_RATIO_BOTTOM
+    };
+
+    public static int getXGravityImageResource(int gravity) {
+        switch (gravity) {
+            case GRAVITY_CENTER:
+                return R.drawable.center_light;
+            case GRAVITY_RATIO:
+                return R.drawable.percent_light;
+            case GRAVITY_LEFT:
+                return R.drawable.back2_light;
+            case GRAVITY_RIGHT:
+                return R.drawable.forward2_light;
+            default:
+                return 0;
+        }
+    }
+
+    public static int getYGravityImageResource(int gravity) {
+        switch (gravity) {
+            case GRAVITY_CENTER:
+                return R.drawable.center_light;
+            case GRAVITY_RATIO:
+                return R.drawable.percent_light;
+            case GRAVITY_TOP:
+                return R.drawable.up2_light;
+            case GRAVITY_BOTTOM:
+                return R.drawable.down2_light;
+            default:
+                return 0;
+        }
+    }
+
+    public static int getBallGravityImageResource(int gravity) {
+        switch (gravity) {
+            case GRAVITY_RATIO:
+                return R.drawable.ratio; // R.drawable.percent_light;
+            case GRAVITY_TOP_LEFT:
+                return R.drawable.top_left;
+            case GRAVITY_TOP_RIGHT: // top|right
+                return R.drawable.top_right;
+            case GRAVITY_BOTTOM_LEFT:
+                return R.drawable.bottom_left;
+            case GRAVITY_BOTTOM_RIGHT: // top|right
+                return R.drawable.bottom_right;
+            case GRAVITY_RATIO_LEFT: // ratio|left
+                return R.drawable.ratio_left;
+            case GRAVITY_RATIO_RIGHT: // ratio|right
+                return R.drawable.ratio_right;
+            case GRAVITY_RATIO_TOP: // ratio|left
+                return R.drawable.ratio_top;
+            case GRAVITY_RATIO_BOTTOM: // ratio|right
+                return R.drawable.ratio_bottom;
+            default:
+                return 0;
+        }
+    }
+
+
+    public static int getBallGravityNameResId(int gravity) {
+        switch (gravity) {
+            case GRAVITY_RATIO:
+                return R.string.ratio; // R.drawable.percent_light;
+            case GRAVITY_TOP_LEFT:
+                return R.string.top_left;
+            case GRAVITY_TOP_RIGHT: // top|right
+                return R.string.top_right;
+            case GRAVITY_BOTTOM_LEFT:
+                return R.string.bottom_left;
+            case GRAVITY_BOTTOM_RIGHT: // top|right
+                return R.string.bottom_right;
+            case GRAVITY_RATIO_LEFT: // ratio|left
+                return R.string.ratio_left;
+            case GRAVITY_RATIO_RIGHT: // ratio|right
+                return R.string.ratio_right;
+            case GRAVITY_RATIO_TOP: // ratio|left
+                return R.string.ratio_top;
+            case GRAVITY_RATIO_BOTTOM: // ratio|right
+                return R.string.ratio_bottom;
+            default:
+                return 0;
+        }
+    }
+    public static boolean isRatio(int ballGravity) {
+        return ballGravity == GRAVITY_RATIO || ballGravity == GRAVITY_RATIO_LEFT || ballGravity == GRAVITY_RATIO_RIGHT;
+    }
+
+    public static boolean isBottom(int ballGravity) {
+        return ballGravity == GRAVITY_RATIO_BOTTOM || ballGravity == GRAVITY_BOTTOM_LEFT || ballGravity == GRAVITY_BOTTOM_RIGHT;
+    }
+
+    public static boolean isTop(int ballGravity) {
+        return ballGravity == GRAVITY_RATIO_TOP || ballGravity == GRAVITY_TOP_LEFT || ballGravity == GRAVITY_TOP_RIGHT;
+    }
+
+    public static boolean isRight(int ballGravity) {
+        return ballGravity == GRAVITY_RATIO_RIGHT || ballGravity == GRAVITY_TOP_RIGHT || ballGravity == GRAVITY_BOTTOM_RIGHT;
+    }
+
+    public static boolean isLeft(int ballGravity) {
+        return ballGravity == GRAVITY_RATIO_LEFT || ballGravity == GRAVITY_TOP_LEFT || ballGravity == GRAVITY_BOTTOM_LEFT;
+    }
+
 }
