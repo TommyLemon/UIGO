@@ -72,7 +72,7 @@ Activity, Fragment, Dialog, PopupWindow 等各种组件(控件)元素的生命�
 <br />
 
 ### 示例项目
-[UIGO Android 简单测试 App](https://github.com/TommyLemon/UIGO/tree/main/UIAuto-Android)    直接 [下载](https://github.com/TommyLemon/UIGO/releases/download/0.9.0/APIJSONTest.apk) （第一次可能失败，返回报错 JSON，一般重试一次就可以）<br />
+[UIGO Android 简单测试 App](https://github.com/TommyLemon/UIGO/tree/main/UIAuto-Android)    直接 [下载](https://github.com/TommyLemon/UIGO/releases/download/0.9.0/UIAuto.apk) （第一次可能失败，返回报错 JSON，一般重试一次就可以）<br />
 [UIGO Android 复杂客户端 App](https://github.com/TommyLemon/UIGO/tree/main/APIJSONApp)    直接 [下载](https://github.com/TommyLemon/UIGO/releases/download/0.9.0/APIJSONApp.apk) （第一次可能失败，返回报错 JSON，一般重试一次就可以）
 
 <br />
@@ -217,6 +217,8 @@ https://github.com/TommyLemon/UIGO/blob/master/APIJSONApp/app/src/main/java/apij
 ```
 参考：<br />
 https://github.com/TommyLemon/UIGO/blob/master/APIJSONApp/app/src/main/java/apijson/demo/manager/HttpManager.java#L168-L179
+
+<br />
 
 ##### 5.通知 Dialog, PopupWindow 显示和隐藏
 **业务代码中如果使用了 android.app.AlertDialog，且录制回放用例涉及**，则可以换成 uiauto.AlertDialog， <br />
