@@ -3789,7 +3789,8 @@ public class UIAutoApp { // extends Application {
         eventNode.ry2 = p2.y;
 
         Object pointerIds = obj.get("pointerIds"); // 有时 getString 取出来是 "L[I@123" 这种内存地址
-        int[] ids = pointerIds instanceof int[] ? (int[]) pointerIds : zuo.biao.apijson.JSON.parseObject(JSON.toJSONString(pointerIds), int[].class);
+        int[] ids = pointerIds instanceof int[] ? (int[]) pointerIds
+                : zuo.biao.apijson.JSON.parseObject(zuo.biao.apijson.JSON.toJSONString(pointerIds), int[].class);
 
         event = MotionEvent.obtain(
                 obj.getLongValue("downTime"),
