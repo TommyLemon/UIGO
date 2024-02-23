@@ -99,24 +99,28 @@
             style="@style/select_json" />
 
         <Button
+            android:id="@+id/btnSelectCode"
             style="@style/match_wrap"
             android:layout_marginTop="30dp"
             android:onClick="toAuto"
             android:text="@string/auto" />
 
         <Button
+            android:id="@+id/btnSelectUnit"
             style="@style/match_wrap"
             android:layout_marginTop="30dp"
             android:onClick="toUnit"
             android:text="@string/unit" />
 
         <Button
+            android:id="@+id/btnSelectUI"
             style="@style/match_wrap"
             android:layout_marginTop="30dp"
             android:onClick="toUI"
             android:text="@string/ui" />
 
         <Button
+            android:id="@+id/btnSelectLog"
             android:onClick="toUpdateLog"
             style="@style/match_wrap"
             android:layout_marginTop="30dp"

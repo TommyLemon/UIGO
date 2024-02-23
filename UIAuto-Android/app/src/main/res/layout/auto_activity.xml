@@ -74,42 +74,49 @@
                 >
 
                 <Button
+                    android:id="@+id/tvAutoGet"
                     android:layout_width="wrap_content"
                     android:layout_height="match_parent"
                     android:onClick="get"
                     android:text="GET" />
 
                 <Button
+                    android:id="@+id/tvAutoHead"
                     android:layout_width="wrap_content"
                     android:layout_height="match_parent"
                     android:onClick="head"
                     android:text="HEAD" />
 
                 <Button
+                    android:id="@+id/tvAutoGets"
                     android:layout_width="wrap_content"
                     android:layout_height="match_parent"
                     android:onClick="gets"
                     android:text="GETS" />
 
                 <Button
+                    android:id="@+id/tvAutoHeads"
                     android:layout_width="wrap_content"
                     android:layout_height="match_parent"
                     android:onClick="heads"
                     android:text="HEADS" />
 
                 <Button
+                    android:id="@+id/tvAutoPost"
                     android:layout_width="wrap_content"
                     android:layout_height="match_parent"
                     android:onClick="get"
                     android:text="POST" />
 
                 <Button
+                    android:id="@+id/tvAutoPut"
                     android:layout_width="wrap_content"
                     android:layout_height="match_parent"
                     android:onClick="put"
                     android:text="PUT" />
 
                 <Button
+                    android:id="@+id/tvAutoDelete"
                     android:layout_width="wrap_content"
                     android:layout_height="match_parent"
                     android:onClick="delete"
