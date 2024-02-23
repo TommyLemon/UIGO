@@ -238,20 +238,19 @@ public class UIAutoApp { // extends Application {
           onEventChange(step - 1, curNode == null ? 0 : curNode.type);  // move 时刷新容易卡顿
         }
 
+        isTimeout = false;
+        mainHandler.removeCallbacks(timeoutRunnable);
+
         if (isOver) {
-          tvControllerPlay.setText(R.string.replay);
-          showCoverAndSplit(true, false);
           isSplitShowing = false;
           isSplit2Showing = false;
           waitMap = new LinkedHashMap<>();
+          tvControllerPlay.setText(R.string.replay);
+          showCoverAndSplit(true, false);
           return;
         }
 
         InputEvent curItem = curNode.item;
-
-        isTimeout = false;
-        mainHandler.removeCallbacks(timeoutRunnable);
-
         //暂停，等待时机
         if (curItem == null || (waitMap.isEmpty() == false && curNode.type == InputUtil.EVENT_TYPE_HTTP)) { // curNode.type == InputUtil.EVENT_TYPE_UI || curNode.type == InputUtil.EVENT_TYPE_HTTP) {
           long timeout = curNode.timeout;
