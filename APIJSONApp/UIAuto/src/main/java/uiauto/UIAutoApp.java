@@ -151,7 +151,8 @@ public class UIAutoApp { // extends Application {
 
   private static double DENSITY = Resources.getSystem().getDisplayMetrics().density;
 
-  public static long STEP_TIMEOUT = 30*1000;
+  public static boolean DEBUG = zuo.biao.apijson.Log.DEBUG;
+  public static long STEP_TIMEOUT = DEBUG ? 30*1000 : 60*1000;
 
 
   private static UIAutoApp instance;
@@ -278,22 +279,22 @@ public class UIAutoApp { // extends Application {
           gravityY = curNode.gravityY;
 
 //          if (isSplitShowing) { // && floatBall != null) {
-            //居然怎么都不更新 vSplitX 和 vSplitY
-            // floatBall.hide();
-            // floatBall.updateX(windowX + splitX - splitRadius);
-            // floatBall.updateY(screenY + splitY - splitRadius);
-            // floatBall.show();
+          //居然怎么都不更新 vSplitX 和 vSplitY
+          // floatBall.hide();
+          // floatBall.updateX(windowX + splitX - splitRadius);
+          // floatBall.updateY(screenY + splitY - splitRadius);
+          // floatBall.show();
 
-            //太卡  FIXME 改了之后还是这样吗？
+          //太卡  FIXME 改了之后还是这样吗？
 //            if (floatBall.getX() != (curNode.splitX - splitRadius + windowWidth)
 //              || floatBall.getY() != (curNode.splitY - splitRadius + windowHeight)) {
-              // FloatWindow.destroy("floatBall");
-              // floatBall = null;
-              floatBall = showSplit(floatBall, true, splitX, splitY, "floatBall", vFloatBall, floatSplitX, floatSplitY);
+          // FloatWindow.destroy("floatBall");
+          // floatBall = null;
+          floatBall = showSplit(floatBall, true, splitX, splitY, "floatBall", vFloatBall, floatSplitX, floatSplitY);
 //            }
 
 //            if (isSplit2Showing) {
-              floatBall2 = showSplit(floatBall2, isSplit2Showing, splitX2, splitY2, "floatBall2", vFloatBall2, floatSplitX2, floatSplitY2);
+          floatBall2 = showSplit(floatBall2, isSplit2Showing, splitX2, splitY2, "floatBall2", vFloatBall2, floatSplitX2, floatSplitY2);
 //            }
 //          }
         }
@@ -933,38 +934,106 @@ public class UIAutoApp { // extends Application {
       ViewGroup vg = (ViewGroup) view;
 
       if (canScroll(vg)) {
-        vg.getViewTreeObserver().addOnScrollChangedListener(new ViewTreeObserver.OnScrollChangedListener() {
+        vg.post(new Runnable() {
           @Override
-          public void onScrollChanged() {
-//            if (vg != lastScrollableView) {
+          public void run() {
+            int[] loc = new int[2];
+            vg.getLocationOnScreen(loc);
+            int w = vg.getWidth();
+            int h = vg.getHeight();
+
+//            Rect rect = new Rect();
+//            vg.getGlobalVisibleRect(rect);
+
+            vg.getViewTreeObserver().addOnScrollChangedListener(new ViewTreeObserver.OnScrollChangedListener() {
+              @Override
+              public void onScrollChanged() {
+//                if (vg != currentScrollableView) {
+//                  return;
+//                }
+
+                int[] loc2 = new int[2];
+                vg.getLocationOnScreen(loc2);
+//                Rect rect2 = new Rect();
+//                vg.getGlobalVisibleRect(rect2);
+
+                int x2 = loc2[0];
+                int y2 = loc2[1];
+
+                int w2 = vg.getWidth();
+                int h2 = vg.getHeight();
+                float ex = downEvent == null ? 0 : downEvent.getX();
+                float ey = downEvent == null ? 0 : downEvent.getY();
+                if (downEvent != null && (ex < x2 || ex > x2 + w2 || ey < y2 || ey > y2 + h2)) {
+//                  return;
+                }
+
+                if (w2 < dip2px(8) || h2 < dip2px(8) || w2 + h2 < dip2px(60)) {
+//                  return;
+                }
+
+                double diff = Math.pow(x2 - loc[0], 2) + Math.pow(y2 - loc[1], 2) + Math.pow(w2 - w, 2) + Math.pow(h2 - h, 2);
+                if (diff > dip2px(16)) {
+//                  return;
+                }
+
+//                if (Math.pow(rect2.left - rect.left, 2) + Math.pow(rect2.right - rect.right, 2)
+//                        + Math.pow(rect2.top - rect.top, 2) + Math.pow(rect2.bottom - rect.bottom, 2) > dip2px(4)) {
+//                  return;
+//                }
+
+                onViewReachParentBound(vg);
+              }
+            });
+
+          }
+        });
+
+      }
+
+      for (int i = 0; i < vg.getChildCount(); i++) {
+        View cv = vg.getChildAt(i);
+        addTextChangedListener(cv);
+      }
+    }
+  }
+
+  private boolean isTouching = false;
+  private ViewGroup currentScrollableView;
+  private void onViewReachParentBound(ViewGroup vg) {
+    //            if (vg != lastScrollableView) {
 //              return;
 //            }
-            if (isShowing == false || isReplay) { // onScrollChanged 只在触屏时回调  || lastDownEvent != null) {
-              return;
-            }
+    if (vg == null || isShowing == false || isReplay || isTouching) { // onScrollChanged 只在触屏时回调  || lastDownEvent != null) {
+      return;
+    }
 
-            boolean isMinLeft = ! vg.canScrollHorizontally(-1);
-            boolean isMaxRight = ! vg.canScrollHorizontally(1);
-            boolean isMinTop = ! vg.canScrollVertically(-1);
-            boolean isMaxBottom = ! vg.canScrollVertically(1);
-            if (isMinLeft == isMaxRight && isMinTop == isMaxBottom) {
-              return;
-            }
+    boolean isMinLeft = ! vg.canScrollHorizontally(-1);
+    boolean isMaxRight = ! vg.canScrollHorizontally(1);
+    boolean isMinTop = ! vg.canScrollVertically(-1);
+    boolean isMaxBottom = ! vg.canScrollVertically(1);
+    if (isMinLeft == isMaxRight && isMinTop == isMaxBottom) {
+      return;
+    }
+    int[] loc = new int[2];
+    vg.getLocationOnScreen(loc);
+    if (loc[0] < 0 || loc[1] < 0) {
+      return;
+    }
 
-            ViewGroup sv = vg; // lastScrollableView; // findViewByPoint(decorView, null, event.getHistoricalX(0), event.getHistoricalY(0), FOCUS_ANY, false, CAN_SCROLL_UNSPECIFIED);
-            ViewGroup pv = sv;
-            if (pv instanceof ScrollView || pv instanceof HorizontalScrollView) {
-              View v = pv.getChildCount() <= 0 ? null : pv.getChildAt(0);
-              if (v instanceof ViewGroup) {
-                pv = (ViewGroup) v;
-              }
-              else {
-                return;
-              }
-            }
+    ViewGroup sv = vg; // lastScrollableView; // findViewByPoint(decorView, null, event.getHistoricalX(0), event.getHistoricalY(0), FOCUS_ANY, false, CAN_SCROLL_UNSPECIFIED);
+//    ViewGroup pv = sv;
+//    if (pv instanceof ScrollView || pv instanceof HorizontalScrollView) {
+//      View v = pv.getChildCount() <= 0 ? null : pv.getChildAt(0);
+//      if (v instanceof ViewGroup) {
+//        pv = (ViewGroup) v;
+//      } else {
+//        return;
+//      }
+//    }
 
-            int cc = pv.getChildCount();
-            int lp = cc - 1;
+//    int cc = pv.getChildCount();
+//    int lp = cc - 1;
 
 //            double dx = sv.getScrollX() - lastScrollX; // FIXME 必须等停下来
 //            double dy = sv.getScrollY() - lastScrollY; // FIXME 必须等停下来
@@ -973,84 +1042,77 @@ public class UIAutoApp { // extends Application {
 //            dy = event.getY() - lastDownEvent.getY();
 //          }
 
-            boolean canScrollHorizontally = isMinLeft != isMaxRight; // dx > dip2px(2); // && canScrollHorizontally(sv);
-            boolean canScrollVertically = isMinTop != isMaxBottom; // dy > dip2px(2); // && canScrollVertically(sv);
+    boolean canScrollHorizontally = isMinLeft != isMaxRight; // dx > dip2px(2); // && canScrollHorizontally(sv);
+    boolean canScrollVertically = isMinTop != isMaxBottom; // dy > dip2px(2); // && canScrollVertically(sv);
 
-            View fv = pv.getChildAt(0);
-            View lv = pv.getChildAt(lp);
+//    View fv = pv.getChildAt(0);
+//    View lv = pv.getChildAt(lp);
 
-            int svl = sv.getPaddingLeft();
-            int svr = sv.getWidth() - sv.getPaddingRight();
-            int svt = sv.getPaddingTop();
-            int svb = sv.getHeight() - sv.getPaddingBottom();
+    int svl = sv.getPaddingLeft();
+    int svr = sv.getWidth() - sv.getPaddingRight();
+    int svt = sv.getPaddingTop();
+    int svb = sv.getHeight() - sv.getPaddingBottom();
+    int sx = sv.getScrollX();
+    int sy = sv.getScrollY();
 
-            boolean change = false;
+    boolean change = false;
 
-            if (isSplit2Showing) {
-              if (canScrollHorizontally) {
-                if (isMinLeft || (gravityX == GRAVITY_RIGHT && fv != null && fv.getLeft() == svl)) {
-                  gravityX = GRAVITY_LEFT;
-                  change = true;
-                }
-                else if (gravityX == GRAVITY_LEFT && lv != null && lv.getRight() == svr) {
-                  gravityX = GRAVITY_RIGHT;
-                  change = true;
-                }
-              }
-
-              if (canScrollVertically) {
-                if (isMinTop || (gravityY == GRAVITY_BOTTOM && fv != null && fv.getTop() == svt)) {
-                  gravityY = GRAVITY_TOP;
-                  change = true;
-                }
-                else if (gravityY == GRAVITY_TOP && lv != null && lv.getBottom() == svb) {
-                  gravityY = GRAVITY_BOTTOM;
-                  change = true;
-                }
-              }
-
-              if (change) {
-                setGravityText(tvControllerGravityX, false, gravityX);
-                setGravityText(tvControllerGravityY, true, gravityY);
-              }
-            }
-            else {
-              int[] loc = new int[2];
-              sv.getLocationOnScreen(loc);
-
-              if (canScrollHorizontally) {
-                if (isMinLeft || (fv != null && (fv.getLeft() == svl || fv.getRight() == svl))) { // XListView 等 Header
-                  splitX = loc[0] + svr - windowWidth;
-                  change = true;
-                }
-                else if (splitX < 0 && lv != null && (lv.getRight() == svr || lv.getLeft() == svr)) { // XListView 等 Footer
-                  splitX = loc[0] + svl;
-                  change = true;
-                }
-              }
-
-              if (canScrollVertically) {
-                if (isMinTop || (fv != null && (fv.getTop() == svt || fv.getBottom() == svt))) { // XListView 等 Header
-                  splitY = loc[1] + svb - windowHeight - (isSeparatedStatus ? statusHeight : 0);
-                  change = true;
-                }
-                else if (lv != null && (lv.getBottom() == svb || lv.getTop() == svb)) { // XListView 等 Footer
-                  splitY = loc[1] + svt - (isSeparatedStatus ? statusHeight : 0);
-                  change = true;
-                }
-              }
-
-              if (change) {
-                floatBall = showSplit(floatBall,  isSplitShowing, splitX, splitY, "floatBall", vFloatBall, floatSplitX, floatSplitY);
-              }
-            }
-          }
-        });
+    if (isSplit2Showing) {
+      if (canScrollHorizontally) {
+        if (isMinLeft) { // || (gravityX == GRAVITY_RIGHT && fv != null && (fv.getLeft() == svl || fv.getRight() == svl))) {
+          gravityX = GRAVITY_LEFT;
+          change = true;
+        } else if (sx > 0) { // gravityX == GRAVITY_LEFT && lv != null && (lv.getRight() == svr || lv.getLeft() == svr)) {
+          gravityX = GRAVITY_RIGHT;
+          change = true;
+        }
       }
 
-      for (int i = 0; i < vg.getChildCount(); i++) {
-        View cv = vg.getChildAt(i);
-        addTextChangedListener(cv);
+      if (canScrollVertically) {
+        if (isMinTop) { // || (gravityY == GRAVITY_BOTTOM && fv != null && (fv.getTop() == svt || fv.getBottom() == svt))) {
+          gravityY = GRAVITY_TOP;
+          change = true;
+        } else if (sy > 0) { // gravityY == GRAVITY_TOP && lv != null && (lv.getBottom() == svb || lv.getTop() == svb)) {
+          gravityY = GRAVITY_BOTTOM;
+          change = true;
+        }
+      }
+
+      if (change) {
+        setGravityText(tvControllerGravityX, false, gravityX);
+        setGravityText(tvControllerGravityY, true, gravityY);
+      }
+    } else {
+      if (canScrollHorizontally) {
+        if (isMinLeft) { // || (fv != null && (fv.getLeft() == svl || fv.getRight() == svl))) { // XListView 等 Header
+          splitX = loc[0] + svr - windowWidth;
+          change = true;
+        } else if (sx > 0) { // splitX < 0 && lv != null && (lv.getRight() == svr || lv.getLeft() == svr)) { // XListView 等 Footer
+          splitX = loc[0] + svl;
+          if (splitX <= 0) {
+            splitX = 1;
+          }
+
+          change = true;
+        }
+      }
+
+      if (canScrollVertically) {
+        if (isMinTop) { // || (fv != null && (fv.getTop() == svt || fv.getBottom() == svt))) { // XListView 等 Header
+          splitY = loc[1] + svb - windowHeight - (isSeparatedStatus ? statusHeight : 0);
+          change = true;
+        } else if (sy > 0) { // lv != null && (lv.getBottom() == svb + sy || lv.getTop() == svb + sy)) { // XListView 等 Footer
+          splitY = loc[1] + svt - (isSeparatedStatus ? statusHeight : 0);
+          if (splitY <= 0) {
+            splitY = 1;
+          }
+
+          change = true;
+        }
+      }
+
+      if (change) {
+        floatBall = showSplit(floatBall, isSplitShowing, splitX, splitY, "floatBall", vFloatBall, floatSplitX, floatSplitY);
       }
     }
   }
@@ -1197,8 +1259,8 @@ public class UIAutoApp { // extends Application {
         setGravityText(tvControllerGravityX, false, gravityX);
         setGravityText(tvControllerGravityY, true, gravityY);
         BallPoint[] points = new BallPoint[] {
-          new BallPoint(ballGravity, splitX, splitY)
-            , isSplit2Showing == false ? null : new BallPoint(ballGravity2, splitX2, splitY2)
+                new BallPoint(ballGravity, splitX, splitY)
+                , isSplit2Showing == false ? null : new BallPoint(ballGravity2, splitX2, splitY2)
         };
         ballPositionMap.put(activity, points);
         classBallPositionMap.put(activity.getClass().getName(), points);
@@ -1829,7 +1891,7 @@ public class UIAutoApp { // extends Application {
   }
 
 
-    private void onUIAutoFragmentCreate(Activity activity) {
+  private void onUIAutoFragmentCreate(Activity activity) {
     if (activity instanceof FragmentActivity) {
       FragmentActivity fa = (FragmentActivity) activity;
       FragmentManager sfm = fa.getSupportFragmentManager();
@@ -2146,7 +2208,7 @@ public class UIAutoApp { // extends Application {
 
 
 
-//  public boolean onTouchEvent(@NotNull MotionEvent event, @NotNull Activity activity) {
+  //  public boolean onTouchEvent(@NotNull MotionEvent event, @NotNull Activity activity) {
 //    return onTouchEvent(event, activity, null);
 //  }
 //  public boolean onTouchEvent(@NotNull MotionEvent event, @NotNull Fragment fragment) {
@@ -2174,7 +2236,7 @@ public class UIAutoApp { // extends Application {
   // LifecycleOwner 只覆盖 Activity, Fragment, 而 Window.Callback 只覆盖 Activity, Dialog
   private final Map<Object, BallPoint[]> ballPositionMap = new HashMap<>();
   private final Map<String, BallPoint[]> classBallPositionMap = new HashMap<>();
-//  @Override
+  //  @Override
   public void onConfigurationChanged(Configuration newConfig) {
 //    super.onConfigurationChanged(newConfig);
 
@@ -2206,9 +2268,9 @@ public class UIAutoApp { // extends Application {
 
           showCover(true);
           // if (isSplitShowing) {
-            floatBall = showSplit(floatBall, isSplitShowing, splitX, splitY, "floatBall", vFloatBall, floatSplitX, floatSplitY);
-            // if (isSplit2Showing) {
-              floatBall2 = showSplit(floatBall2, isSplitShowing && isSplit2Showing, splitX2, splitY2, "floatBall2", vFloatBall2, floatSplitX2, floatSplitY);
+          floatBall = showSplit(floatBall, isSplitShowing, splitX, splitY, "floatBall", vFloatBall, floatSplitX, floatSplitY);
+          // if (isSplit2Showing) {
+          floatBall2 = showSplit(floatBall2, isSplitShowing && isSplit2Showing, splitX2, splitY2, "floatBall2", vFloatBall2, floatSplitX2, floatSplitY);
 
         }
       }
@@ -2259,18 +2321,18 @@ public class UIAutoApp { // extends Application {
     floatController = FloatWindow.get("floatController");
     if (floatController == null) {
       FloatWindow
-        .with(getApplicationContext())
-        .setTag("floatController")
-        .setView(vFloatController)
-        .setWidth(ViewGroup.LayoutParams.MATCH_PARENT)  // windowWidth - windowX)                               //设置控件宽高
+              .with(getApplicationContext())
+              .setTag("floatController")
+              .setView(vFloatController)
+              .setWidth(ViewGroup.LayoutParams.MATCH_PARENT)  // windowWidth - windowX)                               //设置控件宽高
 //					.setHeight(windowHeight)
 //                     .setX(windowX)                                   //设置控件初始位置
 //                     .setY(windowY)
-        .setMoveType(MoveType.slide)
-        .setDesktopShow(true) //必须为 true，否则切换 Activity 就会自动隐藏                        //桌面显示
+              .setMoveType(MoveType.slide)
+              .setDesktopShow(true) //必须为 true，否则切换 Activity 就会自动隐藏                        //桌面显示
 //                .setViewStateListener(mViewStateListener)    //监听悬浮控件状态改变
 //                .setPermissionListener(mPermissionListener)  //监听权限申请结果
-        .build();
+              .build();
 
       floatController = FloatWindow.get("floatController");
     }
@@ -2371,18 +2433,18 @@ public class UIAutoApp { // extends Application {
 
     if (fw == null) {
       FloatWindow
-        .with(getApplicationContext())
-        .setTag(tag)
-        .setView(view)
-        .setWidth(width)                               //设置控件宽高
-        .setHeight(height)
-        .setX(x)                                   //设置控件初始位置
-        .setY(y)
-        .setMoveType(moveType)
-        .setDesktopShow(true) //必须为 true，否则切换 Activity 就会自动隐藏                        //桌面显示
+              .with(getApplicationContext())
+              .setTag(tag)
+              .setView(view)
+              .setWidth(width)                               //设置控件宽高
+              .setHeight(height)
+              .setX(x)                                   //设置控件初始位置
+              .setY(y)
+              .setMoveType(moveType)
+              .setDesktopShow(true) //必须为 true，否则切换 Activity 就会自动隐藏                        //桌面显示
 //                .setViewStateListener(mViewStateListener)    //监听悬浮控件状态改变
 //                .setPermissionListener(mPermissionListener)  //监听权限申请结果
-        .build();
+              .build();
 
       fw = FloatWindow.get(tag);
     }
@@ -2391,7 +2453,7 @@ public class UIAutoApp { // extends Application {
     return fw;
   }
 
-//  private MotionEvent lastDownEvent, lastUpEvent;
+  //  private MotionEvent lastDownEvent, lastUpEvent;
   private float lastBallDownX, lastBallDownY, lastBallUpX, lastBallUpY;
 
   private boolean isSplitShowing, isSplit2Showing;
@@ -2632,59 +2694,59 @@ public class UIAutoApp { // extends Application {
       int size = (int) Math.round(splitSize);
 
       FloatWindow
-        .with(getApplicationContext())
-        .setTag(ballName)
-        .setView(vFloatBall)
-        .setWidth(size)                       //设置控件宽高
-        .setHeight(size)
-        .setX(x)                                   //设置控件初始位置
-        .setY(y)
-        .setMoveType(MoveType.active)
-        .setDesktopShow(true) //必须为 true，否则切换 Activity 就会自动隐藏 //桌面显示
-        .setViewStateListener(new ViewStateListener() {
-          @Override
-          public void onPositionUpdate(int x, int y) {
-            IFloatWindow fb = floatBall_ != null ? floatBall_ : FloatWindow.get(ballName);
-            onUpdateBallPosition(fb, vFloatBall, floatSplitX_, floatSplitY_, isBall2, x, y);
+              .with(getApplicationContext())
+              .setTag(ballName)
+              .setView(vFloatBall)
+              .setWidth(size)                       //设置控件宽高
+              .setHeight(size)
+              .setX(x)                                   //设置控件初始位置
+              .setY(y)
+              .setMoveType(MoveType.active)
+              .setDesktopShow(true) //必须为 true，否则切换 Activity 就会自动隐藏 //桌面显示
+              .setViewStateListener(new ViewStateListener() {
+                @Override
+                public void onPositionUpdate(int x, int y) {
+                  IFloatWindow fb = floatBall_ != null ? floatBall_ : FloatWindow.get(ballName);
+                  onUpdateBallPosition(fb, vFloatBall, floatSplitX_, floatSplitY_, isBall2, x, y);
 
 //            IFloatWindow floatBall = FloatWindow.get(ballName);
 //            if (x != floatBall.getX() || y != floatBall.getY()) {
-            curFocusView = null;
-            tvControllerGravityContainer.setText("");
+                  curFocusView = null;
+                  tvControllerGravityContainer.setText("");
 //            }
 
-          }
+                }
 
-          @Override
-          public void onShow() {
-            IFloatWindow fb = floatBall_ != null ? floatBall_ : FloatWindow.get(ballName);
-            onPositionUpdate(fb == null ? x : fb.getX(), fb == null ? y : fb.getY());
-          }
+                @Override
+                public void onShow() {
+                  IFloatWindow fb = floatBall_ != null ? floatBall_ : FloatWindow.get(ballName);
+                  onPositionUpdate(fb == null ? x : fb.getX(), fb == null ? y : fb.getY());
+                }
 
-          @Override
-          public void onHide() {
-            if (floatSplitX_ != null) {
-              floatSplitX_.hide();
-            }
-            if (floatSplitY_ != null) {
-              floatSplitY_.hide();
-            }
-          }
+                @Override
+                public void onHide() {
+                  if (floatSplitX_ != null) {
+                    floatSplitX_.hide();
+                  }
+                  if (floatSplitY_ != null) {
+                    floatSplitY_.hide();
+                  }
+                }
 
-          @Override
-          public void onDismiss() {
-            onHide();
-          }
+                @Override
+                public void onDismiss() {
+                  onHide();
+                }
 
-          @Override
-          public void onMoveAnimStart() { }
-          @Override
-          public void onMoveAnimEnd() { }
-          @Override
-          public void onBackToDesktop() { }
-        })    //监听悬浮控件状态改变
+                @Override
+                public void onMoveAnimStart() { }
+                @Override
+                public void onMoveAnimEnd() { }
+                @Override
+                public void onBackToDesktop() { }
+              })    //监听悬浮控件状态改变
 //                .setPermissionListener(mPermissionListener)  //监听权限申请结果
-        .build();
+              .build();
 
       ball = FloatWindow.get(ballName);
     }
@@ -3035,7 +3097,7 @@ public class UIAutoApp { // extends Application {
 //              double dy = ry >= oy && ry <= windowHeight + oy ? 0 : (windowHeight - ratio*node.windowHeight)*(ry < oy ? -1 : 1);
 
               // 本质上都是超出了当前 Window 显示区域
-               if ((rx > left && rx < right) || (rx < left && rx > right) || (ry > top && ry < bottom) || (ry < top && ry > bottom)) {
+              if ((rx > left && rx < right) || (rx < left && rx > right) || (ry > top && ry < bottom) || (ry < top && ry > bottom)) {
 //              if (dx != 0 || dy != 0) {
                 double dx = left - right;
                 double dy = top - bottom;
@@ -3182,8 +3244,8 @@ public class UIAutoApp { // extends Application {
 //                event2.setAction(MotionEvent.ACTION_UP);
 //                dispatchTouchEvent(callback_, view_, event2, event2);
 //
-                ballDeltaX = 0;
-                ballDeltaY = 0;
+            ballDeltaX = 0;
+            ballDeltaY = 0;
 //              }
 //            }, 1 + calcDuration(node, node == null ? null : node.next)); // FIXME next down event or not motion event
           }
@@ -3444,6 +3506,11 @@ public class UIAutoApp { // extends Application {
   }
   public void prepareAndSendEvent(@NotNull JSONArray eventList, int step) {
     currentEventNode = null;
+    if (eventList == null || eventList.isEmpty()) {
+      firstEventNode = null;
+      return;
+    }
+
     Node<InputEvent> eventNode = new Node<>(null, null, null);
     for (int i = 0; i < eventList.size(); i++) {
       JSONObject obj = eventList.getJSONObject(i);
@@ -3892,15 +3959,15 @@ public class UIAutoApp { // extends Application {
 
   private double getScale(double ww, double wh, int layoutType, double density) {
 //    if (decorWidth <= 0) {
-      if (windowWidth <= 0) {
-        windowWidth = screenWidth;
-      }
+    if (windowWidth <= 0) {
+      windowWidth = screenWidth;
+    }
 //      decorWidth = windowWidth;
 //    }
 //    if (decorHeight <= 0) {
-      if (windowHeight <= 0) {
-        windowHeight = screenHeight;
-      }
+    if (windowHeight <= 0) {
+      windowHeight = screenHeight;
+    }
 //      decorHeight = windowHeight;
 //    }
 
@@ -4009,7 +4076,7 @@ public class UIAutoApp { // extends Application {
     }
   }
 
-//  public void onHTTPEvent(int action, String format, String url, String request, String response, Activity activity) {
+  //  public void onHTTPEvent(int action, String format, String url, String request, String response, Activity activity) {
 //    onHTTPEvent(action, format, url, request, response, activity, null);
 //  }
 //  public void onHTTPEvent(int action, String format, String url, String request, String response, Fragment fragment) {
@@ -4029,8 +4096,8 @@ public class UIAutoApp { // extends Application {
     if (isReplay) {
       Node<InputEvent> curNode = lastWaitNode == null ? currentEventNode : lastWaitNode;
       if (curNode == null || curNode.disable || /** ((activity == null || Objects.equals(curNode.activity, activity.getClass().getName()))
-//                && (Objects.equals(curNode.fragment, fragment == null ? null : fragment.getClass().getName()))
-              && */ (StringUtil.isNotEmpty(url, true) && ! waitMap.isEmpty()) // ) // 避免过多调用
+       //                && (Objects.equals(curNode.fragment, fragment == null ? null : fragment.getClass().getName()))
+       && */ (StringUtil.isNotEmpty(url, true) && ! waitMap.isEmpty()) // ) // 避免过多调用
       ) {
         String key = getWaitKey(InputUtil.EVENT_TYPE_HTTP, action, method, host, url);
         List<Node<InputEvent>> list = waitMap.get(key);
@@ -4112,37 +4179,37 @@ public class UIAutoApp { // extends Application {
 //    executorService.execute(new Runnable() {
 //      @Override
 //      public void run() { //TODO 截屏等记录下来
-        Node<?> node = eventNode;
+    Node<?> node = eventNode;
 
-        Long inputId;
-        Long toInputId;
-        // if (eventNode.item == null) {  // 自动触发
-        inputId = node.id;
-        toInputId = node.prev == null || node.prev.disable ? null : node.prev.id;
-        // }
-        // else {  // 手动触发
-        //   inputId = eventNode == null || (eventNode.prev) == null ? null : eventNode.prev.id;
-        //   toInputId = eventNode == null ? null : eventNode.id;
-        // }
+    Long inputId;
+    Long toInputId;
+    // if (eventNode.item == null) {  // 自动触发
+    inputId = node.id;
+    toInputId = node.prev == null || node.prev.disable ? null : node.prev.id;
+    // }
+    // else {  // 手动触发
+    //   inputId = eventNode == null || (eventNode.prev) == null ? null : eventNode.prev.id;
+    //   toInputId = eventNode == null ? null : eventNode.id;
+    // }
 
-        JSONObject obj = out != null ? out : new JSONObject(true);
-        obj.put("inputId", inputId);
-        obj.put("toInputId", toInputId);
-        obj.put("orientation", node.orientation);
-        obj.put("time", System.currentTimeMillis());  // TODO 如果有录屏，则不需要截屏，只需要记录时间点
-        if (node.disable == false) {
+    JSONObject obj = out != null ? out : new JSONObject(true);
+    obj.put("inputId", inputId);
+    obj.put("toInputId", toInputId);
+    obj.put("orientation", node.orientation);
+    obj.put("time", System.currentTimeMillis());  // TODO 如果有录屏，则不需要截屏，只需要记录时间点
+    if (node.disable == false) {
 
-          if (window != null && (node.item == null || node.action == MotionEvent.ACTION_DOWN)) {
-            // 同步或用协程来上传图片
+      if (window != null && (node.item == null || node.action == MotionEvent.ACTION_DOWN)) {
+        // 同步或用协程来上传图片
 //            obj.put("screenshotUrl", screenshot(directory == null || directory.exists() == false ? parentDirectory : directory, window, inputId, toInputId, node.orientation));
-          }
-        }
-        if (outputList == null) {
-          outputList = new JSONArray();
-        }
-        synchronized (outputList) { // 居然出现 java.lang.ArrayIndexOutOfBoundsException: length=49; index=49
-        	outputList.add(obj);
-        }
+      }
+    }
+    if (outputList == null) {
+      outputList = new JSONArray();
+    }
+    synchronized (outputList) { // 居然出现 java.lang.ArrayIndexOutOfBoundsException: length=49; index=49
+      outputList.add(obj);
+    }
 //      }
 //    });
   }
@@ -4189,39 +4256,39 @@ public class UIAutoApp { // extends Application {
       Bitmap finalBitmap = bitmap;
       String finalFilePath = filePath;
       executorService.execute(new Runnable() {
-          @Override
-          public void run() {
-            FileOutputStream fos = null;
-            try {
-              fos = new FileOutputStream(finalFilePath);
-              finalBitmap.compress(Bitmap.CompressFormat.PNG, 100, fos);
-            }
-            catch (Throwable e) {
-              Log.e(TAG, "screenshot 截屏异常：" + e.getMessage());
-            }
-            finally {
-              if (finalBitmap != null) {
-                try {
-                  finalBitmap.recycle();
-                } catch (Throwable e) {
-                  e.printStackTrace();
-                }
+        @Override
+        public void run() {
+          FileOutputStream fos = null;
+          try {
+            fos = new FileOutputStream(finalFilePath);
+            finalBitmap.compress(Bitmap.CompressFormat.PNG, 100, fos);
+          }
+          catch (Throwable e) {
+            Log.e(TAG, "screenshot 截屏异常：" + e.getMessage());
+          }
+          finally {
+            if (finalBitmap != null) {
+              try {
+                finalBitmap.recycle();
+              } catch (Throwable e) {
+                e.printStackTrace();
               }
+            }
 
-              if (fos != null) {
-                try {
-                  fos.flush();
-                } catch (Throwable e) {
-                  e.printStackTrace();
-                }
-                try {
-                  fos.close();
-                } catch (Throwable e) {
-                  e.printStackTrace();
-                }
+            if (fos != null) {
+              try {
+                fos.flush();
+              } catch (Throwable e) {
+                e.printStackTrace();
+              }
+              try {
+                fos.close();
+              } catch (Throwable e) {
+                e.printStackTrace();
               }
             }
           }
+        }
       });
 
       return file.getAbsolutePath(); // filePath = directory.getName() + "/" + file.getName();  // 返回相对路径
@@ -4240,6 +4307,8 @@ public class UIAutoApp { // extends Application {
 //  public JSONObject addInputEvent(@NotNull InputEvent ie, @NotNull Window.Callback callback, @NotNull Fragment fragment) {
 //    return addInputEvent(ie, callback, null, fragment);
 //  }
+
+  private MotionEvent downEvent, upEvent;
 
   public JSONObject addInputEvent(@NotNull InputEvent ie, @NotNull Window.Callback callback, Activity activity, Fragment fragment) {
     if (isSplitShowing == false || vSplitX == null || vSplitY == null || isReplay) {
@@ -4347,6 +4416,9 @@ public class UIAutoApp { // extends Application {
       double y = event.getY();
 
       if (action == MotionEvent.ACTION_DOWN) { // || action == MotionEvent.ACTION_UP) {
+        isTouching = true;
+        downEvent = MotionEvent.obtain(event);
+
         View rv = contentView != null && callback instanceof Dialog ? contentView : decorView;
 
         View v = findViewByPoint(rv, null, x, y, FOCUS_ANY, true);
@@ -4364,6 +4436,14 @@ public class UIAutoApp { // extends Application {
         View fv = findViewByPoint(rv, null, x, y, FOCUS_ABLE, true); // FOCUS_HAS 找不到
         obj.put("focusId", fv == null ? null : fv.getId());
         obj.put("focusIdName", getResIdName(fv));
+
+        currentScrollableView = canScroll(v) ? (ViewGroup) v : (canScroll(pv) ? (ViewGroup) pv : (canScroll(fv) ? (ViewGroup) fv :
+                findViewByPoint(rv, null, x, y, FOCUS_ANY, false, CAN_SCROLL_UNSPECIFIED)));
+      }
+      else if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
+        isTouching = false;
+        upEvent = MotionEvent.obtain(event);
+        onViewReachParentBound(currentScrollableView);
       }
 
       int pc = event.getPointerCount();
@@ -4910,14 +4990,14 @@ public class UIAutoApp { // extends Application {
     isReplay = false;
     Node<InputEvent> eventNode = new Node<>(null, null, null);
     if (clear) {
-	    setEventList(null);
-	    firstEventNode = currentEventNode = eventNode;
-	    step = 0;
-	    allStep = 0;
-	    duration = 0;
-        currentTime = startTime = System.currentTimeMillis();
-	    flowId = - currentTime;
-        tvControllerTime.setText("00:00");
+      setEventList(null);
+      firstEventNode = currentEventNode = eventNode;
+      step = 0;
+      allStep = 0;
+      duration = 0;
+      currentTime = startTime = System.currentTimeMillis();
+      flowId = - currentTime;
+      tvControllerTime.setText("00:00");
     }
     else {
       if (currentEventNode == null) {
@@ -4941,11 +5021,11 @@ public class UIAutoApp { // extends Application {
   public void startUIAutoActivity() {
     startActivity(UIAutoActivity.createIntent(getCurrentActivity()));
   }
-//  @Override
+  //  @Override
   public void startActivity(Intent intent) {
     getCurrentActivity().startActivity(intent);
   }
-//  @Override
+  //  @Override
   public void startActivity(Intent intent, Bundle options) {
     getCurrentActivity().startActivity(intent, options);
   }
@@ -5190,7 +5270,7 @@ public class UIAutoApp { // extends Application {
     String activity;
     String fragment;
     String method;
-//    String header;
+    //    String header;
     String host;
     String url;
 //    String request;
