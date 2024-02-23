@@ -462,7 +462,7 @@ https://github.com/TommyLemon/UIGO/blob/master/APIJSONApp/app/src/main/java/apij
 
 ```
 
-**所有 AppCompatPopupWindow, ListPopupWindow 等也同上处理。** <br />
+**所有 ListPopupWindow 等也同上处理。** <br />
 <br />
 
 #### Java 后端 Server
