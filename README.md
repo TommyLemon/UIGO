@@ -94,12 +94,44 @@ https://www.bilibili.com/video/BV1wA4m137ha
 https://www.bilibili.com/video/BV1fH4y1E7gD
 <img width="1280" src="https://github.com/TommyLemon/UIGO/assets/5738175/bed421fa-f1a9-47ea-a265-e34853b2d1c8" href="https://www.bilibili.com/video/BV1fH4y1E7gD" />
 
+#### 零代码录制回放 H5 移动端网页输入、滑动、点击等操作
+https://www.bilibili.com/video/BV1TK421C7y4
+<img width="1280" src="https://github.com/TommyLemon/UIGO/assets/5738175/5c29bec6-2e21-4230-907c-f4ccb1faa4ef" href="https://www.bilibili.com/video/BV1TK421C7y4" />
+
+
 ### 录制用例
 1.按业务 App 提供的方式打开 UIAuto 管理首页，例如 APIJSONApp 是登录后点击首页标题，UIAuto-Android 是点击首页 [自动 UI 测试] 按钮 <br />
 
 2.点击 Record 录制按钮 > 点击顶部悬浮长条中间的 Record 录制 按钮开始录制 > 正常操作 App > 完成一个用例过程后，点击半透明圆形 〇 悬浮球完成录制 <br />
 
 3.(可选)点击右下角 post 按钮上传录制的操作和数据等到后端数据库，可先编辑底部的后端服务器 HTTP URL Host 地址为你自己部署的 APIJSON 后端服务 <br />
+
+#### 录制注意事项
+**1.按贴靠方式调整分割球位置及贴靠方式** <br />
+按下(MotionEvent.ACTION_DOWN 事件)对应 View 的屏幕 \[X, Y\] 坐标位置前，必须先完成这步(如果已经配置正确则跳过) <br />
+
+**分割球对应横纵两条分割线把屏幕分成了 左上、右上、左下、右下 4 个区域，对应数学上按坐标轴划分的 第 二、一、三、四 象限；** <br />
+点击顶部控制条左上角 # 按钮可切换单双分割球，相比单分割球可更精细地设置高级属性 <br />
+
+**双分割球中间会出现一个长方形触控区域，默认点击位置按居中处理**，可点击切换 center 居中, ratio 等比, top 靠上, bottom 靠下, left 靠左, right 靠右；<br />
+分割球本身贴靠方式可以点击分割球来切换 top_left 左上, top_right 右上, bottom_left 左下, bottom_right 右下, ratio 等比, <br />
+ratio_top 靠上并垂直纵向等比, ratio_bottom 靠下并垂直纵向等比, ratio_left 靠左并水平横向等比, ratio_right 靠右并水平横向等比 <br />
+
+**2.滑动要该快则快、该慢则慢** <br />
+**分页列表/网格等滑动尽量快速到底，保证不同宽高比分辨率屏幕上都能在同侧(↓ 从上往下、↑ 从下往上、→ 从左往右、← 从右往左)上显示一致；** <br />
+**点按内部 View 前可缓慢滑动保证目标出现在屏幕内，且手离开屏幕前先在同一位置稳住别动，保证不继续自动滚动(不同机型/系统对惯性滚动处理不一致导致偏差)** <br />
+
+**3.触控的 View 尽量都有 id，且尽量不要改动** <br />
+UIGO 会对有 id 的被触控 View 在回放时进行微调触控位置(不改变 UI 布局，仅微调触屏输入坐标位置)，灵活适配不同屏幕尤其是不同品牌机型的 UI 差异 <br />
+
+**4.最好开启托管服务器代理来录制 HTTP API 接口请求与响应流量，用于回放操作时同时回放数据** <br />
+保证回放到某个步骤和录制到同一步骤时布局一致，不会触控点按错位<br />
+
+**5.不要跳出 App，例如跳转外部浏览器或微信、支付宝等其它 App 来上网、登录、分享、支付等** <br />
+UIGO 目前不支持跨 App 录制回放，当前 App 外的对应事件录制不到也回放不了，打算后续支持对接支持跨 App 录制回放/自动化测试 的项目，<br />
+目前碰到这个问题要么避开，要么等待或手动点 》按钮跳过等待来直接继续执行下一步 <br />
+
+<br />
 
 ### 回放用例
 1.参考 录制用例 1 来打开 UIAuto 管理首页 > 点击左下角 Remote 共享列表 按钮 > 点击打开其中一个和 App 及账号对应的用例，或者 录制用例 后直接进入用例详情界面 <br />
@@ -108,8 +140,15 @@ https://www.bilibili.com/video/BV1fH4y1E7gD
 
 3.点击顶部悬浮长条中间的 Replay 回放 按钮开始回放，观察每步操作前后，App 的 UI 展示、界面数据、界面跳转、弹窗显示、键盘输入等是否符合预期(和录制时表现一样) <br />
 
-<br />
+#### 回放注意事项
+**1.回放开始时 App 初始状态必须和录制时一致** <br />
+包括所在页面(最好都在首页)、列表/网格滚动距离(最好都是没滚动的初始值 0)、中英文等语言设置、字体大小和样式设置、缓存/调试等自定义配置 等 <br />
 
+**2.系统的中英文等语言、字体大小和样式 等设置尽可能保持一致** <br />
+
+**3.最好开启托管服务器代理来回放录制时的 HTTP API 接口请求与响应流量数据** <br />
+
+<br />
 
 ### 快速上手
 
@@ -148,6 +187,7 @@ dependencies {
     @Override
     public void onCreate() {
         super.onCreate();
+        UIAutoApp.STEP_TIMEOUT = 30*1000; // 一般为 HTTP API 网络请求超时时间 ms 毫秒值
         UIAutoApp.getInstance().initUIAuto(this);
     }
 ```
