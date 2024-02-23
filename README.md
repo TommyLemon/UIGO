@@ -268,7 +268,7 @@ https://github.com/TommyLemon/UIGO/blob/master/APIJSONApp/app/src/main/java/apij
 			@Override
 			public void run() {
 				UIAutoApp.getInstance().onHTTPEvent(
-					- action, respnseCode, method, host, url, headerStr, reqBodyStr, resBodyStr, null, activity, fragment
+					- action, responseCode, method, host, url, headerStr, reqBodyStr, resBodyStr, null, activity, fragment
 				);
 			}
 		});
