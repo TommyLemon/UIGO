@@ -28,7 +28,7 @@ public class TimePickerDialog extends android.app.TimePickerDialog {
 	@Override
 	public void show() {
 		super.show();
-		UIAutoApp.getInstance().onUIAutoWindowCreate(this, getWindow());
+		UIAutoApp.getInstance().onUIAutoDialogShow(this);
 	}
 
 	private Activity context;
@@ -42,7 +42,7 @@ public class TimePickerDialog extends android.app.TimePickerDialog {
 					listener.onDismiss(dialog);
 				}
 
-				UIAutoApp.getInstance().onUIAutoWindowDestroy(TimePickerDialog.this, getWindow());
+				UIAutoApp.getInstance().onUIAutoDialogDismiss(TimePickerDialog.this);
 			}
 		});
 	}

@@ -29,7 +29,7 @@ public class Dialog extends android.app.Dialog {
 	@Override
 	public void show() {
 		super.show();
-		UIAutoApp.getInstance().onUIAutoWindowCreate(this, getWindow());
+		UIAutoApp.getInstance().onUIAutoDialogShow(this);
 	}
 
 	private Activity context;
@@ -43,7 +43,7 @@ public class Dialog extends android.app.Dialog {
 					listener.onDismiss(dialog);
 				}
 
-				UIAutoApp.getInstance().onUIAutoWindowDestroy(Dialog.this, getWindow());
+				UIAutoApp.getInstance().onUIAutoDialogDismiss(Dialog.this);
 			}
 		});
 	}

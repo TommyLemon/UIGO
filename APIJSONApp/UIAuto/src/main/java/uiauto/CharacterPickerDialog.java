@@ -30,7 +30,7 @@ public class CharacterPickerDialog extends android.text.method.CharacterPickerDi
 	@Override
 	public void show() {
 		super.show();
-		UIAutoApp.getInstance().onUIAutoWindowCreate(this, getWindow());
+		UIAutoApp.getInstance().onUIAutoDialogShow(this);
 	}
 
 	private Activity context;
@@ -44,7 +44,7 @@ public class CharacterPickerDialog extends android.text.method.CharacterPickerDi
 					listener.onDismiss(dialog);
 				}
 
-				UIAutoApp.getInstance().onUIAutoWindowDestroy(CharacterPickerDialog.this, getWindow());
+				UIAutoApp.getInstance().onUIAutoDialogDismiss(CharacterPickerDialog.this);
 			}
 		});
 	}

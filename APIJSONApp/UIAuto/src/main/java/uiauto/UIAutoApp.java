@@ -61,6 +61,7 @@ import android.support.annotation.RequiresApi;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentManager;
+import android.support.v4.widget.NestedScrollView;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -427,6 +428,7 @@ public class UIAutoApp { // extends Application {
 
   private Activity activity;
   private Fragment fragment;
+  private Dialog dialog;
   int screenWidth;
   int screenHeight;
 
@@ -450,6 +452,14 @@ public class UIAutoApp { // extends Application {
   double decorY;
   double decorWidth;
   double decorHeight;
+  double fragmentX;
+  double fragmentY;
+  double fragmentWidth;
+  double fragmentHeight;
+  double dialogX;
+  double dialogY;
+  double dialogWidth;
+  double dialogHeight;
   double keyboardHeight;
 
   ViewGroup vFloatCover;
@@ -528,6 +538,10 @@ public class UIAutoApp { // extends Application {
     onUIAutoWindowCreate(activity, activity.getWindow(), showToolBar);
   }
 
+  public void onUIAutoDialogShow(@NonNull Dialog dialog) {
+    onUIAutoWindowCreate(dialog, dialog == null ? null : dialog.getWindow());
+  }
+
   public void onUIAutoWindowCreate(@NonNull Window.Callback callback, @NonNull Window window) {
     onUIAutoWindowCreate(callback, window, false);
   }
@@ -552,8 +566,11 @@ public class UIAutoApp { // extends Application {
 //    }
 //    onUIAutoWindowDestroy(this.callback, this.window);
 
+    dialog = callback instanceof Dialog ? (Dialog) callback : null;
+
     //反而让 vFloatCover 与底部差一个导航栏高度 window.addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
     decorView = window.getDecorView(); // activity.findViewById(android.R.id.content);  // decorView = window.getContentView();
+
     decorView.post(new Runnable() {
       @Override
       public void run() {
@@ -595,6 +612,55 @@ public class UIAutoApp { // extends Application {
     addTextChangedListener(decorView);
 
     contentView = decorView.findViewById(android.R.id.content);
+    if (dialog != null && contentView instanceof ViewGroup) {
+      View dialogView = ((ViewGroup) contentView).getChildAt(0); // contentView.findViewById(android.R.id.content);
+      if (dialogView != null) {
+        dialogView.post(new Runnable() {
+          @Override
+          public void run() {
+            updateDialogView(dialogView);
+            double sx = splitX > 0 ? splitX : splitX + windowWidth;
+            double sy = splitY > 0 ? splitY : splitY + windowHeight;
+            double sx2 = splitX2 > 0 ? splitX2 : splitX2 + windowWidth;
+            double sy2 = splitY2 > 0 ? splitY2 : splitY2 + windowHeight;
+
+            double l = dialogX;
+            double r = dialogX + dialogWidth;
+            double t = dialogY;
+            double b = dialogY + dialogHeight;
+
+            if (sx < l || sx > r || sy < t || sy > b || (isSplit2Showing && (sx2 < l || sx2 > r || sy2 < t || sy2 > b))) {
+              if (isSplit2Showing) {
+                splitX = l;
+                splitY = t - (isSeparatedStatus ? statusHeight : 0);
+                splitX2 = r - windowWidth;
+                splitY2 = b - windowHeight - (isSeparatedStatus ? statusHeight : 0);
+
+                ballGravity = GRAVITY_TOP_LEFT;
+                ballGravity2 = GRAVITY_BOTTOM_RIGHT;
+
+                gravityX = GRAVITY_CENTER;
+                gravityY = GRAVITY_CENTER;
+              }
+              else {
+                splitX = l + dialogWidth/2 + (l/2 + r/2 < windowWidth/2 ? 0 : - windowWidth);
+                splitY = t + dialogHeight/2 + (t/2 + b/2 < windowHeight/2 ? 0 : - windowHeight) - (isSeparatedStatus ? statusHeight : 0);
+              }
+
+              floatBall = showSplit(floatBall, isSplitShowing, splitX, splitY, "floatBall", vFloatBall, floatSplitX, floatSplitY);
+              floatBall2 = showSplit(floatBall2, isSplitShowing && isSplit2Showing, splitX2, splitY2, "floatBall2", vFloatBall2, floatSplitX2, floatSplitY2);
+            }
+
+            dialogView.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+              @Override
+              public void onGlobalLayout() {
+                updateDialogView(dialogView);
+              }
+            });
+          }
+        });
+      }
+    }
 
     Window.Callback windowCallback = window.getCallback();
 
@@ -604,28 +670,28 @@ public class UIAutoApp { // extends Application {
       @Override
       public boolean dispatchKeyEvent(KeyEvent event) {
 //				dispatchEventToCurrentActivity(event);
-        addInputEvent(event, callback, activity, fragment);
+        addInputEvent(event, callback, activity, fragment, dialog);
         return windowCallback != null && windowCallback.dispatchKeyEvent(event);
       }
 
       @Override
       public boolean dispatchKeyShortcutEvent(KeyEvent event) {
 //				dispatchEventToCurrentActivity(event);
-        addInputEvent(event, callback, activity, fragment);
+        addInputEvent(event, callback, activity, fragment, dialog);
         return windowCallback != null && windowCallback.dispatchKeyShortcutEvent(event);
       }
 
       @Override
       public boolean dispatchTouchEvent(MotionEvent event) {
 //				dispatchEventToCurrentActivity(event);
-        addInputEvent(event, callback, activity, fragment);
+        addInputEvent(event, callback, activity, fragment, dialog);
         return windowCallback != null && windowCallback.dispatchTouchEvent(event);
       }
 
       @Override
       public boolean dispatchTrackballEvent(MotionEvent event) {
 //				dispatchEventToCurrentActivity(event);
-        addInputEvent(event, callback, activity, fragment);
+        addInputEvent(event, callback, activity, fragment, dialog);
         return windowCallback != null && windowCallback.dispatchTrackballEvent(event);
       }
 
@@ -766,9 +832,14 @@ public class UIAutoApp { // extends Application {
     }
     splitRadius = splitSize/2;
 
-    BallPoint[] points = ballPositionMap.get(activity);
-    if (points == null || points.length < 1) {
-      points = classBallPositionMap.get(activity.getClass().getName());
+    Object key = dialog != null ? dialog : (fragment != null ? fragment : activity);
+    if (key == null) {
+      key = getCurrentActivity();
+    }
+
+    BallPoint[] points = ballPositionMap.get(key);
+    if (key != null && (points == null || points.length < 1)) {
+      points = classBallPositionMap.get(key.getClass().getName());
     }
     BallPoint p = points == null || points.length < 1 ? null : points[0];
     if (p != null) {
@@ -783,14 +854,14 @@ public class UIAutoApp { // extends Application {
     }
 
     if (splitX == 0 || Math.abs(splitX) >= windowWidth) { // decorWidth) {
-      splitX = -splitSize - dip2px(30);
+      splitX = -splitSize - (dialog != null ? dialogX + dialogWidth/2 : dip2px(30)); // 同一个 Window，没必要 (fragment != null ? fragmentX + fragmentWidth - windowWidth - dip2px(30) : dip2px(30)));
     }
     if (splitY == 0 || Math.abs(splitY) >= windowHeight) { // decorHeight) {
-      splitY = -splitSize - dip2px(30);
+      splitY = -splitSize - (dialog != null ? dialogY + dialogHeight/2 : dip2px(30)); // 同一个 Window，没必要 (fragment != null ? fragmentY + fragmentHeight - dip2px(30) : dip2px(30)));
     }
 
-    if (points == null || points.length < 2) {
-      points = classBallPositionMap.get(activity.getClass().getName());
+    if (key != null && (points == null || points.length < 2)) {
+      points = classBallPositionMap.get(key.getClass().getName());
     }
     BallPoint p2 = points == null || points.length < 2 ? null : points[1];
     isSplit2Showing = p2 != null;
@@ -902,7 +973,7 @@ public class UIAutoApp { // extends Application {
 
             InputEvent ie = new EditTextEvent(KeyEvent.ACTION_UP, 0, et, EditTextEvent.WHEN_BEFORE
                     , StringUtil.getString(et.getText()), et.getSelectionStart(), et.getSelectionEnd(), s, start, count, after);
-            addInputEvent(ie, callback, activity, fragment);
+            addInputEvent(ie, callback, activity, fragment, dialog);
           }
 
           @Override
@@ -913,7 +984,7 @@ public class UIAutoApp { // extends Application {
 
             InputEvent ie = new EditTextEvent(KeyEvent.ACTION_UP, 0, et, EditTextEvent.WHEN_ON
                     , StringUtil.getString(et.getText()), et.getSelectionStart(), et.getSelectionEnd(), s, start, count);
-            addInputEvent(ie, callback, activity, fragment);
+            addInputEvent(ie, callback, activity, fragment, dialog);
           }
 
           @Override
@@ -924,7 +995,7 @@ public class UIAutoApp { // extends Application {
 
             InputEvent ie = new EditTextEvent(KeyEvent.ACTION_UP, 0, et, EditTextEvent.WHEN_AFTER
                     , StringUtil.getString(et.getText()), et.getSelectionStart(), et.getSelectionEnd(),s);
-            addInputEvent(ie, callback, activity, fragment);
+            addInputEvent(ie, callback, activity, fragment, dialog);
           }
         });
       }
@@ -989,7 +1060,7 @@ public class UIAutoApp { // extends Application {
     //            if (vg != lastScrollableView) {
 //              return;
 //            }
-    if (isShowing == false || isReplay || isTouching) { // onScrollChanged 只在触屏时回调  || lastDownEvent != null) {
+    if (vg == null || isShowing == false || isReplay || isTouching) { // onScrollChanged 只在触屏时回调  || lastDownEvent != null) {
       return;
     }
 
@@ -1008,7 +1079,7 @@ public class UIAutoApp { // extends Application {
 
     ViewGroup sv = vg; // lastScrollableView; // findViewByPoint(decorView, null, event.getHistoricalX(0), event.getHistoricalY(0), FOCUS_ANY, false, CAN_SCROLL_UNSPECIFIED);
     ViewGroup pv = sv;
-    if (pv instanceof ScrollView || pv instanceof HorizontalScrollView) {
+    if (pv instanceof ScrollView || pv instanceof HorizontalScrollView || pv instanceof NestedScrollView) {
       View v = pv.getChildCount() <= 0 ? null : pv.getChildAt(0);
       if (v instanceof ViewGroup) {
         pv = (ViewGroup) v;
@@ -1110,7 +1181,7 @@ public class UIAutoApp { // extends Application {
     Display display = activity.getWindowManager().getDefaultDisplay();
     display.getRealMetrics(metric);
 
-    boolean isLand = activity.getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE;
+    //    boolean isLand = activity.getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE;
     // 居然是相对屏幕方向的
     screenWidth = metric.widthPixels; // isLand ? metric.widthPixels : metric.heightPixels; // 宽度（PX）
     screenHeight = metric.heightPixels; // isLand ? metric.heightPixels : metric.widthPixels; // 高度（PX）
@@ -1157,6 +1228,22 @@ public class UIAutoApp { // extends Application {
     decorY = decorView == null ? 0 : decorView.getY();
     decorWidth = decorView == null ? screenWidth : decorView.getWidth();
     decorHeight = decorView == null ? screenHeight : decorView.getHeight();
+  }
+
+  private void updateDialogView(View dialogView) {
+    //  目前 view 仅用于 PopupWindow  setCurrentView(dialogView, callback, activity, fragment, dialog);
+    if (dialogView == null) {
+      dialogX = dialogY = dialogWidth = dialogHeight = 0;
+      return;
+    }
+
+    int[] loc = new int[2];
+    dialogView.getLocationOnScreen(loc);
+
+    dialogX = loc[0];
+    dialogY = loc[1];
+    dialogWidth = dialogView.getWidth();
+    dialogHeight = dialogView.getHeight();
   }
 
   public static final String KEY_ENABLE_PROXY = "KEY_ENABLE_PROXY";
@@ -1233,12 +1320,7 @@ public class UIAutoApp { // extends Application {
 
         setGravityText(tvControllerGravityX, false, gravityX);
         setGravityText(tvControllerGravityY, true, gravityY);
-        BallPoint[] points = new BallPoint[] {
-          new BallPoint(ballGravity, splitX, splitY)
-            , isSplit2Showing == false ? null : new BallPoint(ballGravity2, splitX2, splitY2)
-        };
-        ballPositionMap.put(activity, points);
-        classBallPositionMap.put(activity.getClass().getName(), points);
+        saveBallPosition(activity);
       }
 
       @Override
@@ -1936,6 +2018,7 @@ public class UIAutoApp { // extends Application {
             super.onFragmentPaused(fm, f);
             Log.v(TAG, "onFragmentPaused  fragment = " + f.getClass().getName());
             onUIEvent(InputUtil.UI_ACTION_PAUSE, f.getActivity(), f);
+            // 没必要，Fragment 肯定都在 Activity 内    saveBallPosition(f);
             setCurrentFragment(null);
           }
 
@@ -2048,12 +2131,19 @@ public class UIAutoApp { // extends Application {
   }
 
 
+  public void onUIAutoDialogDismiss(Dialog dialog) {
+    onUIAutoWindowDestroy(dialog, dialog == null ? null : dialog.getWindow());
+  }
   public void onUIAutoWindowDestroy(Window.Callback callback, Window window) {
     if (activity == null) {
       activity = getCurrentActivity();
     }
 
     if (callback instanceof Dialog) {
+      saveBallPosition(dialog);
+
+      updateDialogView(null);
+
       if (activity == null) {
         activity = ((Dialog) callback).getOwnerActivity();
         setCurrentActivity(activity);
@@ -2066,6 +2156,19 @@ public class UIAutoApp { // extends Application {
 
     this.popupWindow = null;
     this.view = null;
+  }
+
+  private void saveBallPosition(Object key) {
+    if (key == null) {
+      key = getCurrentActivity();
+    }
+
+    BallPoint[] points = new BallPoint[] {
+            new BallPoint(ballGravity, splitX, splitY)
+            , isSplit2Showing == false ? null : new BallPoint(ballGravity2, splitX2, splitY2)
+    };
+    ballPositionMap.put(key, points);
+    classBallPositionMap.put(key.getClass().getName(), points);
   }
 
 
@@ -2133,7 +2236,7 @@ public class UIAutoApp { // extends Application {
       pw.setTouchInterceptor(new View.OnTouchListener() {
         @Override
         public boolean onTouch(View v, MotionEvent event) {
-          addInputEvent(event, callback, activity, fragment);
+          addInputEvent(event, callback, activity, fragment, dialog);
 //          pw.dismiss();
 
 //          if (event.getAction() == MotionEvent.ACTION_UP) {
@@ -2144,13 +2247,13 @@ public class UIAutoApp { // extends Application {
       });
     }
 
-    setCurrentView(v, callback, activity, fragment);
+    setCurrentView(v, callback, activity, fragment, null);
   }
 
 
   private Map<Object, View> viewMap = new LinkedHashMap<>();
   private View view;
-  public void setCurrentView(View v, Window.Callback callback, Activity activity, Fragment fragment) {
+  public void setCurrentView(View v, Window.Callback callback, Activity activity, Fragment fragment, Dialog dialog) {
     this.view = v;
 
     if (v == null) {
@@ -2168,7 +2271,7 @@ public class UIAutoApp { // extends Application {
             return false;
           }
 
-          addInputEvent(event, callback, activity, fragment);
+          addInputEvent(event, callback, activity, fragment, dialog);
 
 //          if (event.getAction() == MotionEvent.ACTION_UP) {
 //            setCurrentPopupWindow(null, null, callback, activity, fragment);
@@ -2189,16 +2292,23 @@ public class UIAutoApp { // extends Application {
 //  public boolean onTouchEvent(@NotNull MotionEvent event, @NotNull Fragment fragment) {
 //    return onTouchEvent(event, fragment.getActivity(), fragment);
 //  }
-  public boolean onTouchEvent(@NotNull MotionEvent event, @NotNull Activity activity, Fragment fragment) {
-    addInputEvent(event, activity, activity, fragment);
+  public boolean onTouchEvent(@NotNull MotionEvent event, @NotNull Activity activity, Fragment fragment, Dialog dialog) {
+    addInputEvent(event, activity, activity, fragment, dialog);
     return true;
   }
   public boolean onKeyDown(int keyCode, @NotNull KeyEvent event, @NotNull Activity activity, Fragment fragment) {
-    addInputEvent(event, activity, activity, fragment);
+    return onKeyDown(keyCode, event, activity, fragment, null);
+  }
+  public boolean onKeyDown(int keyCode, @NotNull KeyEvent event, @NotNull Activity activity, Fragment fragment, Dialog dialog) {
+    addInputEvent(event, activity, activity, fragment, dialog);
     return true;
   }
+
   public boolean onKeyUp(int keyCode, @NotNull KeyEvent event, @NotNull Activity activity, Fragment fragment) {
-    addInputEvent(event, activity, activity, fragment);
+    return onKeyUp(keyCode, event, activity, fragment, null);
+  }
+  public boolean onKeyUp(int keyCode, @NotNull KeyEvent event, @NotNull Activity activity, Fragment fragment, Dialog dialog) {
+    addInputEvent(event, activity, activity, fragment, dialog);
     return true;
   }
 
@@ -2949,6 +3059,8 @@ public class UIAutoApp { // extends Application {
       if (ie instanceof MotionEvent) {
         MotionEvent event = (MotionEvent) ie;
         int action = event.getAction();
+
+        boolean isDialog = callback_ instanceof Dialog;
         boolean isPopupWindow = false;
 
         MotionEvent viewEvent = event;
@@ -2984,7 +3096,7 @@ public class UIAutoApp { // extends Application {
               }
             }
           }
-          else if (isKeyboardChange) {
+          else if (isDialog || isKeyboardChange) {
             node = obj2EventNode(obj, node, node.step);
             if (node.item instanceof MotionEvent) {
               event = (MotionEvent) node.item;
@@ -3111,7 +3223,6 @@ public class UIAutoApp { // extends Application {
 
           }
 
-          boolean isDialog = callback_ instanceof Dialog;
           View rv = isDialog && contentView != null ? contentView : decorView;
 
           View v = isDialog || isNotDown ? null : findViewByPoint(rv, null, rx, ry, FOCUS_ANY, true);
@@ -3372,7 +3483,7 @@ public class UIAutoApp { // extends Application {
     }
 
     if (record) {
-      addInputEvent(ie, callback_, activity, fragment);
+      addInputEvent(ie, callback_, activity, fragment, dialog);
     }
 
     return callback_ != null || view_ != null;
@@ -3475,7 +3586,6 @@ public class UIAutoApp { // extends Application {
 
   }
 
-  private Node<InputEvent> eventNode = null;
   public void prepareAndSendEvent(@NotNull JSONArray eventList) {
     prepareAndSendEvent(eventList, 0);
   }
@@ -3612,18 +3722,26 @@ public class UIAutoApp { // extends Application {
 
       double ww = obj.getDoubleValue("windowWidth");
       double wh = obj.getDoubleValue("windowHeight");
-
       double sh = obj.getDoubleValue("statusHeight");
       double kh = obj.getDoubleValue("keyboardHeight");
       double nh = obj.getDoubleValue("navigationHeight");
+      double dw = obj.getDoubleValue("decorWidth"); // Dialog 下和弹窗布局一致
+      double dh = obj.getDoubleValue("decorHeight"); // Dialog 下和弹窗布局一致
 
-      double cw = ww; // obj.getDoubleValue("decorWidth");
-      double ch = wh; // - sh; // obj.getDoubleValue("decorHeight") - sh - nh;
+      String dialog = obj.getString("dialog");
+      double dlgX = obj.getDoubleValue("dialogX");
+      double dlgY = obj.getDoubleValue("dialogY");
+      double dlgW = obj.getDoubleValue("dialogWidth");
+      double dlgH = obj.getDoubleValue("dialogHeight");
+
+      boolean isDialog = StringUtil.isNotEmpty(dialog, true);
+      double cw = isDialog ? dlgW : ww; // obj.getDoubleValue("decorWidth");
+      double ch = isDialog ? dlgH : wh; // - sh; // obj.getDoubleValue("decorHeight") - sh - nh;
       if (cw <= 100) {
-        cw = ww;
+        cw = dw;
       }
       if (ch <= 100) {
-        ch = wh; // - sh; // - nh;
+        ch = dh; // - sh; // - nh;
       }
 
       double ratio = getScale(cw, ch, layoutType, density);
@@ -3679,18 +3797,22 @@ public class UIAutoApp { // extends Application {
         curView.getLocationOnScreen(loc);
       }
 
+      double sttH = isDialog ? 0 : statusHeight;
+      double ccw = isDialog ? dialogWidth : windowWidth;
+      double cch = isDialog ? dialogHeight : windowHeight;
+
       double sx = 0; // loc == null ? obj.getDoubleValue("splitX") : loc[0] + curFocusView.getWidth() - curFocusView.getPaddingRight(); //curRect.right - curView.getPaddingRight();
       double sy = 0; // = loc == null ? obj.getDoubleValue("splitY") : loc[1] + curFocusView.getHeight() - curFocusView.getPaddingBottom() - statusHeight; //curRect.bottom - curView.getPaddingBottom();
       double sx2 = 0; // = loc == null ? obj.getDoubleValue("splitX2") : loc[0] + curFocusView.getPaddingLeft(); // curRect.left + curView.getPaddingLeft();
       double sy2 = 0; // = loc == null ? obj.getDoubleValue("splitY2") : loc[1] + curFocusView.getPaddingTop() - statusHeight; // curRect.top + curView.getPaddingTop();
       if (loc != null) {
         sx = loc[0] + curView.getWidth() - curView.getPaddingRight(); //curRect.right - curView.getPaddingRight();
-        sy = loc[1] + curView.getHeight() - curView.getPaddingBottom() - statusHeight; //curRect.bottom - curView.getPaddingBottom();
+        sy = loc[1] + curView.getHeight() - curView.getPaddingBottom() - sttH; //curRect.bottom - curView.getPaddingBottom();
         sx2 = loc[0] + curView.getPaddingLeft(); // curRect.left + curView.getPaddingLeft();
-        sy2 = loc[1] + curView.getPaddingTop() - statusHeight; // curRect.top + curView.getPaddingTop();
+        sy2 = loc[1] + curView.getPaddingTop() - sttH; // curRect.top + curView.getPaddingTop();
       }
 
-      if (sx2 <= 0 || sx >= windowWidth || sy2 <= 0 || sy >= windowHeight || Math.abs(sx - sx2) < 30 || Math.abs(sy - sy2) < 30) {
+      if (sx2 <= 0 || sx >= ccw || sy2 <= 0 || sy >= cch || Math.abs(sx - sx2) < 30 || Math.abs(sy - sy2) < 30) {
         sx = transSplitX(obj.getDoubleValue("splitX"), cw, ballGravity, ratio);
         sy = transSplitY(obj.getDoubleValue("splitY"), ch, ballGravity, ratio);
         sx2 = transSplitX(obj.getDoubleValue("splitX2"), cw, ballGravity2, ratio);
@@ -3720,9 +3842,17 @@ public class UIAutoApp { // extends Application {
       double minSY = sy2 <= 0 ? sy : Math.min(sy, sy2);
       double maxSY = sy2 <= 0 ? sy : Math.max(sy, sy2);
 
+      if (isDialog) {
+        minSX -= dlgX;
+        maxSX -= dlgX;
+
+        minSY = minSY - dlgY + (isSeparatedStatus ? statusHeight : 0);
+        maxSY = maxSY - dlgY + (isSeparatedStatus ? statusHeight : 0);
+      }
+
       double rx;
       if (gravityX == GRAVITY_RATIO) {
-        double maxSX2 = windowWidth + ratio*(maxSX - ww);
+        double maxSX2 = ccw + ratio*(maxSX - ww);
         rx = minSX + (maxSX2 - ratio*minSX)*(x - minSX)/(maxSX - minSX);
       }
       else if (gravityX == GRAVITY_CENTER || (gravityX < 0 && x > minSX && x < maxSX)) { //居中，一般是弹窗
@@ -3730,12 +3860,12 @@ public class UIAutoApp { // extends Application {
 //          rx = x < mid ? ratio*x : decorWidth*mid/cw + ratio*(x - maxSX); // 居中靠左/靠右，例如关闭按钮
 //        rx = windowWidth*mid/cw + ratio*(x - mid); // 居中靠左/靠右，例如关闭按钮
 
-        double maxSX2 = windowWidth + ratio*(maxSX - ww);
+        double maxSX2 = ccw + ratio*(maxSX - ww);
         double mid2 = (ratio*minSX + maxSX2)/2f;
         rx = mid2 + ratio*(x - mid); // 居中靠上/靠下，例如 取消、确定 按钮
       }
-      else if (gravityX == GRAVITY_RIGHT || (gravityX < 0 && (x < 0 || x >= maxSX))) { // 靠右，例如列表项右侧标记已读、添加、删除、数量输入框等按钮
-        rx = windowWidth + ratio*(x < 0 ? x : x - cw);
+      else if (gravityX == GRAVITY_RIGHT || (gravityX < 0 && (x < 0 || (x >= maxSX && (isDialog == false || x < dlgW))))) { // 靠右，例如列表项右侧标记已读、添加、删除、数量输入框等按钮
+        rx = ccw + ratio*(x < 0 ? x : x - cw);
       }
       else { // if (gravityX == GRAVITY_LEFT || (x >= 0 && x <= minSX)) { // 靠左
         rx = ratio*x;
@@ -3746,26 +3876,26 @@ public class UIAutoApp { // extends Application {
 
       double ry;
       if (gravityY == GRAVITY_RATIO) {
-        double maxSY2 = windowHeight + ratio*(maxSY - wh);
+        double maxSY2 = cch + ratio*(maxSY - wh);
         ry = minSY + (maxSY2 - ratio*minSY)*(y - minSY)/(maxSY - minSY);
       }
       else if (gravityY == GRAVITY_CENTER || (gravityY < 0 && y > minSY && y < maxSY)) { //居中，一般是弹窗
         double mid = (minSY + maxSY)/2f;
 //        ry = (windowHeight /* - (isSeparatedStatus ? 0 : statusHeight) */)*mid/ch + ratio*(y - mid); // 居中靠上/靠下，例如 取消、确定 按钮
 
-        double maxSY2 = windowHeight + ratio*(maxSY - wh);
+        double maxSY2 = cch + ratio*(maxSY - wh);
         double mid2 = (ratio*minSY + maxSY2)/2f;
         ry = mid2 + ratio*(y - mid); // 居中靠上/靠下，例如 取消、确定 按钮
       }
-      else if (gravityY == GRAVITY_BOTTOM || (gravityY < 0 && (y < 0 || y >= maxSY))) { // 靠下，例如底部 tab、菜单按钮、悬浮按钮等
-        ry = windowHeight /* - (isSeparatedStatus ? 0 : statusHeight) */ + ratio*(y < 0 ? y : y - ch); // decorHeight + ratio*(y < 0 ? y : y - ch);
+      else if (gravityY == GRAVITY_BOTTOM || (gravityY < 0 && (y < 0 || (y >= maxSY && (isDialog == false || y < dlgH))))) { // 靠下，例如底部 tab、菜单按钮、悬浮按钮等
+        ry = cch /* - (isSeparatedStatus ? 0 : statusHeight) */ + ratio*(y < 0 ? y : y - ch); // decorHeight + ratio*(y < 0 ? y : y - ch);
       }
       else { // if (gravityY == GRAVITY_TOP || (y >= 0 && y <= minSY)) { // 靠上
         ry = ratio*y;
       }
 
       rx += windowX + decorX;
-      ry += windowY + decorY + statusHeight; // 此时不能确定 (view != null && popupWindow != null && popupWindow.isShowing() ? 0 : statusHeight); // + (isSeparatedStatus ? statusHeight : 0);
+      ry += windowY + decorY + sttH; // 此时不能确定 (view != null && popupWindow != null && popupWindow.isShowing() ? 0 : statusHeight); // + (isSeparatedStatus ? statusHeight : 0);
 
 //      int tid = obj.getIntValue("targetId");
 //      String tidName = obj.getString("targetIdName");
@@ -3906,7 +4036,7 @@ public class UIAutoApp { // extends Application {
       ratioX = sx/cw;
     }
 
-    sx = ratioX == null ? sx*ratio : ratioX*windowWidth;
+    sx = ratioX == null ? sx*ratio : ratioX*(dialog == null ? windowWidth : dialogWidth);
 
     return sx;
   }
@@ -3991,15 +4121,19 @@ public class UIAutoApp { // extends Application {
   public void onUIEvent(int action, Window.Callback callback, Activity activity) {
     onUIEvent(action, callback, activity, null);
   }
+  public void onUIEvent(int action, Window.Callback callback, Activity activity, Dialog dialog) {
+    onUIEvent(action, callback, activity, null, dialog);
+  }
   public void onUIEvent(int action, Window.Callback callback, Fragment fragment) {
-    onUIEvent(action, callback, null, fragment);
+    onUIEvent(action, callback, fragment, null);
   }
-  public synchronized void onUIEvent(int action, Window.Callback callback, Activity activity, Fragment fragment) {
-    onUIEvent(action, callback, null, fragment, null, null);
+  public void onUIEvent(int action, Window.Callback callback, Fragment fragment, Dialog dialog) {
+    onUIEvent(action, callback, null, fragment, dialog);
   }
-
-
-  public synchronized void onUIEvent(int action, Window.Callback callback, Activity activity, Fragment fragment, WebView webView, String url) {
+  public void onUIEvent(int action, Window.Callback callback, Activity activity, Fragment fragment, Dialog dialog) {
+    onUIEvent(action, callback, activity, fragment, dialog, null, null);
+  }
+  public synchronized void onUIEvent(int action, Window.Callback callback, Activity activity, Fragment fragment, Dialog dialog, WebView webView, String url) {
     if (activity != null && activity.isFinishing() == false
             && activity.isDestroyed() == false && activity.getWindow() != null) {
       window = activity.getWindow();
@@ -4038,7 +4172,7 @@ public class UIAutoApp { // extends Application {
       }
     }
     else {
-      JSONObject obj = newEvent(callback, activity, fragment);
+      JSONObject obj = newEvent(callback, activity, fragment, dialog);
       obj.put("type", InputUtil.EVENT_TYPE_UI);
       obj.put("action", action);
       // 总是导致停止后续动作，尤其是返回键相关的事件  obj.put("disable", action != InputUtil.UI_ACTION_RESUME);
@@ -4057,7 +4191,13 @@ public class UIAutoApp { // extends Application {
 //  public void onHTTPEvent(int action, String format, String url, String request, String response, Fragment fragment) {
 //    onHTTPEvent(action, format, url, request, response, null, fragment);
 //  }
-  public synchronized void onHTTPEvent(int action, String format, String method, String host, String url, String header, String request, String response, Activity activity, Fragment fragment) {
+
+  public synchronized void onHTTPEvent(int action, String format, String method, String host, String url
+        , String header, String request, String response, Activity activity, Fragment fragment) {
+    onHTTPEvent(action, format, method, host, url, header, request, response, activity, fragment, null);
+  }
+  public synchronized void onHTTPEvent(int action, String format, String method, String host, String url
+          , String header, String request, String response, Activity activity, Fragment fragment, Dialog dialog) {
     if (isSplitShowing == false) {
       Log.e(TAG, "onHTTPEvent  isSplitShowing == false >> return null;");
       return;
@@ -4100,7 +4240,7 @@ public class UIAutoApp { // extends Application {
       }
     }
     else {
-      JSONObject obj = newEvent(activity, fragment);
+      JSONObject obj = newEvent(activity, fragment, dialog);
       obj.put("type", InputUtil.EVENT_TYPE_HTTP);
       obj.put("action", action);
       obj.put("disable", action >= 0 && action != InputUtil.HTTP_ACTION_RESPONSE);
@@ -4283,7 +4423,7 @@ public class UIAutoApp { // extends Application {
 //    return addInputEvent(ie, callback, null, fragment);
 //  }
 
-  public JSONObject addInputEvent(@NotNull InputEvent ie, @NotNull Window.Callback callback, Activity activity, Fragment fragment) {
+  public JSONObject addInputEvent(@NotNull InputEvent ie, @NotNull Window.Callback callback, Activity activity, Fragment fragment, Dialog dialog) {
     if (isSplitShowing == false || vSplitX == null || vSplitY == null || isReplay) {
       Log.e(TAG, "addInputEvent  isSplitShowing == false || vSplitX == null || vSplitY == null || isReplay >> return null;");
       return null;
@@ -4297,11 +4437,17 @@ public class UIAutoApp { // extends Application {
     }
 
     // 直接在上面判断会导致少录制触屏事件
-    if (activity == null && fragment != null) {
-      activity = fragment.getActivity();
+    if (activity == null) {
+      if (fragment != null) {
+        activity = fragment.getActivity();
+      }
+
+      if (activity == null && dialog != null) {
+        activity = (Activity) dialog.getContext();
+      }
     }
 
-    JSONObject obj = newEvent(callback, activity, fragment);
+    JSONObject obj = newEvent(callback, activity, fragment, dialog);
 
     int type = 0;
     int action = 0;
@@ -4426,8 +4572,9 @@ public class UIAutoApp { // extends Application {
         obj.put("y2", y2);
       }
       else { // FIXME 根据 ballGravity, ballGravity2 和 gravityX, gravityY 计算
+        boolean isDialog = dialog != null;
         double rx = x - windowX - decorX;
-        double ry = y - windowY - decorY - (popupWindow != null && popupWindow.isShowing() ? 0 : statusHeight); // (isSeparatedStatus ? 0 : statusHeight);
+        double ry = y - windowY - decorY - (isDialog || popupWindow != null && popupWindow.isShowing() ? 0 : statusHeight); // (isSeparatedStatus ? 0 : statusHeight);
 
 //        if (callback instanceof Dialog) {
 //          Dialog dialog = (Dialog) callback;
@@ -4449,8 +4596,28 @@ public class UIAutoApp { // extends Application {
         double maxY = (isSplit2Showing ? Math.max(floatBall.getY(), floatBall2.getY()) : floatBall.getY()) + splitRadius;
 //      double avgY = (minY + maxY)/2;
 
-        rx = rx < maxX ? rx : rx - windowWidth; // dw + dx); // Math.round(x - windowX - decorX - (x < avgX ? 0 : decorWidth)));
-        ry = ry < maxY ? ry : ry - windowHeight; // + (isSeparatedStatus ? 0 : statusHeight)); // dh + dy + statusHeight + navigationHeight); // Math.round(y - windowY - decorY - (y < avgY ? 0 : decorHeight)));
+        if (isDialog) {
+          maxX -= dialogX;
+          maxY = maxY - dialogY + (isSeparatedStatus ? statusHeight : 0);
+
+          // 避免和从下往上的定位坐标冲突，反正弹窗外触屏唯一有效的作用就是隐藏弹窗，保证最终为负数即可
+          if (rx < 0) {
+            rx -= dialogWidth;
+          }
+          else if (rx > dialogWidth) {
+            rx += dialogWidth;
+          }
+
+          if (ry < 0) {
+            ry -= 2*dialogHeight;
+          }
+          else if (ry > dialogHeight) {
+            ry += 2*dialogHeight;
+          }
+        }
+
+        rx = rx < maxX ? rx : rx - (isDialog ? dialogWidth : windowWidth); // dw + dx); // Math.round(x - windowX - decorX - (x < avgX ? 0 : decorWidth)));
+        ry = ry < maxY ? ry : ry - (isDialog ? dialogHeight : windowHeight); // + (isSeparatedStatus ? 0 : statusHeight)); // dh + dy + statusHeight + navigationHeight); // Math.round(y - windowY - decorY - (y < avgY ? 0 : decorHeight)));
 
         obj.put("x", rx);
         obj.put("y", ry);
@@ -4693,13 +4860,18 @@ public class UIAutoApp { // extends Application {
 
 
   private boolean canScroll(View view) {
-    return view != null && (view instanceof AdapterView || view instanceof RecyclerView || view instanceof ScrollView || view instanceof HorizontalScrollView);
+    return view != null && (view instanceof AdapterView || view instanceof RecyclerView || view instanceof ScrollView
+            || view instanceof HorizontalScrollView || view instanceof NestedScrollView);
     // && (view.canScrollHorizontally(View.LAYOUT_DIRECTION_UNDEFINED) || view.canScrollHorizontally(View.LAYOUT_DIRECTION_RTL) || view.canScrollHorizontally(View.LAYOUT_DIRECTION_LTR)
     // || view.canScrollVertically(View.LAYOUT_DIRECTION_UNDEFINED) || view.canScrollVertically(View.LAYOUT_DIRECTION_INHERIT) || view.canScrollVertically(View.LAYOUT_DIRECTION_LOCALE));
   }
   private boolean canScrollHorizontally(View view) {
     if (view instanceof HorizontalScrollView) {
       return true;
+    }
+
+    if (view instanceof NestedScrollView) {
+      return view.canScrollHorizontally(-1) || view.canScrollHorizontally(1);
     }
 
     if (view instanceof RecyclerView) {
@@ -4713,6 +4885,10 @@ public class UIAutoApp { // extends Application {
   private boolean canScrollVertically(View view) {
     if (view instanceof AdapterView || view instanceof ScrollView) {
       return true;
+    }
+
+    if (view instanceof NestedScrollView) {
+      return view.canScrollVertically(-1) || view.canScrollVertically(1);
     }
 
     if (view instanceof RecyclerView) {
@@ -4793,23 +4969,30 @@ public class UIAutoApp { // extends Application {
   public JSONObject newEvent(@NotNull Window.Callback callback, @NotNull Activity activity) {
     return newEvent(callback, activity, null);
   }
-  public JSONObject newEvent(@NotNull Window.Callback callback, @NotNull Fragment fragment) {
-    return newEvent(callback, null, fragment);
+  public JSONObject newEvent(@NotNull Window.Callback callback, @NotNull Activity activity, Dialog dialog) {
+    return newEvent(callback, activity, null, dialog);
   }
-  public JSONObject newEvent(@NotNull Window.Callback callback, Activity activity, Fragment fragment) {
+  public JSONObject newEvent(@NotNull Window.Callback callback, @NotNull Fragment fragment) {
+    return newEvent(callback, fragment, null);
+  }
+  public JSONObject newEvent(@NotNull Window.Callback callback, @NotNull Fragment fragment, Dialog dialog) {
+    return newEvent(callback, null, fragment, dialog);
+  }
+  public JSONObject newEvent(@NotNull Window.Callback callback, Activity activity, Fragment fragment, Dialog dialog) {
     if (activity == null && fragment != null) {
       activity = fragment.getActivity();
     }
     return newEvent(
-            activity == null ? Configuration.ORIENTATION_PORTRAIT : activity.getResources().getConfiguration().orientation,
-            callback,
-            activity == null ? null : activity.getClass().getName()
+            activity == null ? Configuration.ORIENTATION_PORTRAIT : activity.getResources().getConfiguration().orientation
+            , callback
+            , activity == null ? null : activity.getClass().getName()
             , fragment == null ? null : fragment.getClass().getName()
+            , dialog == null ? null : dialog.getClass().getName()
     );
   }
 
   private long lastId = 0;
-  public JSONObject newEvent(int orientation, @NotNull Window.Callback callback, String activity, String fragment) {
+  public JSONObject newEvent(int orientation, @NotNull Window.Callback callback, String activity, String fragment, String dialog) {
     decorX = decorView == null ? 0 : decorView.getX();
     decorY = decorView == null ? 0 : decorView.getY();
     decorWidth = decorView == null ? windowWidth : decorView.getWidth();
@@ -4859,8 +5042,14 @@ public class UIAutoApp { // extends Application {
     event.put("decorY", decorY);
     event.put("decorWidth", decorWidth);
     event.put("decorHeight", decorHeight);
+    event.put("dialogX", dialogX);
+    event.put("dialogY", dialogY);
+    event.put("dialogWidth", dialogWidth);
+    event.put("dialogHeight", dialogHeight);
     event.put("activity", activity);
     event.put("fragment", fragment);
+    //    event.put("popupWindow", popupWindow);
+    event.put("dialog", dialog);
 
     if (event.get("name") == null) {
       String name = StringUtil.isEmpty(fragment, true) ? activity : fragment;
@@ -5037,7 +5226,7 @@ public class UIAutoApp { // extends Application {
   protected WebView webView;
   public void setCurrentWebView(WebView webView, @NotNull Activity activity, @Nullable Fragment fragment) {
     this.webView = webView;
-    setCurrentView(view, callback, activity, fragment);
+    setCurrentView(view, callback, activity, fragment, null);
   }
   protected String webUrl;
   public void setCurrentWebUrl(String webUrl) {
@@ -5085,7 +5274,7 @@ public class UIAutoApp { // extends Application {
     InputEvent ie = new EditTextEvent(KeyEvent.ACTION_UP, 0, et, EditTextEvent.WHEN_ON
             , text, selectionStart, selectionEnd, text)
             .setTargetWebId(id).setX(touchX).setY(touchY);
-    return addInputEvent(ie, activity.getWindow().getCallback(), activity, fragment);
+    return addInputEvent(ie, activity.getWindow().getCallback(), activity, fragment, null);
   }
 
 

@@ -41,7 +41,7 @@ public class AlertDialog extends android.app.AlertDialog {
 	@Override
 	public void show() {
 		super.show();
-		UIAutoApp.getInstance().onUIAutoWindowCreate(this, getWindow());
+		UIAutoApp.getInstance().onUIAutoDialogShow(this);
 	}
 
 	private Activity context;
@@ -55,7 +55,7 @@ public class AlertDialog extends android.app.AlertDialog {
 					listener.onDismiss(dialog);
 				}
 
-				UIAutoApp.getInstance().onUIAutoWindowDestroy(AlertDialog.this, getWindow());
+				UIAutoApp.getInstance().onUIAutoDialogDismiss(AlertDialog.this);
 			}
 		});
 	}

@@ -69,7 +69,7 @@ public class WriteHandlingWebViewClient extends WebViewClient {
         Map<String, List<JSONObject>> reqMap = dataReqMap.get(url);
         Set<Map.Entry<String, List<JSONObject>>> set = reqMap == null || reqMap.isEmpty() ? null : reqMap.entrySet();
         if (set == null) { // || set.isEmpty()) {
-            APP.onUIEvent(InputUtil.UI_ACTION_RESUME, activity, activity, fragment, webView, url);
+            APP.onUIEvent(InputUtil.UI_ACTION_RESUME, activity, activity, fragment, null, webView, url);
 //        inject();
             return;
         }

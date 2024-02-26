@@ -29,7 +29,7 @@ public class ProgressDialog extends android.app.ProgressDialog {
 	@Override
 	public void show() {
 		super.show();
-		UIAutoApp.getInstance().onUIAutoWindowCreate(this, getWindow());
+		UIAutoApp.getInstance().onUIAutoDialogShow(this);
 	}
 
 	private Activity context;
@@ -43,7 +43,7 @@ public class ProgressDialog extends android.app.ProgressDialog {
 					listener.onDismiss(dialog);
 				}
 
-				UIAutoApp.getInstance().onUIAutoWindowDestroy(ProgressDialog.this, getWindow());
+				UIAutoApp.getInstance().onUIAutoDialogDismiss(ProgressDialog.this);
 			}
 		});
 	}

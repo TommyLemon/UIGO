@@ -31,7 +31,7 @@ public class DatePickerDialog extends android.app.DatePickerDialog {
 	@Override
 	public void show() {
 		super.show();
-		UIAutoApp.getInstance().onUIAutoWindowCreate(this, getWindow());
+		UIAutoApp.getInstance().onUIAutoDialogShow(this);
 	}
 
 	private Activity context;
@@ -45,7 +45,7 @@ public class DatePickerDialog extends android.app.DatePickerDialog {
 					listener.onDismiss(dialog);
 				}
 
-				UIAutoApp.getInstance().onUIAutoWindowDestroy(DatePickerDialog.this, getWindow());
+				UIAutoApp.getInstance().onUIAutoDialogDismiss(DatePickerDialog.this);
 			}
 		});
 	}
