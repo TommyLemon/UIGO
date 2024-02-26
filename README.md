@@ -519,7 +519,7 @@ https://github.com/TommyLemon/APIAuto/issues
 https://github.com/TommyLemon/UIGO/commits/master
 
 ### 我要赞赏
-UIGO 从私有仓库默默开发了 3 年到现在终于开源了，Apache 证书对商用和非商用都很友好。
+UIGO 从私有仓库默默开发了 3 年到现在终于开源了，Apache 证书对商用和非商用都很友好。<br />
 创作不易、坚持更难，右上角点亮 ⭐ Star 支持/收藏下本项目吧，谢谢 ^_^ <br />
 https://github.com/TommyLemon/UIGO
 <br />
