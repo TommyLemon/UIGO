@@ -3264,22 +3264,35 @@ public class UIAutoApp { // extends Application {
               nv.right = nv.left + tv.getWidth();
               nv.top = tLoc[1];
               nv.bottom = nv.top + tv.getHeight();
+
+              nv.paddingLeft = tv.getPaddingLeft();
+              nv.paddingRight = tv.getPaddingRight();
+              nv.paddingTop = tv.getPaddingTop();
+              nv.paddingBottom = tv.getPaddingBottom();
             }
 
+            int p = dip2px(10);
+            float l = nv.left + (nv.paddingLeft >= p ? 0 : nv.paddingLeft);
+            float r = nv.right - (nv.paddingRight >= p ? 0 : nv.paddingRight);
+            float t = nv.top + (nv.paddingTop >= p ? 0 : nv.paddingTop);
+            float b = nv.bottom - (nv.paddingBottom >= p ? 0 : nv.paddingBottom);
+
+            int d = dip2px(2);
+
             float dx = 0;
-            if (rx < nv.left) {
-              dx = nv.left + 1 - rx;
+            if (rx < l) {
+              dx = l + d - rx;
             }
-            else if (rx > nv.right) {
-              dx = nv.right - 1 - rx;
+            else if (rx > r) {
+              dx = r - d - rx;
             }
 
             float dy = 0;
-            if (ry < nv.top) {
-              dy = nv.top + 1 - ry;
+            if (ry < t) {
+              dy = t + d - ry;
             }
-            else if (ry > nv.bottom) {
-              dy = nv.bottom - 1 - ry;
+            else if (ry > b) {
+              dy = b - d - ry;
             }
 
             deltaX = dx;
@@ -4845,12 +4858,17 @@ public class UIAutoApp { // extends Application {
                       + Math.pow(Math.min(Math.abs(y - t), Math.abs(y - b)), 2)
       );
 
+      int pl = view.getPaddingLeft();
+      int pr = view.getPaddingRight();
+      int pt = view.getPaddingTop();
+      int pb = view.getPaddingBottom();
+
       if (x >= l && x <= r && y >= t && y <= b && (nearestView == null || nearestView.distance > 0 || nearestView.z < view.getZ())) {
-        nearestView = new NearestView<>((V) view, 0, l, r, t, b);
+        nearestView = new NearestView<>((V) view, 0, l, r, t, b, pl, pr, pt, pb);
       }
       else {
         if (nearestView == null || (nearestView.distance > d && nearestView.z <= view.getZ())) {
-          nearestView = new NearestView<>((V) view, d, l, r, t, b);
+          nearestView = new NearestView<>((V) view, d, l, r, t, b, pl, pr, pt, pb);
         }
       }
     }
@@ -5493,6 +5511,7 @@ public class UIAutoApp { // extends Application {
     V view;
     float z;
     int left, right, top, bottom;
+    int paddingLeft, paddingRight, paddingTop, paddingBottom;
     double distance;
 
     public NearestView(V view) {
@@ -5500,9 +5519,10 @@ public class UIAutoApp { // extends Application {
     }
 
     public NearestView(V view, double distance) {
-      this(view, distance, 0, 0, 0, 0);
+      this(view, distance, 0, 0, 0, 0, 0, 0, 0, 0);
     }
-    public NearestView(V view, double distance, int left, int right, int top, int bottom) {
+    public NearestView(V view, double distance, int left, int right, int top, int bottom
+            , int paddingLeft, int paddingRight, int paddingTop, int paddingBottom) {
       this.view = view;
       this.distance = distance;
       this.z = view.getZ();
