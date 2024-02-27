@@ -24,7 +24,7 @@
 <br />
 
 <p align="center" >
-<img width="240" src="https://github.com/TommyLemon/UIGO/assets/5738175/ef03bb7d-f3a5-497f-8087-fbc1ee7594f9" /><img width="240" src="https://github.com/TommyLemon/UIGO/assets/5738175/d3ffbdaa-1b35-426a-9c4d-6124a2e63550" /><img width="240" src="https://github.com/TommyLemon/UIGO/assets/5738175/e994d333-05a1-4102-b0dc-e1671ecde2e1" />
+<img width="720" src="https://github.com/TommyLemon/UIGO/assets/5738175/49edbcdb-2bc6-4dfb-bd30-4f9aaafe4e25" />
 </p>
 
 <img width="1280" src="https://github.com/TommyLemon/UIGO/assets/5738175/54cf82d0-99b0-4085-ab89-d54ff95ef4c4" href="https://www.bilibili.com/video/BV1wA4m137ha" />
@@ -516,10 +516,11 @@ https://github.com/TommyLemon/APIAuto/issues
 
 
 ### 持续更新
-[https://github.com/TommyLemon/UIGO/commits/master](https://github.com/TommyLemon/UIGO/commits/master)
+https://github.com/TommyLemon/UIGO/commits/master
 
 ### 我要赞赏
-创作不易、坚持更难，右上角点 ⭐ Star 支持下本项目吧，谢谢 ^_^ <br />
-[https://gitee.com/TommyLemon/UIGO](https://gitee.com/TommyLemon/UIGO)
+UIGO 从私有仓库默默开发了 3 年到现在终于开源了，Apache 证书对商用和非商用都很友好。<br />
+创作不易、坚持更难，右上角点亮 ⭐ Star 支持/收藏下本项目吧，谢谢 ^_^ <br />
+https://github.com/TommyLemon/UIGO
 <br />
 <br />
