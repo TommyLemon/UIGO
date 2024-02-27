@@ -62,8 +62,6 @@ import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.widget.NestedScrollView;
-import android.support.v7.widget.GridLayoutManager;
-import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -89,9 +87,7 @@ import android.webkit.ValueCallback;
 import android.webkit.WebView;
 import android.widget.AdapterView;
 import android.widget.EditText;
-import android.widget.FrameLayout;
 import android.widget.HorizontalScrollView;
-import android.widget.ListView;
 import android.widget.PopupWindow;
 import android.widget.ScrollView;
 import android.widget.TextView;
@@ -113,7 +109,6 @@ import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.lang.annotation.Annotation;
 import java.lang.ref.WeakReference;
-import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.net.URLEncoder;
 import java.text.DecimalFormat;
@@ -3233,6 +3228,7 @@ public class UIAutoApp { // extends Application {
           String tidName = isNotDown || obj == null ? null : obj.getString("targetIdName");
           int tid2 = isNotDown || tidName == null ? 0 : getResId(tidName);
 
+          boolean isTV = v instanceof TextView;
           boolean ignore = isDialog || isNotDown || obj == null || (vid > 0 && vid == tid)
                   || (vidName != null && Objects.equals(vidName, tidName));
           NearestView<View> nv = ignore ? null : findNearestView(rv, null, rx, ry, true, tid2 > 0 ? tid2 : tid, null);
@@ -3256,28 +3252,53 @@ public class UIAutoApp { // extends Application {
             }
           }
 
+          if (tv == null && ignore && isTV) {
+            tv = v;
+          }
+
           if (tv != null) {
-            if (nv.left*nv.right*nv.top*nv.bottom == 0) {
+            int d = dip2px(1.1);
+
+            Integer textIndex = obj != null && tv instanceof TextView ? obj.getInteger("textIndex") : null;
+            String txt = textIndex == null || textIndex < 0 ? null : StringUtil.getString((TextView) tv);
+            int len = txt == null ? 0 : txt.length();
+            Rect rect = len <= 0 ? null : TextViewUtil.getSelectionRect((TextView) tv, textIndex < len - 1 ? textIndex : len - 1);
+
+            float l, r, t, b;
+            if (rect != null && Math.abs(rect.right - rect.left) >= d && Math.abs(rect.bottom - rect.top) >= d) {
               int[] tLoc = new int[2];
               tv.getLocationOnScreen(tLoc);
-              nv.left = tLoc[0];
-              nv.right = nv.left + tv.getWidth();
-              nv.top = tLoc[1];
-              nv.bottom = nv.top + tv.getHeight();
 
-              nv.paddingLeft = tv.getPaddingLeft();
-              nv.paddingRight = tv.getPaddingRight();
-              nv.paddingTop = tv.getPaddingTop();
-              nv.paddingBottom = tv.getPaddingBottom();
+              l = rect.left + tLoc[0];
+              r = rect.right + tLoc[0];
+              t = rect.top + tLoc[1];
+              b = rect.bottom + tLoc[1];
             }
+            else {
+              if (nv == null) {
+                nv = new NearestView<>(tv);
+              }
 
-            int p = dip2px(10);
-            float l = nv.left + (nv.paddingLeft >= p ? 0 : nv.paddingLeft);
-            float r = nv.right - (nv.paddingRight >= p ? 0 : nv.paddingRight);
-            float t = nv.top + (nv.paddingTop >= p ? 0 : nv.paddingTop);
-            float b = nv.bottom - (nv.paddingBottom >= p ? 0 : nv.paddingBottom);
+              if (nv.left * nv.right * nv.top * nv.bottom == 0) {
+                int[] tLoc = new int[2];
+                tv.getLocationOnScreen(tLoc);
+                nv.left = tLoc[0];
+                nv.right = nv.left + tv.getWidth();
+                nv.top = tLoc[1];
+                nv.bottom = nv.top + tv.getHeight();
 
-            int d = dip2px(2);
+                nv.paddingLeft = tv.getPaddingLeft();
+                nv.paddingRight = tv.getPaddingRight();
+                nv.paddingTop = tv.getPaddingTop();
+                nv.paddingBottom = tv.getPaddingBottom();
+              }
+
+              int p = dip2px(10);
+              l = nv.left + (nv.paddingLeft >= p ? 0 : nv.paddingLeft);
+              r = nv.right - (nv.paddingRight >= p ? 0 : nv.paddingRight);
+              t = nv.top + (nv.paddingTop >= p ? 0 : nv.paddingTop);
+              b = nv.bottom - (nv.paddingBottom >= p ? 0 : nv.paddingBottom);
+            }
 
             float dx = 0;
             if (rx < l) {
@@ -3802,7 +3823,7 @@ public class UIAutoApp { // extends Application {
       boolean isCur = isSplit2Show && (step == this.step || Objects.equals(getCurrentActivity().getClass().getName(), obj.getString("activity")));
       int id = isCur ? getResId(gravityViewIdName) : 0;
       View curView = isCur ? findView(id > 0 ? id : gravityViewId) : null;
-//      Rect curRect = curView == null ? null : new Rect();
+      //      Rect curRect = curView == null ? null : new Rect();
 
       int[] loc = curView == null ? null : new int[2];
       if (loc != null) {
@@ -3909,32 +3930,6 @@ public class UIAutoApp { // extends Application {
 
       rx += windowX + decorX;
       ry += windowY + decorY + sttH; // 此时不能确定 (view != null && popupWindow != null && popupWindow.isShowing() ? 0 : statusHeight); // + (isSeparatedStatus ? statusHeight : 0);
-
-//      int tid = obj.getIntValue("targetId");
-//      String tidName = obj.getString("targetIdName");
-//      int tid2 = isCur ? getResId(tidName) : 0;
-//      View tv = isCur ? findView(tid2 > 0 ? tid2 : tid) : null;
-//
-//      int[] tLoc = tv == null ? null : new int[2];
-//      if (tLoc != null) {
-//        tv.getLocationOnScreen(tLoc);
-//
-//        int l = tLoc[0];
-//        if (rx < l) {
-//          rx = l + 1;
-//        }
-//        else if (rx > l + tv.getWidth()) {
-//          rx = l + tv.getWidth() - 1;
-//        }
-//
-//        int r = tLoc[1];
-//        if (ry < r) {
-//          ry = r + 1;
-//        }
-//        else if (ry > r + tv.getWidth()) {
-//          ry = r + tv.getWidth() - 1;
-//        }
-//      }
 
       eventNode.rx = rx;
       eventNode.ry = ry;
@@ -4566,6 +4561,24 @@ public class UIAutoApp { // extends Application {
         View fv = findViewByPoint(rv, null, x, y, FOCUS_ABLE, true); // FOCUS_HAS 找不到
         obj.put("focusId", fv == null ? null : fv.getId());
         obj.put("focusIdName", getResIdName(fv));
+
+        TextView tv = v instanceof TextView ? (TextView) v : (fv instanceof TextView ? (TextView) fv : null);
+        String txt = StringUtil.getString(tv);
+        int len = txt == null ? 0 : txt.length();
+
+        int[] loc = new int[2];
+        if (len > 0 && tv != null) {
+          tv.getLocationOnScreen(loc);
+        }
+
+        Integer textIndex = len <= 0 ? null : TextViewUtil.getTouchIndex(tv, (int) Math.round(x - loc[0]), (int) Math.round(y - loc[1]));
+        boolean noTxt = textIndex == null || textIndex < 0 || textIndex >= len;
+
+        String leftText = textIndex == null || textIndex <= 0 ? null : txt.substring(0, Math.min(textIndex, len));
+        String rightText = noTxt ? null : txt.substring(textIndex);
+        obj.put("textIndex", textIndex);
+        obj.put("leftText", leftText);
+        obj.put("rightText", rightText);
       }
       else if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
         onViewReachParentBound(currentScrollableView);
