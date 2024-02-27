@@ -3,7 +3,7 @@
 </h1>
  
 <p align="center">📱 零代码快准稳 UI 智能录制回放平台 🚀</p>
-<p align="center">自动兼容任意宽高比分辨率屏幕，自动精准等待网络请求，录制回放快、准、稳！</p>
+<p align="center">像素级自动兼容任意宽高比分辨率屏幕，毫秒级自动精准等待网络请求，录制回放快、准、稳！</p>
 <p align="center" >
   <a href="https://github.com/TommyLemon/UIGO/tree/master/UIAuto-Android"><img src="https://img.shields.io/badge/Demo-Android26%2B-brightgreen.svg?style=flat"></a>
   <a href="https://github.com/TommyLemon/UIGO/tree/master/APIJSONApp"><img src="https://img.shields.io/badge/App-Android26%2B-brightgreen.svg?style=flat"></a>
@@ -30,11 +30,11 @@
 <img width="1280" src="https://github.com/TommyLemon/UIGO/assets/5738175/54cf82d0-99b0-4085-ab89-d54ff95ef4c4" href="https://www.bilibili.com/video/BV1wA4m137ha" />
 
 ## UIGO - 📱 零代码快准稳 UI 智能录制回放平台 🚀 
-**自动兼容任意宽高比分辨率屏幕，自动精准等待网络请求，录制回放快、准、稳！**<br />
-适用于 大量重复操作界面、一次录制到处回放、App UI/功能 自动化测试、<br />
+**像素级自动兼容任意宽高比分辨率屏幕，毫秒级自动精准等待网络请求，录制回放快、准、稳！**<br />
+适用于 一次录制到处回放、反复回归界面操作、App UI/功能 自动化测试、<br />
 帮助开发快速复现和排查 bug、方便判断 bug 原因出在前端还是后端 等，<br />
-大量减少耗时费力又无聊的重复手工操作，大幅提高手工和自动化测试效率，<br />
-强力杜绝 测试和开发、前端和后端 关于缺陷单踢皮球等各种低效扯皮内耗！<br />
+**大量减少耗时费力又无聊的重复手工操作，大幅提高手工和自动化测试效率，**<br />
+**强力杜绝 测试和开发、前端和后端 关于缺陷单踢皮球等各种低效扯皮内耗！**<br />
 
 **用户包含腾讯，应微信团队邀请分享了 零代码测试工具与实践(API•单元•UI)**
 
@@ -45,6 +45,7 @@
 * 支持 Android 真机、Studio/Genymotion 等模拟器
 * **单双指点击、长按、滑动、缩放各种像素级精细操作**
 * **自动精准等待、模拟 HTTP API 的请求和响应数据**
+* **不同机型录制回放偏差基本仅在 3 像素、2 毫秒 内**
 * **可从任意界面开始和停止录制、回放，绕过登录问题**
 * 可自动对关键步骤截屏，方便对比回放与录制差异
 * **可自动和手动选择 View 及触摸区域、贴靠方式等**
@@ -58,11 +59,11 @@
 1.它们录制过程各种别扭难用反人类，甚至还需要开发/维护用例脚本、每个用例都写一大堆代码频繁部署等；<br />
 **UIGO 不需要写任何代码，录制几乎是按和人正常操作完全一样的方式，操作简单易用，录制回放快、准、稳！**<br />
 <br />
-2.它们很难兼容各种不同宽高比分辨率屏幕，16:9 屏幕录制最多只能较好地在 16:9 屏幕回放，即便手写代码也很难在列表项 ID 重复控件精准定位；<br />
-**UIGO 则能很好地支持 16:9, 19.5:9 等各种不同屏幕录制，然后在 720P, 1080P, 1080X2340, 1440X2560, 1440X3200 等各种屏幕很好地精准回放。**<br />
+2.它们很难兼容各种不同宽高比分辨率屏幕，720P, 1080P 等 16:9 屏幕录制最多只能较好地在 16:9 屏幕回放，<br />即便手写代码或图像比对等也很难在列表项 View id/图标 重复控件精准定位，经常点错位置导致大量回放失败；<br />
+**UIGO 则能很好地支持 16:9, 19.5:9 等各种不同屏幕录制，然后在 720P, 1080P, 2K, 1080X2340, 1440X3200 <br />等各种 不同机型、不同系统、不同屏幕 基本都能很好地精准回放，偏差基本仅在相当于一根头发丝的 3 像素内！**<br />
 <br />
-3.它们要到处人为设置/调整操作步骤等待时间，还总是要么等太久、要么还没返回就过早执行下一步导致出错，因为很难保证网络请求在精准时间范围内返回结果；<br />
-**UIGO 则会自动精准等待 App 发送的各种 HTTP API 网路请求，像专业的测试工程师一样精准高效地等待后端接口响应并执行 点击、长按、滑动、缩放 等每一步触屏操作！**<br />
+3.它们要到处人为设置/调整操作步骤等待时间，还总是要么等太久、要么还没返回就过早执行下一步导致出错，<br />因为几乎无法保证网络请求在精准时间内返回，所以总是界面没加载完就滑动、弹窗没显示就点了"确定"位置等；<br />
+**UIGO 则会自动精准等待 App 发送的各种 HTTP API 网络请求，偏差基本在 2 毫秒内，比眨眼一次还要快 50 倍，<br />像专业的测试工程师一样精准高效地等待数据和 UI 都加载好并执行 点击、长按、滑动、缩放 等每一步对应操作！**<br />
 <br />
 
 ### 原理说明
@@ -282,13 +283,13 @@ https://github.com/TommyLemon/UIGO/blob/master/APIJSONApp/app/src/main/java/apij
 **业务代码中如果使用了 android.app.AlertDialog，且录制回放用例涉及**，则可以换成 uiauto.AlertDialog， <br />
 最简单的方式是顶部菜单 Edit > Find > Replace in files 全局搜索 import android.app.AlertDialog， <br />
 然后点搜索弹窗右下角 Replace All 按钮批量改为 import uiauto.AlertDialog。 <br />
-如果因为用了自定义或第三方通用 Base Alert Dialog 不方便替换，则可以在里面加上：
+如果因为用了自定义或第三方通用 Base Alert Dialog 不方便替换，则可以 extends uiauto.AlertDialog 或在里面加上：
 
 ```java
 	@Override
 	public void show() {
 		super.show();
-		UIAutoApp.getInstance().onUIAutoWindowCreate(this, getWindow()); // 通知已显示
+		UIAutoApp.getInstance().onUIAutoDialogShow(this); // 通知已显示
 	}
 
 	// 拦截隐藏事件监听
@@ -309,7 +310,7 @@ https://github.com/TommyLemon/UIGO/blob/master/APIJSONApp/app/src/main/java/apij
 					listener.onDismiss(dialog);
 				}
 
-				UIAutoApp.getInstance().onUIAutoWindowDestroy(AlertDialog.this, getWindow()); // 通知已隐藏
+				UIAutoApp.getInstance().onUIAutoDialogDismiss(Dialog.this); // 通知已隐藏
 			}
 		});
 	}
@@ -339,7 +340,7 @@ https://github.com/TommyLemon/UIGO/blob/master/APIJSONApp/app/src/main/java/apij
 **业务代码中如果使用了 android.widget.PopupWindow，且录制回放用例涉及**，则可以换成 uiauto.PopupWindow， <br />
 最简单的方式是顶部菜单 Edit > Find > Replace in files 全局搜索 import android.widget.PopupWindow， <br />
 然后点搜索弹窗右下角 Replace All 按钮批量改为 import uiauto.PopupWindow。 <br />
-如果因为用了自定义或第三方通用 Base Popup Window 不方便替换，则可以在里面加上：
+如果因为用了自定义或第三方通用 Base Popup Window 不方便替换，则可以 extends uiauto.PopupWindow 或在里面加上：
 
 ```java
     private android.widget.PopupWindow popupWindow;
@@ -519,7 +520,7 @@ https://github.com/TommyLemon/APIAuto/issues
 https://github.com/TommyLemon/UIGO/commits/master
 
 ### 我要赞赏
-UIGO 从私有仓库默默开发了 3 年到现在终于开源了，Apache 证书对商用和非商用都很友好。<br />
+UIGO 从私有仓库默默开发了 3 年多到现在终于开源了，Apache 证书对商用和非商用都很友好。<br />
 创作不易、坚持更难，右上角点亮 ⭐ Star 支持/收藏下本项目吧，谢谢 ^_^ <br />
 https://github.com/TommyLemon/UIGO
 <br />
