@@ -20,9 +20,13 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.telephony.TelephonyManager;
+import android.util.DisplayMetrics;
 import android.util.Log;
+import android.view.Display;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -411,18 +415,29 @@ public class UIAutoListActivity extends Activity implements HttpManager.OnHttpRe
 
                 if (deviceId <= 0) {
                     table = "Device";
-                    // TODO FIXME Device <<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-                    request.put("width", 1080);
-                    request.put("height", 1920);
-                    request.put("brand", "Xiaomi");
-                    request.put("model", "MI 8");
+                    DisplayMetrics metric = new DisplayMetrics();
+                    Display display = getWindowManager().getDefaultDisplay();
+                    display.getRealMetrics(metric);
+
+                    request.put("width", metric.widthPixels);
+                    request.put("height", metric.heightPixels);
+                    request.put("maker", Build.MANUFACTURER);
+                    request.put("brand", Build.BRAND);
+                    request.put("model", Build.MODEL);
+
+                    try {
+                        TelephonyManager tm = (TelephonyManager) getSystemService(TELEPHONY_SERVICE);
+                        request.put("imei", tm == null ? null : tm.getImei());
+                    }
+                    catch (Throwable e) {
+                        e.printStackTrace();
+                    }
                 } else if (systemId <= 0) {
                     table = "System";
-                    // TODO FIXME System <<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-                    request.put("type", 0);
-                    request.put("brand", "Xiaomi MIUI");
-                    request.put("versionCode", 14);
-                    request.put("versionName", "14.0");
+                    request.put("type", 0); // 类型：0 - Android OS, 1 - iOS, 3 - HarmonyOS, 4 - Tizen
+                    request.put("brand", Build.BRAND);
+                    request.put("versionCode", Build.VERSION.SDK_INT);
+                    request.put("versionName", Build.VERSION.RELEASE);
                 } else {
                     table = "Flow";
                     request.put("deviceId", deviceId);
