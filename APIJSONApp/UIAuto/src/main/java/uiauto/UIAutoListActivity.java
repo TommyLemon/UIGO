@@ -15,13 +15,17 @@ limitations under the License.*/
 package uiauto;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
@@ -34,6 +38,7 @@ import android.widget.Toast;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 
+import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -56,6 +61,7 @@ public class UIAutoListActivity extends Activity implements HttpManager.OnHttpRe
     public static final String INTENT_FLOW_ID = "INTENT_FLOW_ID";
     public static final String INTENT_EVENT_LIST = "INTENT_EVENT_LIST";
     public static final String INTENT_TEMP_KEY = "INTENT_TEMP_KEY";
+    public static final String INTENT_NAME = "INTENT_NAME";
 
     public static final String RESULT_LIST = "RESULT_LIST";
 
@@ -64,7 +70,17 @@ public class UIAutoListActivity extends Activity implements HttpManager.OnHttpRe
      * @return
      */
     public static Intent createIntent(Context context, boolean isLocal) {
-        return new Intent(context, UIAutoListActivity.class).putExtra(INTENT_IS_LOCAL, isLocal);
+        return createIntent(context, isLocal, null);
+    }
+
+    /**
+     * @param context
+     * @return
+     */
+    public static Intent createIntent(Context context, boolean isLocal, String name) {
+        return new Intent(context, UIAutoListActivity.class)
+                .putExtra(INTENT_IS_LOCAL, isLocal)
+                .putExtra(INTENT_NAME, name);
     }
 
     /**
@@ -72,7 +88,17 @@ public class UIAutoListActivity extends Activity implements HttpManager.OnHttpRe
      * @return
      */
     public static Intent createIntent(Context context, long flowId) {
-        return new Intent(context, UIAutoListActivity.class).putExtra(INTENT_FLOW_ID, flowId);
+        return createIntent(context, flowId, null);
+    }
+
+    /**
+     * @param context
+     * @return
+     */
+    public static Intent createIntent(Context context, long flowId, String name) {
+        return new Intent(context, UIAutoListActivity.class)
+                .putExtra(INTENT_FLOW_ID, flowId)
+                .putExtra(INTENT_NAME, name);
     }
 
     /**
@@ -110,6 +136,7 @@ public class UIAutoListActivity extends Activity implements HttpManager.OnHttpRe
     SharedPreferences cache;
     String cacheKey;
     String tempKey;
+    String name;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -121,8 +148,13 @@ public class UIAutoListActivity extends Activity implements HttpManager.OnHttpRe
         isLocal = getIntent().getBooleanExtra(INTENT_IS_LOCAL, isLocal);
         flowId = getIntent().getLongExtra(INTENT_FLOW_ID, flowId);
         tempKey = getIntent().getStringExtra(INTENT_TEMP_KEY);
+        name = getIntent().getStringExtra(INTENT_NAME);
         if (StringUtil.isNotEmpty(tempKey, true)) {
             eventList = JSON.parseArray(cache.getString(tempKey, null));
+        }
+
+        if (StringUtil.isEmpty(name, true)) {
+            name = getString(R.string.temp_flow) + " " + DateFormat.getDateTimeInstance().format(new Date());
         }
 
         hasTempTouchList = eventList != null && eventList.isEmpty() == false;
@@ -172,12 +204,26 @@ public class UIAutoListActivity extends Activity implements HttpManager.OnHttpRe
 
         btnUIAutoListReplay.setVisibility(isTouch ? View.VISIBLE : View.GONE);
         etUIAutoListName.setVisibility(isTouch ? View.VISIBLE : View.GONE);
-        etUIAutoListName.setEnabled(isLocal || hasTempTouchList);
+//        etUIAutoListName.setEnabled(isLocal || hasTempTouchList);
+        etUIAutoListName.setText(name);
+
 //        llUIAutoListBar.setVisibility(isLocal ? View.GONE : View.VISIBLE);
 
         int count = eventList == null ? 0 : eventList.size();
         tvUIAutoListCount.setText((isLocal ? "0" : count + "/") + count);
         btnUIAutoListGet.setText(isLocal ? "post" : "get");
+
+
+        etUIAutoListName.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+                if (event.getKeyCode() == KeyEvent.KEYCODE_ENTER) {
+                    saveBaseInfo();
+                    return true;
+                }
+                return false;
+            }
+        });
 
         lvUIAutoList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
@@ -189,18 +235,42 @@ public class UIAutoListActivity extends Activity implements HttpManager.OnHttpRe
 //                        finish();
                     }
                     else {
-                        startActivityForResult(UIAutoListActivity.createIntent(context, obj == null ? 0 : obj.getLongValue("id")), REQUEST_EVENT_LIST);
+                        startActivityForResult(UIAutoListActivity.createIntent(
+                                context, obj == null ? 0 : obj.getLongValue("id"), obj.getString("name")
+                        ), REQUEST_EVENT_LIST);
                     }
                 }
             }
         });
 
+        lvUIAutoList.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
+            @Override
+            public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
+                new AlertDialog.Builder(context)
+                        .setMessage(R.string.confirm_delete)
+                        .setNegativeButton(R.string.no, new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                dialog.dismiss();
+                            }
+                        })
+                        .setPositiveButton(R.string.yes, new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                delete(position);
+                            }
+                        })
+                        .create()
+                        .show();
+                return true;
+            }
+        });
 
 
         if (hasTempTouchList) {
             showList(eventList);
         } else {
-            send(btnUIAutoListGet);
+            send();
         }
     }
 
@@ -218,7 +288,17 @@ public class UIAutoListActivity extends Activity implements HttpManager.OnHttpRe
                 tvUIAutoListCount.setText((isLocal ? remoteCount + "/" : allCount + "/") + allCount);
                 pbUIAutoList.setVisibility(View.GONE);
                 if (adapter == null) {
-                    adapter = new ArrayAdapter<>(context, android.R.layout.simple_list_item_1, list);
+                    adapter = new ArrayAdapter<String>(context, android.R.layout.simple_list_item_1, list) {
+                        @Override
+                        public View getView(int position, View convertView, ViewGroup parent) {
+                            if (isLocal == false && noMore == false && isLoading == false && position >= getCount() - 1) {
+                                page ++;
+                                send();
+                            }
+                            return super.getView(position, convertView, parent);
+                        }
+                    };
+
                     lvUIAutoList.setAdapter(adapter);
                 } else {
                     adapter.clear();
@@ -245,7 +325,7 @@ public class UIAutoListActivity extends Activity implements HttpManager.OnHttpRe
 
                         String state = statueMap.get(obj);
                         if (StringUtil.isEmpty(state, true)) {
-                            state = "Local";
+                            state = isLocal ? "Local" : "Remote";
                         }
 
                         if (isTouch) {
@@ -301,117 +381,140 @@ public class UIAutoListActivity extends Activity implements HttpManager.OnHttpRe
 
 
     private int remoteCount = 0;
+    private int count = 100;
+    private int page = 0;
     private Map<JSONObject, String> statueMap = new HashMap<JSONObject, String>();
 
-    public void send(View v) {
+    public void onClickSend(View v) {
+        page = 0;
+        noMore = false;
+        send();
+    }
+
+    private boolean isLoading = false;
+
+    public void saveBaseInfo() {
+        saveBaseInfo(null);
+    }
+    public void saveBaseInfo(Runnable runnable) {
         needLoading = true;
 
-        final String fullUrl = StringUtil.getTrimedString(etUIAutoListUrl) + StringUtil.getString((TextView) v).toLowerCase();
+        final String host = StringUtil.getTrimedString(etUIAutoListUrl);
 
         pbUIAutoList.setVisibility(View.VISIBLE);
-
-        if (hasTempTouchList == false) {
-            hasTempTouchList = true;
-            cache.edit().remove(cacheKey).putString(cacheKey, UIAutoApp.toJSONString(eventList)).apply();
-        }
 
         new Thread(new Runnable() {
             @Override
             public void run() {
+                JSONRequest request = new JSONRequest();
+                String table;
 
-                if (isLocal) {
-                    if (deviceId <= 0 || systemId <= 0 || flowId <= 0) {
-                        JSONRequest request = new JSONRequest();
+                if (deviceId <= 0) {
+                    table = "Device";
+                    // TODO FIXME Device <<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+                    request.put("width", 1080);
+                    request.put("height", 1920);
+                    request.put("brand", "Xiaomi");
+                    request.put("model", "MI 8");
+                } else if (systemId <= 0) {
+                    table = "System";
+                    // TODO FIXME System <<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+                    request.put("type", 0);
+                    request.put("brand", "Xiaomi MIUI");
+                    request.put("versionCode", 14);
+                    request.put("versionName", "14.0");
+                } else {
+                    table = "Flow";
+                    request.put("deviceId", deviceId);
+                    request.put("systemId", systemId);
+                    request.put("name", StringUtil.getTrimedString(etUIAutoListName));
+                }
 
-                        if (deviceId <= 0) {
-                            {   // Flow <<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-                                JSONRequest device = new JSONRequest();
-                                device.put("width", 1080);
-                                device.put("height", 1920);
-                                device.put("brand", "Xiaomi");
-                                device.put("model", "MI 8");
-                                request.put("Device", device);
-                            }   // Flow >>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-                            request.setTag("Device");
-                        }
-                        else if (systemId <= 0) {
-                            {   // Flow <<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-                                JSONRequest system = new JSONRequest();
-                                system.put("type", 0);
-                                system.put("brand", "Xiaomi MIUI");
-                                system.put("versionCode", 14);
-                                system.put("versionName", "14.0");
-                                request.put("System", system);
-                            }   // Flow >>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-                            request.setTag("System");
-                        }
-                        else {
-                            {   // Flow <<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-                                JSONRequest flow = new JSONRequest();
-                                flow.put("deviceId", 0);
-                                flow.put("systemId", 0);
-                                flow.put("name", StringUtil.getTrimedString(etUIAutoListName));
-                                request.put("Flow", flow);
-                            }   // Flow >>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-                            request.setTag("Flow");
-                        }
-
-
-                        HttpManager.getInstance().post(fullUrl, request.toString(), new HttpManager.OnHttpResponseListener() {
+                HttpManager.getInstance().post(host + (deviceId <= 0 || systemId <= 0 || flowId <= 0 ? "post/" : "put/") + table, request.toString(), new HttpManager.OnHttpResponseListener() {
+                    @Override
+                    public void onHttpResponse(int requestCode, String resultJson, Exception e) {
+                        runOnUiThread(new Runnable() {
                             @Override
-                            public void onHttpResponse(int requestCode, String resultJson, Exception e) {
-                                runOnUiThread(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        pbUIAutoList.setVisibility(View.GONE);
-                                    }
-                                });
+                            public void run() {
+                                pbUIAutoList.setVisibility(View.GONE);
+                            }
+                        });
 
-                                JSONResponse response = new JSONResponse(resultJson);
-                                if (response.isSuccess()) {
+                        JSONResponse response = new JSONResponse(resultJson);
+                        if (response.isSuccess()) {
 
-                                    if (deviceId <= 0) {
-                                        JSONResponse resp = response.getJSONResponse("Device");
-                                        deviceId = resp == null ? 0 : resp.getId();
-                                        if (deviceId > 0) {
-                                            send(v);
-                                        }
-                                    }
-                                    else if (systemId <= 0) {
-                                        JSONResponse resp = response.getJSONResponse("System");
-                                        systemId = resp == null ? 0 : resp.getId();
-                                        if (systemId > 0) {
-                                            send(v);
-                                        }
-                                    }
-                                    else {
-                                        JSONResponse resp = response.getJSONResponse("Flow");
-                                        flowId = resp == null ? 0 : resp.getId();
-                                        if (flowId > 0) {
-                                            runOnUiThread(new Runnable() {
-                                                @Override
-                                                public void run() {
-                                                    etUIAutoListName.setEnabled(false);
-                                                    send(v);
-                                                }
-                                            });
-                                        }
+                            if (deviceId <= 0) {
+                                JSONResponse resp = response.getJSONResponse("Device");
+                                deviceId = resp == null ? 0 : resp.getId();
+                                if (deviceId > 0) {
+                                    if (runnable != null) {
+                                        runOnUiThread(runnable);
                                     }
                                 }
-                                else {
+                            } else if (systemId <= 0) {
+                                JSONResponse resp = response.getJSONResponse("System");
+                                systemId = resp == null ? 0 : resp.getId();
+                                if (systemId > 0) {
+                                    if (runnable != null) {
+                                        runOnUiThread(runnable);
+                                    }
+                                }
+                            } else {
+                                JSONResponse resp = response.getJSONResponse("Flow");
+                                flowId = resp == null ? 0 : resp.getId();
+                                if (flowId > 0) {
                                     runOnUiThread(new Runnable() {
                                         @Override
                                         public void run() {
-                                            Toast.makeText(context, "Upload Device/System/Flow failed! " + response.getMsg(), Toast.LENGTH_LONG).show();
+                                            etUIAutoListName.setEnabled(false);
+                                            if (runnable != null) {
+                                                runnable.run();
+                                            }
                                         }
                                     });
                                 }
                             }
-                        });
+                        } else {
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    Toast.makeText(context, "Upload Device/System/Flow failed! " + response.getMsg(), Toast.LENGTH_LONG).show();
+                                }
+                            });
+                        }
+                    }
+                });
 
+            }
+        }).start();
+    }
+
+    public void send() {
+        needLoading = true;
+        isLoading = true;
+
+        final String fullUrl = StringUtil.getTrimedString(etUIAutoListUrl) + StringUtil.getString(btnUIAutoListGet).toLowerCase();
+
+        pbUIAutoList.setVisibility(View.VISIBLE);
+
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                if (hasTempTouchList == false) {
+                    hasTempTouchList = true;
+                    cache.edit().remove(cacheKey).putString(cacheKey, UIAutoApp.toJSONString(eventList)).commit();
+                }
+
+                if (isLocal) {
+                    if (deviceId <= 0 || systemId <= 0 || flowId <= 0) {
+                        saveBaseInfo(new Runnable() {
+                            @Override
+                            public void run() {
+                                send();
+                            }
+                        });
                         return;
                     }
-
 
                     if (eventList == null || eventList.isEmpty()) {
                         runOnUiThread(new Runnable() {
@@ -466,6 +569,8 @@ public class UIAutoListActivity extends Activity implements HttpManager.OnHttpRe
                             HttpManager.getInstance().post(fullUrl, request.toString(), new HttpManager.OnHttpResponseListener() {
                                 @Override
                                 public void onHttpResponse(int requestCode, String resultJson, Exception e) {
+                                    isLoading = false;
+
                                     JSONResponse response = new JSONResponse(resultJson);
                                     if (response.isSuccess()) {
                                         remoteCount ++;
@@ -475,7 +580,7 @@ public class UIAutoListActivity extends Activity implements HttpManager.OnHttpRe
                                         statueMap.put(input, "Remote");
                                     }
                                     else {
-                                        statueMap.put(input, "Local");
+                                        statueMap.put(input, isLocal ? "Local" : "Remote");
                                         runOnUiThread(new Runnable() {
                                             @Override
                                             public void run() {
@@ -492,6 +597,7 @@ public class UIAutoListActivity extends Activity implements HttpManager.OnHttpRe
                                             }
                                         });
                                     }
+
                                     showList(array);
                                 }
                             });
@@ -513,7 +619,7 @@ public class UIAutoListActivity extends Activity implements HttpManager.OnHttpRe
                                 }
                                 touchItem.put("Input", input);
                             }   // Input >>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-                            request.putAll(touchItem.toArray(0, 0, "Input"));
+                            request.putAll(touchItem.toArray(page <= 0 ? 0 : count, page, "Input"));
                         }   // Input[] >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
                     }
                     else {
@@ -524,7 +630,7 @@ public class UIAutoListActivity extends Activity implements HttpManager.OnHttpRe
                                 flow.put("@order", "time-");
                                 flowItem.put("Flow", flow);
                             }   // Flow >>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-                            request.putAll(flowItem.toArray(0, 0, "Flow"));
+                            request.putAll(flowItem.toArray(page <= 0 ? 0 : count, page, "Flow"));
                         }   // Flow[] >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
                     }
 
@@ -534,6 +640,68 @@ public class UIAutoListActivity extends Activity implements HttpManager.OnHttpRe
             }
         }).start();
     }
+
+    private void delete(int position) {
+        JSONObject item = array == null || position < 0 || position > array.size() ? null : array.getJSONObject(position);
+        String id = item == null ? null : item.getString("id");
+        if (StringUtil.isEmpty(id, true)) {
+            UIAutoApp.getInstance().toast(R.string.pls_select_usable_item);
+            return;
+        }
+
+        if (isLocal) {
+            array.remove(position);
+            showList(array);
+            return;
+        }
+
+        final String host = StringUtil.getTrimedString(etUIAutoListUrl);
+
+        pbUIAutoList.setVisibility(View.VISIBLE);
+
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                String table = isTouch ? "Input" : "Flow";
+
+                JSONRequest request = new JSONRequest("id", item.getString("id"));
+                HttpManager.getInstance().post(host + "delete/" + table, request.toString(), new HttpManager.OnHttpResponseListener() {
+                    @Override
+                    public void onHttpResponse(int requestCode, String resultJson, Exception e) {
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                pbUIAutoList.setVisibility(View.GONE);
+                            }
+                        });
+
+                        JSONResponse response = new JSONResponse(resultJson);
+                        JSONResponse resp = response.getJSONResponse(table);
+                        boolean ok = resp.isSuccess();
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                Toast.makeText(context, getString(ok ? R.string.delete_succeed : R.string.delete_failed)
+                                        + " " + response.getMsg(), Toast.LENGTH_LONG).show();
+                            }
+                        });
+
+                        if (ok) {
+                            if (array != null && position > 0 && array.size() > position) {
+                                array.remove(position);
+                                showList(array);
+                            }
+
+                            send();
+                        }
+                    }
+                });
+
+            }
+        }).start();
+    }
+
+
 
     public void replay(View v) {
         if (isTouch) {
@@ -558,24 +726,49 @@ public class UIAutoListActivity extends Activity implements HttpManager.OnHttpRe
 
 
 
+    private boolean noMore = false;
     private JSONArray array;
     @Override
     public void onHttpResponse(int requestCode, String resultJson, Exception e) {
+        isLoading = false;
+
         Log.d(TAG, "onHttpResponse  resultJson = " + resultJson);
         if (e != null) {
             Log.e(TAG, "onHttpResponse e = " + e.getMessage());
         }
         JSONResponse response = new JSONResponse(resultJson);
-        array = response.getArray(isTouch ? "Input[]" : "Flow[]");
-        if (array == null) {
-            array = new JSONArray();
+        JSONArray arr = response.getArray(isTouch ? "Input[]" : "Flow[]");
+        noMore = arr == null || arr.isEmpty();
+        if (arr == null) {
+            arr = new JSONArray();
         }
         statueMap = new HashMap<>();
-        for (int i = 0; i < array.size(); i++) {
-            statueMap.put(array.getJSONObject(i), "Remote");
+        for (int i = 0; i < arr.size(); i++) {
+            statueMap.put(arr.getJSONObject(i), "Remote");
+        }
+
+        if (page <= 0 || array == null || array.isEmpty()) {
+            array = arr;
+        }
+        else if (noMore) {
+            page --;
+            UIAutoApp.getInstance().toast(R.string.already_loaded_all);
+        }
+        else {
+            array.addAll(arr);
         }
 
         showList(array);
+
+        if (noMore == false && array.size() < 1000) {
+            page ++;
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    send();
+                }
+            });
+        }
     }
 
 

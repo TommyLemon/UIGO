@@ -2079,7 +2079,7 @@ public class UIAutoApp { // extends Application {
     }
   }
 
-  private void toast(int id) {
+  public void toast(int id) {
     toast(getResources().getString(id));
   }
   private void toast(String s) {

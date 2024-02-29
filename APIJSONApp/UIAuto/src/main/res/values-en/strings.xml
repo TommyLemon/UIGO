@@ -32,4 +32,14 @@
     <string name="unselected_touch_scope">Unselected touch scope</string>
     <string name="selected_touch_scope_long_press_to_unselect">Selected touch scope, long press to unselect</string>
     <string name="click_sharp_to_double_ball_click_dollar_to_go_settings">Click # to double ball, click $ to go settings</string>
+    <string name="no_more">no more</string>
+    <string name="already_loaded_all">already loaded all</string>
+    <string name="pls_input_name_here">Please input name here</string>
+    <string name="temp_flow">Temp flow</string>
+    <string name="confirm_delete">Confirm delete?</string>
+    <string name="yes">Yes</string>
+    <string name="pls_select_usable_item">Please select usable item</string>
+    <string name="delete_succeed">Delete succeed</string>
+    <string name="delete_failed">Delete failed, please check your network and retry</string>
+    <string name="no">No</string>
 </resources>
