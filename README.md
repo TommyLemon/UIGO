@@ -28,6 +28,7 @@
 </p>
 
 <img width="1280" src="https://github.com/TommyLemon/UIGO/assets/5738175/54cf82d0-99b0-4085-ab89-d54ff95ef4c4" href="https://www.bilibili.com/video/BV1wA4m137ha" />
+<img width="1280" src="https://github.com/TommyLemon/UIGO/assets/5738175/032de745-e49a-43f3-b368-84fdbd6a97d7" href="https://search.bilibili.com/all?keyword=UIGO" />
 
 ## UIGO - 📱 零代码快准稳 UI 智能录制回放平台 🚀 
 **像素级自动兼容任意宽高比分辨率屏幕，毫秒级自动精准等待网络请求，录制回放快、准、稳！**<br />
