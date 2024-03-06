@@ -42,4 +42,5 @@
     <string name="delete_succeed">Delete succeed</string>
     <string name="delete_failed">Delete failed, please check your network and retry</string>
     <string name="no">No</string>
+    <string name="proxy_">Proxy:</string>
 </resources>

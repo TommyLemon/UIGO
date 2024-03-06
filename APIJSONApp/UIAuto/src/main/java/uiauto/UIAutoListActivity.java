@@ -385,12 +385,16 @@ public class UIAutoListActivity extends Activity implements HttpManager.OnHttpRe
 
 
     private int remoteCount = 0;
-    private int count = 100;
+    private int count = 0;
     private int page = 0;
     private Map<JSONObject, String> statueMap = new HashMap<JSONObject, String>();
 
     public void onClickSend(View v) {
-        page = 0;
+        if (isLoading) {
+            return;
+        }
+
+        page ++; // page = 0;
         noMore = false;
         send();
     }
@@ -634,7 +638,7 @@ public class UIAutoListActivity extends Activity implements HttpManager.OnHttpRe
                                 }
                                 touchItem.put("Input", input);
                             }   // Input >>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-                            request.putAll(touchItem.toArray(page <= 0 ? 0 : count, page, "Input"));
+                            request.putAll(touchItem.toArray(count, page, "Input"));
                         }   // Input[] >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
                     }
                     else {
@@ -645,7 +649,7 @@ public class UIAutoListActivity extends Activity implements HttpManager.OnHttpRe
                                 flow.put("@order", "time-");
                                 flowItem.put("Flow", flow);
                             }   // Flow >>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-                            request.putAll(flowItem.toArray(page <= 0 ? 0 : count, page, "Flow"));
+                            request.putAll(flowItem.toArray(count, page, "Flow"));
                         }   // Flow[] >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
                     }
 

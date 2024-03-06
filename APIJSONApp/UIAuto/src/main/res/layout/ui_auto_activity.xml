@@ -68,6 +68,7 @@
             android:layout_height="45dp"
             android:layout_width="match_parent"
             android:orientation="horizontal"
+            android:background="@android:color/white"
             >
 
             <Button
@@ -136,10 +137,11 @@
             android:layout_height="45dp"
             android:layout_width="match_parent"
             android:orientation="horizontal"
+            android:background="@android:color/white"
             >
 
             <TextView
-                android:text="Proxy:"
+                android:text="@string/proxy_"
                 android:layout_width="wrap_content"
                 android:layout_height="match_parent"
                 android:gravity="center"
@@ -191,6 +193,7 @@
         android:layout_width="match_parent"
         android:orientation="horizontal"
         android:gravity="center"
+        android:background="@android:color/white"
         >
 
         <Button
