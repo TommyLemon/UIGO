@@ -234,6 +234,9 @@ public class UIAutoApp { // extends Application {
           onEventChange(step - 1, curNode == null ? 0 : curNode.type);  // move 时刷新容易卡顿
         }
 
+        isTimeout = false;
+        mainHandler.removeCallbacks(timeoutRunnable);
+
         if (isOver) {
           tvControllerPlay.setText(R.string.replay);
           showCoverAndSplit(true, false);
@@ -244,9 +247,6 @@ public class UIAutoApp { // extends Application {
         }
 
         InputEvent curItem = curNode.item;
-
-        isTimeout = false;
-        mainHandler.removeCallbacks(timeoutRunnable);
 
         //暂停，等待时机
         if (curItem == null || (waitMap.isEmpty() == false && curNode.type == InputUtil.EVENT_TYPE_HTTP)) { // curNode.type == InputUtil.EVENT_TYPE_UI || curNode.type == InputUtil.EVENT_TYPE_HTTP) {
@@ -607,8 +607,11 @@ public class UIAutoApp { // extends Application {
     addTextChangedListener(decorView);
 
     contentView = decorView.findViewById(android.R.id.content);
-    if (dialog != null && contentView instanceof ViewGroup) {
-      View dialogView = ((ViewGroup) contentView).getChildAt(0); // contentView.findViewById(android.R.id.content);
+    View dlgView = contentView == null ? decorView : contentView;
+    if (dialog != null && dlgView != null) {
+      View dv = dlgView instanceof ViewGroup ? ((ViewGroup) dlgView).getChildAt(0) : null; // contentView.findViewById(android.R.id.content);
+      View dialogView = dv == null ? dlgView : dv;
+
       if (dialogView != null) {
         dialogView.post(new Runnable() {
           @Override
@@ -1690,6 +1693,9 @@ public class UIAutoApp { // extends Application {
       @Override
       public boolean onLongClick(View v) {
         handler.removeMessages(0);
+        isTimeout = false;
+        mainHandler.removeCallbacks(timeoutRunnable);
+
         if (step != 0) {
           step = 0;
           tvControllerCount.setText(step + "/" + allStep);
@@ -3228,30 +3234,60 @@ public class UIAutoApp { // extends Application {
           String tidName = isNotDown || obj == null ? null : obj.getString("targetIdName");
           int tid2 = isNotDown || tidName == null ? 0 : getResId(tidName);
 
-          boolean isTV = v instanceof TextView;
-          boolean ignore = isDialog || isNotDown || obj == null || (vid > 0 && vid == tid)
-                  || (vidName != null && Objects.equals(vidName, tidName));
-          NearestView<View> nv = ignore ? null : findNearestView(rv, null, rx, ry, true, tid2 > 0 ? tid2 : tid, null);
+          int childCount = obj == null ? 0 : obj.getIntValue("childCount");
+          Integer childIndex = obj == null ? null : obj.getInteger("childIndex");
+          childIndex = childIndex == null ? null : (childIndex >= 0 ? childIndex : childIndex + childCount);
+
+          ViewParent vp = v == null ? null : v.getParent();
+          ViewGroup vg = vp instanceof ViewGroup ? (ViewGroup) vp : null;
+          int ind = vg == null ? -1 : vg.indexOfChild(v);
+
+          boolean ignore = isDialog || isNotDown || obj == null || (
+                  ( (vid > 0 && vid == tid) || (vidName != null && Objects.equals(vidName, tidName)) )
+                          && ( childIndex == null || ind < 0 || (childIndex >= 0 && childIndex == ind)
+                          || (childIndex < 0 && childIndex + vg.getChildCount() == ind) )
+          );
+
+          NearestView<View> nv = ignore ? null : findNearestView(rv, null, rx, ry, true, tid2 > 0 ? tid2 : tid, childIndex, null);
+          if (ignore == false && nv == null && childIndex != null) {
+            nv = findNearestView(rv, null, rx, ry, true, tid2 > 0 ? tid2 : tid, null, null);
+          }
 
           View tv = nv == null ? null : nv.view;
           if (ignore == false && tv == null) {
             int fid = obj.getIntValue("focusId");
             String fidName = obj.getString("focusIdName");
+
+            int focusChildCount = obj.getIntValue("focusChildCount");
+            Integer focusChildIndex = obj.getInteger("focusChildIndex");
+            focusChildIndex = focusChildIndex == null ? focusChildIndex : (focusChildIndex >= 0 ? focusChildIndex : focusChildIndex + focusChildCount);
+
             int fid2 = fidName == null ? 0 : getResId(fidName);
-            nv = findNearestView(rv, null, rx, ry, true, fid2 > 0 ? fid2 : fid, null);
+            nv = findNearestView(rv, null, rx, ry, true, fid2 > 0 ? fid2 : fid, focusChildIndex, null);
+            if (nv == null && focusChildIndex != null) {
+              nv = findNearestView(rv, null, rx, ry, true, fid2 > 0 ? fid2 : fid, null, null);
+            }
 
             tv = nv == null ? null : nv.view;
 
             if (tv == null) {
               int pid = obj.getIntValue("parentId");
               String pidName = obj.getString("parentIdName");
+              int parentChildCount = obj.getIntValue("parentChildCount");
+              Integer parentChildIndex = obj.getInteger("parentChildIndex");
+              parentChildIndex = parentChildIndex == null ? null : (parentChildIndex >= 0 ? parentChildIndex : parentChildIndex + parentChildCount);
+
               int pid2 = pidName == null ? 0 : getResId(pidName);
-              nv = findNearestView(rv, null, rx, ry, true, pid2 > 0 ? pid2 : pid, null);
+              nv = findNearestView(rv, null, rx, ry, true, pid2 > 0 ? pid2 : pid, parentChildIndex, null);
+              if (nv == null && parentChildIndex != null) {
+                nv = findNearestView(rv, null, rx, ry, true, pid2 > 0 ? pid2 : pid, null, null);
+              }
 
               tv = nv == null ? null : nv.view;
             }
           }
 
+          boolean isTV = v instanceof TextView;
           if (tv == null && ignore && isTV) {
             tv = v;
           }
@@ -4542,7 +4578,20 @@ public class UIAutoApp { // extends Application {
       double x = event.getX();
       double y = event.getY();
 
-      if (action == MotionEvent.ACTION_DOWN) { // || action == MotionEvent.ACTION_UP) {
+      int childCount = 0;
+      int childIndex = -1;
+      ViewGroup parentView = null;
+
+      int focusChildCount = 0;
+      int focusChildIndex = -1;
+      ViewGroup focusParentView = null;
+
+      int parentChildCount = 0;
+      int parentChildIndex = -1;
+      ViewGroup grandParentView = null;
+
+      boolean isDown = action == MotionEvent.ACTION_DOWN;
+      if (isDown) { // || action == MotionEvent.ACTION_UP) {
         isTouching = true;
         View rv = contentView != null && callback instanceof Dialog ? contentView : decorView;
 
@@ -4551,16 +4600,52 @@ public class UIAutoApp { // extends Application {
         obj.put("targetIdName", getResIdName(v));
 
         ViewParent p = v == null ? null : v.getParent();
+        if (p instanceof ViewGroup) {
+          childCount = ((ViewGroup) p).getChildCount();
+          obj.put("childCount", childCount);
+
+          childIndex = ((ViewGroup) p).indexOfChild(v);
+          if (childIndex >= 0) {
+            obj.put("childIndex", childIndex);
+          }
+        }
+
         while (p instanceof View && ((View) p).getId() <= 0) {
           p = p.getParent();
         }
-        View pv = p instanceof View ? (View) p : null;
+        ViewGroup pv = parentView = p instanceof ViewGroup ? (ViewGroup) p : null;
         obj.put("parentId", pv == null ? null : pv.getId());
         obj.put("parentIdName", getResIdName(pv));
+
+        ViewParent gpv = pv == null ? null : pv.getParent();
+        if (gpv instanceof ViewGroup) {
+          grandParentView = (ViewGroup) gpv;
+
+          parentChildCount = grandParentView.getChildCount();
+          obj.put("parentChildCount", parentChildCount);
+
+          parentChildIndex = grandParentView.indexOfChild(pv);
+          if (parentChildIndex >= 0) {
+            obj.put("parentChildIndex", parentChildIndex);
+          }
+        }
 
         View fv = findViewByPoint(rv, null, x, y, FOCUS_ABLE, true); // FOCUS_HAS 找不到
         obj.put("focusId", fv == null ? null : fv.getId());
         obj.put("focusIdName", getResIdName(fv));
+
+        ViewParent fp = fv == null ? null : fv.getParent();
+        if (fp instanceof ViewGroup) {
+          focusParentView = ((ViewGroup) fp);
+
+          focusChildCount = focusParentView.getChildCount();
+          obj.put("focusChildCount", focusChildCount);
+
+          focusChildIndex = focusParentView.indexOfChild(fv);
+          if (focusChildIndex >= 0) {
+            obj.put("focusChildIndex", focusChildIndex);
+          }
+        }
 
         TextView tv = v instanceof TextView ? (TextView) v : (fv instanceof TextView ? (TextView) fv : null);
         String txt = StringUtil.getString(tv);
@@ -4649,6 +4734,18 @@ public class UIAutoApp { // extends Application {
         obj.put("y", ry);
         obj.put("x2", x2 == null ? null : rx + x2 - x);
         obj.put("y2", y2 == null ? null : ry + y2 - y);
+
+        if (isDown && ((rx < 0 && canScrollHorizontally(parentView)) || (ry < 0 && canScrollVertically(parentView)))) {
+          if (childIndex >= 0) {
+            obj.put("childIndex", childIndex - childCount);
+          }
+          if (focusChildIndex >= 0) {
+            obj.put("focusChildIndex", focusChildIndex - focusChildCount);
+          }
+          if (parentChildIndex >= 0) {
+            obj.put("parentChildIndex", parentChildIndex - parentChildCount);
+          }
+        }
       }
 
       obj.put("rawX", event.getRawX());
@@ -4839,12 +4936,12 @@ public class UIAutoApp { // extends Application {
             ? (V) view : null;
   }
 
-  public <V extends View> NearestView<V> findNearestView(View view, Class<V> clazz, double x, double y, boolean onlyFocusable, int id, NearestView<V> nearestView) {
+  public <V extends View> NearestView<V> findNearestView(View view, Class<V> clazz, double x, double y, boolean onlyFocusable, int id, Integer childIndex, NearestView<V> nearestView) {
     if (view instanceof ViewGroup) {
       ViewGroup vg = (ViewGroup) view;
 
       for (int i = vg.getChildCount() - 1; i >= 0; i--) {
-        NearestView<V> nv = findNearestView(vg.getChildAt(i), clazz, x, y, onlyFocusable, id, nearestView);
+        NearestView<V> nv = findNearestView(vg.getChildAt(i), clazz, x, y, onlyFocusable, id, childIndex, nearestView);
         if (nv != null) {
           nearestView = nv;
         }
@@ -4858,6 +4955,16 @@ public class UIAutoApp { // extends Application {
     if (view != null && (id <= 0 || view.getId() == id) && (clazz == null || clazz.isAssignableFrom(view.getClass()))
             && (onlyFocusable == false || view.hasFocus() || view.isFocusable() || view.isFocusableInTouchMode())
     ) {
+      ViewParent vp = childIndex == null ? null : view.getParent();
+      if (vp instanceof ViewGroup) {
+        ViewGroup vg = (ViewGroup) vp;
+        int ind = vg.indexOfChild(view);
+        if ((childIndex >= 0 && childIndex != ind) || (childIndex < 0 && childIndex + vg.getChildCount() != ind)) {
+          return nearestView;
+        }
+      }
+
+
       int[] loc = new int[2];
       view.getLocationOnScreen(loc); // nearestView.getLocationInWindow(loc);
 
