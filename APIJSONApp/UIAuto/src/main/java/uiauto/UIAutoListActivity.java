@@ -214,7 +214,7 @@ public class UIAutoListActivity extends Activity implements HttpManager.OnHttpRe
         if (StringUtil.isEmpty(server, true)) {
             server = "http://apijson.cn:9090";
         }
-        etUIAutoListUrl.setText(server);
+        etUIAutoListUrl.setText(server + "/");
 
 //        llUIAutoListBar.setVisibility(isLocal ? View.GONE : View.VISIBLE);
 
