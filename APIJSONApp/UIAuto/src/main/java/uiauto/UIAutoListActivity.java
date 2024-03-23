@@ -210,6 +210,11 @@ public class UIAutoListActivity extends Activity implements HttpManager.OnHttpRe
         etUIAutoListName.setVisibility(isTouch ? View.VISIBLE : View.GONE);
 //        etUIAutoListName.setEnabled(isLocal || hasTempTouchList);
         etUIAutoListName.setText(name);
+        String server = UIAutoApp.getInstance().getProxyServer();
+        if (StringUtil.isEmpty(server, true)) {
+            server = "http://apijson.cn:9090";
+        }
+        etUIAutoListUrl.setText(server);
 
 //        llUIAutoListBar.setVisibility(isLocal ? View.GONE : View.VISIBLE);
 
@@ -494,6 +499,8 @@ public class UIAutoListActivity extends Activity implements HttpManager.OnHttpRe
                                 }
                             }
                         } else {
+                            isLoading = false;
+
                             runOnUiThread(new Runnable() {
                                 @Override
                                 public void run() {
