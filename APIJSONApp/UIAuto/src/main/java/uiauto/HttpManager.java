@@ -307,17 +307,17 @@ public class HttpManager {
     /**
      * @return
      */
-    public String getCookie() {
-        return context.getSharedPreferences(KEY_COOKIE, Context.MODE_PRIVATE).getString(KEY_COOKIE, "");
+    public String getCookie(String host) {
+        return context.getSharedPreferences(KEY_COOKIE, Context.MODE_PRIVATE).getString(host, "");
     }
     /**
      * @param value
      */
-    public void saveCookie(String value) {
+    public void saveCookie(String host, String value) {
         context.getSharedPreferences(KEY_COOKIE, Context.MODE_PRIVATE)
                 .edit()
-                .remove(KEY_COOKIE)
-                .putString(KEY_COOKIE, value)
+                .remove(host)
+                .putString(host, value)
                 .commit();
     }
 
@@ -354,7 +354,8 @@ public class HttpManager {
 
         @Override
         public Map<String, List<String>> get(URI uri, Map<String, List<String>> requestHeaders) throws IOException {
-            String cookie = getCookie();
+            String host = uri.getScheme() + "://" + uri.getHost() + ":" + uri.getPort();
+            String cookie = getCookie(host);
             Map<String, List<String>> map = new HashMap<String, List<String>>();
             map.putAll(requestHeaders);
             if (!TextUtils.isEmpty(cookie)) {
@@ -372,7 +373,8 @@ public class HttpManager {
                 for (int i = 0; i < list.size(); i++) {
                     String cookie = list.get(i);
                     if (cookie.startsWith("JSESSIONID")) {
-                        saveCookie(list.get(i));
+                        String host = uri.getScheme() + "://" + uri.getHost() + ":" + uri.getPort();
+                        saveCookie(host, cookie);
                         break;
                     }
                 }
