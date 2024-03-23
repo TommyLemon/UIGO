@@ -148,7 +148,7 @@ public class UIAutoApp { // extends Application {
   private static double DENSITY = Resources.getSystem().getDisplayMetrics().density;
 
   public static boolean DEBUG = zuo.biao.apijson.Log.DEBUG;
-  public static long STEP_TIMEOUT = DEBUG ? 30*1000 : 60*1000;
+  public static long STEP_TIMEOUT = DEBUG ? 10*1000 : 60*1000;
 
 
   private static UIAutoApp instance;
@@ -1341,22 +1341,7 @@ public class UIAutoApp { // extends Application {
         setCurrentPopupWindow(null, null, null, activity, null);
 
         if (activityList == null || activityList.isEmpty()) { // Application.onTerminate 只在模拟器调用，真机不调用
-          setGravityText(tvControllerGravityX, false, gravityX);
-          setGravityText(tvControllerGravityY, true, gravityY);
-
-          String s = JSON.toJSONString(classBallPositionMap);
-          cache.edit()
-                  .remove(SPLIT_SIZE).putFloat(SPLIT_SIZE, (float) splitSize)
-                  .remove(SPLIT_COLOR).putInt(SPLIT_COLOR, splitColor)
-                  .remove(BALL_GRAVITY).putInt(BALL_GRAVITY, ballGravity)
-                  .remove(BALL_GRAVITY2).putInt(BALL_GRAVITY2, ballGravity2)
-                  .remove(SPLIT_X).putFloat(SPLIT_X, (float) splitX)
-                  .remove(SPLIT_Y).putFloat(SPLIT_Y, (float) splitY)
-                  .remove(SPLIT_X2).putFloat(SPLIT_X2, (float) splitX2)
-                  .remove(SPLIT_Y2).putFloat(SPLIT_Y2, (float) splitY2)
-                  .remove(CLASS_BALL_CACHE_MAP).putString(CLASS_BALL_CACHE_MAP, s)
-                  .commit();
-//                  .apply();
+          saveAllBallPositions();
         }
       }
 
@@ -1473,7 +1458,7 @@ public class UIAutoApp { // extends Application {
           name = "\n[" + item.getIntValue("x") + ", " + item.getIntValue("y") + "]";
         }
 
-        ((TextView) holder.itemView).setText((disable ? "" : index + ".  ") + action + name);
+        ((TextView) holder.itemView).setText((disable ? "-" : "") + index + ". " + action + name);
         //位置数字区分，避免暗色背景显示不明显
         ((TextView) holder.itemView).setTextColor(getResources().getColor(index == step ? android.R.color.holo_red_dark : android.R.color.white));
 
@@ -1839,6 +1824,25 @@ public class UIAutoApp { // extends Application {
         toast(R.string.selected_touch_scope_long_press_to_unselect);
       }
     });
+  }
+
+  public void saveAllBallPositions() {
+    setGravityText(tvControllerGravityX, false, gravityX);
+    setGravityText(tvControllerGravityY, true, gravityY);
+
+    String s = JSON.toJSONString(classBallPositionMap);
+    cache.edit()
+            .remove(SPLIT_SIZE).putFloat(SPLIT_SIZE, (float) splitSize)
+            .remove(SPLIT_COLOR).putInt(SPLIT_COLOR, splitColor)
+            .remove(BALL_GRAVITY).putInt(BALL_GRAVITY, ballGravity)
+            .remove(BALL_GRAVITY2).putInt(BALL_GRAVITY2, ballGravity2)
+            .remove(SPLIT_X).putFloat(SPLIT_X, (float) splitX)
+            .remove(SPLIT_Y).putFloat(SPLIT_Y, (float) splitY)
+            .remove(SPLIT_X2).putFloat(SPLIT_X2, (float) splitX2)
+            .remove(SPLIT_Y2).putFloat(SPLIT_Y2, (float) splitY2)
+            .remove(CLASS_BALL_CACHE_MAP).putString(CLASS_BALL_CACHE_MAP, s)
+            .commit();
+//                  .apply();
   }
 
   private void setSplit() {
@@ -2728,6 +2732,8 @@ public class UIAutoApp { // extends Application {
           if (Math.pow(dx, 2) + Math.pow(dy, 2) > Math.pow(dip2px(8), 2)) {
             return true;
           }
+
+          saveAllBallPositions();
 
           dismiss();
 
