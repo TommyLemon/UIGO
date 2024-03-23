@@ -43,4 +43,9 @@
     <string name="delete_failed">Delete failed, please check your network and retry</string>
     <string name="no">No</string>
     <string name="proxy_">Proxy:</string>
+    <string name="account_">Account:</string>
+    <string name="password_">Password:</string>
+    <string name="sign_in">Sign in</string>
+    <string name="sign_out">Sign out</string>
+    <string name="sign_up">Sign up</string>
 </resources>

@@ -43,4 +43,9 @@
     <string name="delete_failed">删除失败，请检查网络后重试</string>
     <string name="no">取消</string>
     <string name="proxy_">代理：</string>
+    <string name="account_">账号：</string>
+    <string name="password_">密码：</string>
+    <string name="sign_in">登录</string>
+    <string name="sign_out">登出</string>
+    <string name="sign_up">注册</string>
 </resources>

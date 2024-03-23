@@ -81,8 +81,8 @@ public class UnitAutoActivity extends Activity implements HttpServerRequestCallb
     private Activity context;
     private boolean isAlive;
 
-    private static TextView tvUnitRequest;  // server 回调方法 onRequest 内只能访问到初始化时的变量及 static 变量
-    private static TextView tvUnitResponse;
+    protected static TextView tvUnitRequest;  // server 回调方法 onRequest 内只能访问到初始化时的变量及 static 变量
+    protected static TextView tvUnitResponse;
 
     private TextView tvUnitOrient;
     private TextView tvUnitIP;

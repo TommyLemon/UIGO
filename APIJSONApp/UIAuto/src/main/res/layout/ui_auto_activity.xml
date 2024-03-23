@@ -38,6 +38,7 @@
                     android:hint="request"
                     android:textSize="14sp"
                     android:textIsSelectable="true"
+                    android:textColor="@android:color/white"
                     />
 
                 <View
@@ -55,7 +56,9 @@
                     android:gravity="top|left"
                     android:hint="response"
                     android:textIsSelectable="true"
-                    android:textSize="14sp" />
+                    android:textSize="14sp"
+                    android:textColor="@android:color/white"
+                    />
             </LinearLayout>
         </ScrollView>
 
@@ -179,6 +182,112 @@
 
         </LinearLayout>
 
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@android:color/white" />
+
+        <LinearLayout
+            android:layout_height="45dp"
+            android:layout_width="match_parent"
+            android:orientation="horizontal"
+            android:background="@android:color/white"
+            >
+
+            <TextView
+                android:text="@string/account_"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:singleLine="true"
+                android:onClick="ip"
+                android:ellipsize="middle"
+                android:textSize="16sp"
+                android:layout_marginLeft="1dp"
+                />
+
+            <EditText
+                android:id="@+id/etUIAccount"
+                android:hint="13000082001"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="left|center_vertical"
+                android:enabled="true"
+                android:textSize="16sp"
+                android:layout_weight="1"
+                />
+
+            <ProgressBar
+                android:id="@+id/pbUISignIn"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:visibility="gone"
+                tools:visibility="visible"
+                />
+
+            <Button
+                android:id="@+id/tvUISignIn"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:text="@string/sign_in"
+                android:onClick="signIn"
+                />
+
+        </LinearLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@android:color/white" />
+
+        <LinearLayout
+            android:layout_height="45dp"
+            android:layout_width="match_parent"
+            android:orientation="horizontal"
+            android:background="@android:color/white"
+            >
+
+            <TextView
+                android:text="@string/password_"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:singleLine="true"
+                android:onClick="ip"
+                android:ellipsize="middle"
+                android:textSize="16sp"
+                android:layout_marginLeft="1dp"
+                />
+
+            <EditText
+                android:id="@+id/etUIPassword"
+                android:hint="123456"
+                android:inputType="textPassword"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="left|center_vertical"
+                android:enabled="true"
+                android:textSize="16sp"
+                android:layout_weight="1"
+                />
+
+            <ProgressBar
+                android:id="@+id/pbUISignUp"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:visibility="gone"
+                tools:visibility="visible"
+                />
+
+            <Button
+                android:id="@+id/tvUISignUp"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:text="@string/sign_up"
+                android:onClick="signUp"
+                />
+
+        </LinearLayout>
 
     </LinearLayout>
 
