@@ -4343,7 +4343,7 @@ public class UIAutoApp { // extends Application {
     }
 
     Drawable bkgd = view.getBackground();
-    if (bkgd != null) {
+    if (bkgd != null && isOutput) {
       propertyMap.put(KEY_BACKGROUND, trySaveImage(bkgd, dty.getAbsolutePath() + "/uiauto_background_" + id + "_time_" + System.currentTimeMillis() + ".png"));
     }
 
@@ -4451,7 +4451,7 @@ public class UIAutoApp { // extends Application {
       }
     }
     else if (isImage) {
-      Drawable img = ((ImageView) view).getDrawable();
+      Drawable img = isOutput ? ((ImageView) view).getDrawable() : null;
       if (img != null) {
         propertyMap.put(KEY_IMAGE, trySaveImage(img, dty.getAbsolutePath() + "/uiauto_image_" + id + "_time_" + System.currentTimeMillis() + ".png"));
       }
@@ -4985,7 +4985,7 @@ public class UIAutoApp { // extends Application {
             bitmap = Bitmap.createBitmap(bitmap, 0, 0, w, h, matrix, false);
           }
 
-//          saveImage(bitmap, filePath);
+// FIXME 总是报错 bitmap is recycled, cannot use it         saveImage(bitmap, filePath);
         } catch (Throwable e) {
           e.printStackTrace();
 //          throw new RuntimeException(e);
