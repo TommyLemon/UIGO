@@ -14,6 +14,7 @@ limitations under the License.*/
 
 package uiauto;
 
+import static android.view.ViewGroup.LayoutParams.WRAP_CONTENT;
 import static uiauto.InputUtil.GRAVITY_BOTTOM;
 import static uiauto.InputUtil.GRAVITY_BOTTOM_LEFT;
 import static uiauto.InputUtil.GRAVITY_BOTTOM_RIGHT;
@@ -42,9 +43,12 @@ import android.content.res.AssetManager;
 import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Point;
 import android.graphics.Rect;
+import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
@@ -62,13 +66,16 @@ import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.widget.NestedScrollView;
+import android.support.v7.widget.LinearLayoutCompat;
 import android.support.v7.widget.RecyclerView;
 import android.text.Editable;
+import android.text.InputType;
 import android.text.TextWatcher;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.ActionMode;
 import android.view.Display;
+import android.view.Gravity;
 import android.view.InputEvent;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
@@ -85,10 +92,17 @@ import android.view.WindowManager;
 import android.view.accessibility.AccessibilityEvent;
 import android.webkit.ValueCallback;
 import android.webkit.WebView;
+import android.widget.AbsListView;
 import android.widget.AdapterView;
+import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.HorizontalScrollView;
+import android.widget.ImageButton;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.PopupWindow;
+import android.widget.RelativeLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -105,6 +119,7 @@ import com.yhao.floatwindow.ViewStateListener;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.lang.annotation.Annotation;
@@ -114,14 +129,17 @@ import java.net.URLEncoder;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -146,6 +164,7 @@ public class UIAutoApp { // extends Application {
   private static final String CLASS_BALL_CACHE_MAP = "CLASS_BALL_CACHE_MAP";
 
   private static double DENSITY = Resources.getSystem().getDisplayMetrics().density;
+  private static float SCALED_DENSITY = Resources.getSystem().getDisplayMetrics().scaledDensity;
 
   public static boolean DEBUG = zuo.biao.apijson.Log.DEBUG;
   public static long STEP_TIMEOUT = DEBUG ? 10*1000 : 60*1000;
@@ -826,7 +845,7 @@ public class UIAutoApp { // extends Application {
 
     splitSize = cache.getFloat(SPLIT_SIZE, 0);
     if (splitSize < 10) {
-      splitSize = dip2px(45);
+      splitSize = dp2px(45);
     }
     splitRadius = splitSize/2;
 
@@ -852,10 +871,10 @@ public class UIAutoApp { // extends Application {
     }
 
     if (splitX == 0 || Math.abs(splitX) >= windowWidth) { // decorWidth) {
-      splitX = -splitSize - (dialog != null ? dialogX + dialogWidth/2 : dip2px(30)); // 同一个 Window，没必要 (fragment != null ? fragmentX + fragmentWidth - windowWidth - dip2px(30) : dip2px(30)));
+      splitX = -splitSize - (dialog != null ? dialogX + dialogWidth/2 : dp2px(30)); // 同一个 Window，没必要 (fragment != null ? fragmentX + fragmentWidth - windowWidth - dip2px(30) : dip2px(30)));
     }
     if (splitY == 0 || Math.abs(splitY) >= windowHeight) { // decorHeight) {
-      splitY = -splitSize - (dialog != null ? dialogY + dialogHeight/2 : dip2px(30)); // 同一个 Window，没必要 (fragment != null ? fragmentY + fragmentHeight - dip2px(30) : dip2px(30)));
+      splitY = -splitSize - (dialog != null ? dialogY + dialogHeight/2 : dp2px(30)); // 同一个 Window，没必要 (fragment != null ? fragmentY + fragmentHeight - dip2px(30) : dip2px(30)));
     }
 
     if (key != null && (points == null || points.length < 2)) {
@@ -875,10 +894,10 @@ public class UIAutoApp { // extends Application {
     }
 
     if (splitX2 == 0 || Math.abs(splitX2) >= windowWidth) { // decorWidth) {
-      splitX2 = splitSize + dip2px(30);
+      splitX2 = splitSize + dp2px(30);
     }
     if (splitY2 == 0 || Math.abs(splitY2) >= windowHeight) { // decorHeight) {
-      splitY2 = splitSize + dip2px(30);
+      splitY2 = splitSize + dp2px(30);
     }
 
     if (showToolBar) {
@@ -1025,8 +1044,8 @@ public class UIAutoApp { // extends Application {
 
                 int w2 = vg.getWidth();
                 int h2 = vg.getHeight();
-                if (w2 + h2 <= dip2px(60) || Math.pow(loc2[0] - loc[0], 2) + Math.pow(loc2[1] - loc[1], 2)
-                        + Math.pow(w2 - w, 2) + Math.pow(h2 - h, 2) > dip2px(10)) {
+                if (w2 + h2 <= dp2px(60) || Math.pow(loc2[0] - loc[0], 2) + Math.pow(loc2[1] - loc[1], 2)
+                        + Math.pow(w2 - w, 2) + Math.pow(h2 - h, 2) > dp2px(10)) {
                   return;
                 }
 
@@ -1636,8 +1655,8 @@ public class UIAutoApp { // extends Application {
         // floatBall2 = null;
         // if (isSplit2Showing) {
         floatBall2 = showSplit(floatBall2, isSplit2Showing,
-                floatBall.getX() + splitRadius - dip2px(0.5)
-                , floatBall.getY() + splitRadius - dip2px(0.5) // - (isSeparatedStatus ? statusHeight : 0)
+                floatBall.getX() + splitRadius - dp2px(0.5)
+                , floatBall.getY() + splitRadius - dp2px(0.5) // - (isSeparatedStatus ? statusHeight : 0)
                 , "floatBall2", vFloatBall2, floatSplitX2, floatSplitY2
         );
         // }
@@ -2567,14 +2586,14 @@ public class UIAutoApp { // extends Application {
     int y = (int) Math.round(splitY - splitRadius + (splitY > 0 ? 0 : windowHeight)); // - (isSeparatedStatus ? 0 : statusHeight))); // + navigationHeight)); // 只有贴边才会自动处理  decorHeight); // 已被 FloatWindow 处理 windowY + decorY
     if (floatSplitX_ != null) {
       try {
-        floatSplitX_.updateX((int) Math.round(x + splitRadius - dip2px(0.5f)));
+        floatSplitX_.updateX((int) Math.round(x + splitRadius - dp2px(0.5f)));
       } catch (Throwable e) {
         e.printStackTrace();
       }
     }
     if (floatSplitY_ != null) {
       try {
-        floatSplitY_.updateY((int) Math.round(y + splitRadius - dip2px(0.5f)));
+        floatSplitY_.updateY((int) Math.round(y + splitRadius - dp2px(0.5f)));
       } catch (Throwable e) {
         e.printStackTrace();
       }
@@ -2729,7 +2748,7 @@ public class UIAutoApp { // extends Application {
 
           lastBallUpX = lastBallDownX = lastBallUpY = lastBallDownY = 0;
 
-          if (Math.pow(dx, 2) + Math.pow(dy, 2) > Math.pow(dip2px(8), 2)) {
+          if (Math.pow(dx, 2) + Math.pow(dy, 2) > Math.pow(dp2px(8), 2)) {
             return true;
           }
 
@@ -2852,11 +2871,11 @@ public class UIAutoApp { // extends Application {
     tvControllerY.setText(splitY + "\n" + DECIMAL_FORMAT.format(splitY/windowHeight) + "%");
 
     if (floatSplitX_ != null && floatSplitX_.isShowing()) {
-      floatSplitX_.updateX((int) (x + Math.round(splitRadius) - dip2px(0.5f)));
+      floatSplitX_.updateX((int) (x + Math.round(splitRadius) - dp2px(0.5f)));
       floatSplitX_.hide();
     }
     if (floatSplitY_ != null && floatSplitY_.isShowing()) {
-      floatSplitY_.updateY((int) (y + Math.round(splitRadius) - dip2px(0.5f)));
+      floatSplitY_.updateY((int) (y + Math.round(splitRadius) - dp2px(0.5f)));
       floatSplitY_.hide();
     }
 
@@ -2897,14 +2916,14 @@ public class UIAutoApp { // extends Application {
 
     if (floatSplitX_ != null) { //  && floatSplitX_.isShowing()) {
       try {
-        floatSplitX_.updateX((int) Math.round(splitX - dip2px(0.5f)));
+        floatSplitX_.updateX((int) Math.round(splitX - dp2px(0.5f)));
       } catch (Throwable e) {
         e.printStackTrace();
       }
     }
     if (floatSplitY_ != null) { //   && floatSplitY_.isShowing()) {
       try {
-        floatSplitY_.updateY((int) Math.round(splitY - dip2px(0.5f)));
+        floatSplitY_.updateY((int) Math.round(splitY - dp2px(0.5f)));
       } catch (Throwable e) {
         e.printStackTrace();
       }
@@ -3299,7 +3318,7 @@ public class UIAutoApp { // extends Application {
           }
 
           if (tv != null) {
-            int d = dip2px(1.1);
+            int d = dp2px(1.1);
 
             Integer textIndex = obj != null && tv instanceof TextView ? obj.getInteger("textIndex") : null;
             String txt = textIndex == null || textIndex < 0 ? null : StringUtil.getString((TextView) tv);
@@ -3335,7 +3354,7 @@ public class UIAutoApp { // extends Application {
                 nv.paddingBottom = tv.getPaddingBottom();
               }
 
-              int p = dip2px(10);
+              int p = dp2px(10);
               l = nv.left + (nv.paddingLeft >= p ? 0 : nv.paddingLeft);
               r = nv.right - (nv.paddingRight >= p ? 0 : nv.paddingRight);
               t = nv.top + (nv.paddingTop >= p ? 0 : nv.paddingTop);
@@ -3582,7 +3601,7 @@ public class UIAutoApp { // extends Application {
   /**
    * 根据手机的分辨率从 dp 的单位 转成为 px(像素)
    */
-  public int dip2px(double dpValue) {
+  public int dp2px(double dpValue) {
     final double scale = DENSITY;
     return (int) Math.round(dpValue*scale);  // + 0.5f 是为了让结果四舍五入
   }
@@ -3590,11 +3609,22 @@ public class UIAutoApp { // extends Application {
   /**
    * 根据手机的分辨率从 px(像素) 的单位 转成为 dp
    */
-  public int px2dip(double pxValue) {
-    final double scale = DENSITY;
-    return (int) Math.round(pxValue/scale);  // + 0.5f 是为了让结果四舍五入
+  public int px2dp(float pxValue) {
+    return (int) (pxValue / DENSITY + 0.5f);  // + 0.5f 是为了让结果四舍五入
   }
 
+  /**
+   * 根据字体大小从 px(像素) 的单位 转成为 sp
+   */
+  public int px2sp(float pxValue) {
+    return (int) (pxValue / SCALED_DENSITY + 0.5f);  // + 0.5f 是为了让结果四舍五入
+  }
+  /**
+   * 根据字体大小从 sp 的单位 转成为 px(像素)
+   */
+  public int sp2px(float spValue) {
+    return (int) (spValue * SCALED_DENSITY + 0.5f);  // + 0.5f 是为了让结果四舍五入
+  }
 
   private Node<InputEvent> firstEventNode;
   private Node<InputEvent> currentEventNode;
@@ -4144,6 +4174,600 @@ public class UIAutoApp { // extends Application {
   }
 
 
+  public static final String KEY_DISABLE = "disable";
+  public static final String KEY_DATA = "data";
+  public static final String KEY_REF = "ref";
+  public static final String KEY_AT = "at";
+  public static final String KEY_INPUT = "input";
+  public static final String KEY_OUTPUT = "output";
+  public static final String KEY_REQUEST = "request";
+  public static final String KEY_RESPONSE = "response";
+  // public static final String KEY_INPUT_AT = "input@";
+  // public static final String KEY_OUTPUT_AT = "output@";
+  public static final String KEY_TYPE = "type";
+  public static final String KEY_PARENT = "parent";
+  public static final String KEY_PARENT_TYPE = "parentType";
+  public static final String KEY_PARENT_ID = "parentId";
+  public static final String KEY_CHILDREN = "children";
+  public static final String KEY_ACTION = "action";
+  public static final String KEY_VIEW_ID = "viewId";
+  public static final String KEY_KEY = "key";
+  public static final String KEY_FOCUSABLE = "focusable";
+  public static final String KEY_TICK = "tick";
+  public static final String KEY_NAME = "name";
+  public static final String KEY_CONTENT = "content";
+  public static final String KEY_VALUE = "value";
+  public static final String KEY_TIME = "time";
+  public static final String KEY_STATE = "state";
+  public static final String KEY_DETAIL = "detail";
+  public static final String KEY_VALUE_VISIBLE = "valueVisible";
+  public static final String KEY_TYPE_VISIBLE = "typeVisible";
+  public static final String KEY_IMAGE_VISIBLE = "imageVisible";
+  public static final String KEY_VALUE_INPUT_TYPE = "valueInputType";
+  public static final String KEY_TYPE_INPUT_TYPE = "typeInputType";
+  public static final String KEY_VALUE_OPTIONS = "valueOptions";
+  public static final String KEY_TYPE_OPTIONS = "typeOptions";
+  public static final String KEY_IMAGE_OPTIONS = "imageOptions";
+  public static final String KEY_VALUE_EDITABLE = "valueEditable";
+  public static final String KEY_TYPE_EDITABLE = "typeEditable";
+  public static final String KEY_IMAGE_EDITABLE = "imageEditable";
+
+  public static final String KEY_SHOW = "@show"; // 是否必要？
+  public static final String KEY_HIDE = "@hide";
+  public static final String KEY_TOUCH = "touch"; // @touch
+  public static final String KEY_CLICK = "click"; // @click ?
+  public static final String KEY_LONG_CLICK = "longClick";
+  public static final String KEY_NEXT = "next"; // 在某个事件后的处理
+
+  public static final String KEY_HTTP = "http";
+  public static final String KEY_BACK = "back";
+  public static final String KEY_EDIT = "edit";
+  public static final String KEY_JUMP = "jump";
+  public static final String KEY_MENU = "menu";
+  public static final String KEY_OPTION = "option";
+
+  public static final String KEY_DIALOG = "dialog";
+  public static final String KEY_TOAST = "toast";
+  public static final String KEY_SUBMIT = "submit";
+
+  public static final String KEY_INDEX = "index";
+  public static final String KEY_ID = "id";
+  public static final String KEY_VISIBILITY = "visibility";
+  public static final String KEY_X = "x";
+  public static final String KEY_Y = "y";
+  public static final String KEY_Z = "z";
+  public static final String KEY_WEIGHT = "weight";
+  public static final String KEY_WIDTH = "width";
+  public static final String KEY_HEIGHT = "height";
+  public static final String KEY_MARGIN_LEFT = "marginLeft";
+  public static final String KEY_MARGIN_RIGHT = "marginRight";
+  public static final String KEY_MARGIN_TOP = "marginTop";
+  public static final String KEY_MARGIN_BOTTOM = "marginBottom";
+  public static final String KEY_PADDING_LEFT = "paddingLeft";
+  public static final String KEY_PADDING_RIGHT = "paddingRight";
+  public static final String KEY_PADDING_TOP = "paddingTop";
+  public static final String KEY_PADDING_BOTTOM = "paddingBottom";
+  public static final String KEY_GRAVITY = "gravity";
+  public static final String KEY_LAYOUT_GRAVITY = "layoutGravity";
+  public static final String KEY_BACKGROUND = "background";
+  public static final String KEY_FOREGROUND = "foreground";
+  public static final String KEY_ORIENTATION = "orientation";
+  public static final String KEY_HORIZONTAL = "horizontal";
+  public static final String KEY_VERTICAL = "vertical";
+  public static final String KEY_IMAGE = "image";
+  public static final String KEY_URL = "url";
+  public static final String KEY_TEXT = "text";
+  public static final String KEY_CHECK = "tick";
+  public static final String KEY_HINT = "hint";
+  public static final String KEY_TEXT_SIZE = "textSize";
+  public static final String KEY_SHAPE = "shape";
+  public static final String KEY_COLOR = "color";
+  public static final String KEY_TEXT_COLOR = "textColor";
+  public static final String KEY_HINT_COLOR = "hintTextColor";
+
+
+  long activityId;
+  String pageKey;
+  String pageName;
+
+  boolean selectedEditable = false;
+  boolean isSelectType = false;
+  String selectedKey = null;
+  Object selectedValue = null;
+  Node<JSONObject> selectedAction = null;
+  View selectedPropertyView = null;
+  JSONObject selectedPropertyItem = null;
+  JSONArray optionList = new JSONArray();
+
+  JSONArray propertyList = new JSONArray();
+
+  public final Map<String, Map<View, ? extends JSON>> pageViewListMap = new LinkedHashMap<>();
+  // public final Map<String, View> pageContentViewMap = new LinkedHashMap<>();
+  public Map<View, ? extends JSON> viewPropertyListMap = new LinkedHashMap<>();
+  public Map<View, ? extends JSON> removedViewPropertyListMap = new LinkedHashMap<>();
+  private boolean isContainProperty(JSONArray propertyList, String key) {
+    return getProperty(propertyList, key) != null;
+  }
+
+  private JSONObject getProperty(JSONArray propertyList, String key) {
+    return getProperty(propertyList, key, false);
+  }
+  private JSONObject getProperty(JSONArray propertyList, String key, boolean null2Empty) {
+    if (propertyList == null || propertyList.isEmpty() || key == null) {
+      return null;
+    }
+
+    for (int i = 0; i < propertyList.size(); i++) {
+      Object obj = propertyList.get(i);
+      if (obj instanceof JSONObject == false) {
+        continue;
+      }
+
+      JSONObject prop = (JSONObject) obj;
+      String k = prop.getString(KEY_KEY);
+      if (key.equals(k)) {
+        return prop;
+      }
+    }
+
+    if (null2Empty) {
+      JSONObject prop = new JSONObject();
+      prop.put(KEY_KEY, key);
+      propertyList.add(prop);
+      return prop;
+    }
+
+    return null;
+  }
+
+  private boolean canAddType(Set<String> keySet, String type, Set<String> addedKeySet) {
+    if (addedKeySet.contains(type) == false) {
+      addedKeySet.add(type);
+    }
+    return ! keySet.contains(type);
+  }
+
+
+//  public <J extends JSON> void allView2Properties(View view, String pageKey, boolean isGenId, boolean isKeyValue) {
+//    Map<View, J> map = pageViewListMap.get(pageKey);
+////  避免选中 View 后被选中的反而在 parentView 前面，顺序错乱   if (map == null) {
+//    map = new LinkedHashMap<>();
+////      pageViewListMap.put(pageKey, map);
+////    }
+//    allView2Properties(view, map, isGenId, isKeyValue, true);
+//    pageViewListMap.put(pageKey, map);
+//  }
+  public <J extends JSON> J allView2Properties(View view, Map<View, J> viewPropertyListMap, boolean isGenId, boolean isKeyValue, boolean isRoot) {
+    if (view == null) {
+      return null;
+    }
+
+    J properties = null;
+    if (isRoot == false || isKeyValue) {
+       properties = ui2propertyArray(view, viewPropertyListMap, isGenId, isKeyValue);
+    }
+
+    if (view instanceof ViewGroup) {
+      ViewGroup vg = (ViewGroup) view;
+
+      int size = vg instanceof RecyclerView || vg instanceof AbsListView
+              ? Math.min(3, vg.getChildCount()) : vg.getChildCount();
+      JSONArray cl = new JSONArray(size);
+      for (int i = 0; i < size; i++) {
+        Map<View, J> map = new LinkedHashMap<>();
+        J ppty = allView2Properties(vg.getChildAt(i), map, isGenId, isKeyValue, false);
+        cl.add(ppty);
+      }
+
+      if (properties instanceof JSONObject) {
+        ((JSONObject) properties).put("childList", cl);
+      }
+    }
+
+    return properties;
+  }
+
+  private <J extends JSON> J ui2propertyArray(View view, Map<View, J> viewPropertyListMap, boolean isGenId, boolean isKeyValue) {
+    if (view == null) {
+      return null;
+    }
+
+    File dty = directory != null && directory.exists() ? directory : parentDirectory;
+
+    // Activity context = getCurrentActivity();
+
+    boolean isViewGroup = view instanceof ViewGroup;
+    boolean isImage = isViewGroup == false && view instanceof ImageView;
+    boolean isCheck = isViewGroup == false && view instanceof CheckBox;
+    boolean isText = isViewGroup == false && isImage == false && view instanceof TextView;
+    boolean canScroll = canScroll(view);
+
+    JSON properties = viewPropertyListMap == null ? null : viewPropertyListMap.get(view);
+
+    JSONObject propertyMap = properties instanceof JSONObject ? (JSONObject) properties : new JSONObject(true);
+
+    int id = view.getId();
+    ViewParent vp = view.getParent();
+    float parentWidth = vp instanceof View ? ((View) vp).getWidth() : 0;
+    float parentHeight = vp instanceof View ? ((View) vp).getHeight() : 0;
+
+    int index = 0;
+    if (vp != null) {
+      if (isKeyValue) {
+        JSONArray pl = new JSONArray();
+
+        int pid = isGenId ? vp.hashCode() : View.NO_ID;
+        if (vp instanceof View) {
+          pid = ((View) vp).getId();
+          if (isGenId && pid <= 0) {
+            pid = View.generateViewId();
+            ((View) vp).setId(pid);
+          }
+        }
+
+//        if (id <= 0) {
+//          id = View.generateViewId();
+//          view.setId(id);
+//        }
+
+        propertyMap.put(KEY_PARENT_TYPE, vp.getClass().getName());
+        propertyMap.put(KEY_PARENT_ID, pid);
+      }
+
+      propertyMap.put(KEY_INDEX, vp instanceof ViewGroup ? ((ViewGroup) vp).indexOfChild(view) : 0);
+    }
+
+    if (isGenId && id <= 0) {
+      id = View.generateViewId();
+      view.setId(id);
+    }
+
+    ViewGroup.LayoutParams lp = view.getLayoutParams();
+    int width = lp == null ? WRAP_CONTENT : lp.width; // view.getWidth();
+    int height = lp == null ? WRAP_CONTENT : lp.height; // view.getHeight();
+
+    Class<?> type = view.getClass();
+    propertyMap.put(KEY_TYPE, type == null ? null : type.getName());
+
+    boolean focusable = view.isFocusable() || view.isFocusableInTouchMode();
+    propertyMap.put(KEY_FOCUSABLE, focusable);
+
+    String visibility = view.getVisibility() == View.GONE ? KEY_GONE : (view.getVisibility() == View.INVISIBLE ? KEY_HIDDEN : KEY_VISIBLE);
+    propertyMap.put(KEY_VISIBILITY, visibility); // view.getVisibility());
+
+    Drawable bkgd = view.getBackground();
+    propertyMap.put(KEY_BACKGROUND, trySaveImage(bkgd, dty.getAbsolutePath() + "/uiauto_background_" + id + "_time_" + System.currentTimeMillis(), ".png"));
+
+    propertyMap.put(KEY_X, pixel2Obj(view.getX()));
+    propertyMap.put("translationX", pixel2Obj(view.getTranslationX()));
+
+    propertyMap.put(KEY_Y, pixel2Obj(view.getY()));
+    propertyMap.put("translationY", pixel2Obj(view.getTranslationY()));
+
+    propertyMap.put(KEY_Z, pixel2Obj(view.getZ()));
+    propertyMap.put("translationZ", pixel2Obj(view.getTranslationZ()));
+
+    propertyMap.put(KEY_WIDTH, pixel2Obj(width, parentWidth));
+    propertyMap.put(KEY_HEIGHT, pixel2Obj(height, parentHeight));
+
+    if (lp instanceof ViewGroup.MarginLayoutParams) {
+      ViewGroup.MarginLayoutParams mlp = (ViewGroup.MarginLayoutParams) lp;
+
+      if (mlp instanceof LinearLayoutCompat.LayoutParams) {
+        float weight = ((LinearLayoutCompat.LayoutParams) mlp).weight;
+        propertyMap.put(KEY_HEIGHT, weight);
+      }
+
+      propertyMap.put(KEY_MARGIN_LEFT, pixel2Obj(mlp.leftMargin, parentWidth));
+      propertyMap.put(KEY_MARGIN_TOP, pixel2Obj(mlp.topMargin, parentHeight));
+      propertyMap.put(KEY_MARGIN_RIGHT, pixel2Obj(mlp.rightMargin, parentWidth));
+      propertyMap.put(KEY_MARGIN_BOTTOM, pixel2Obj(mlp.bottomMargin, parentWidth));
+    }
+
+    propertyMap.put(KEY_PADDING_LEFT, pixel2Obj(view.getPaddingLeft(), parentWidth));
+    propertyMap.put(KEY_PADDING_TOP, pixel2Obj(view.getPaddingTop(), parentHeight));
+    propertyMap.put(KEY_PADDING_RIGHT, pixel2Obj(view.getPaddingRight(), parentWidth));
+    propertyMap.put(KEY_PADDING_BOTTOM, pixel2Obj(view.getPaddingBottom(), parentHeight));
+
+    if (isText) {
+      TextView tv = (TextView) view;
+
+      propertyMap.put(KEY_GRAVITY, tv.getGravity());
+      propertyMap.put(KEY_TEXT, tv.getText());
+      propertyMap.put(KEY_HINT, tv.getHint());
+      propertyMap.put(KEY_TEXT_SIZE, pixel2Obj(tv.getTextSize()));
+      propertyMap.put(KEY_TEXT_COLOR, color2Obj(tv.getCurrentTextColor()));
+      propertyMap.put(KEY_HINT_COLOR, color2Obj(tv.getCurrentHintTextColor()));
+
+      if (isCheck) {
+        propertyMap.put(KEY_CHECK, ((CheckBox) view).isChecked());
+      }
+    }
+    else if (isImage) {
+      Drawable img = ((ImageView) view).getDrawable();
+      propertyMap.put(KEY_IMAGE, trySaveImage(img, dty.getAbsolutePath() + "/uiauto_image_" + id + "_time_" + System.currentTimeMillis(), ".png"));
+    }
+    else if (view instanceof RelativeLayout) {
+      propertyMap.put(KEY_GRAVITY, ((RelativeLayout) view).getGravity());
+    }
+    else if (view instanceof LinearLayout || canScroll) {
+      if (view instanceof LinearLayout) {
+        propertyMap.put(KEY_GRAVITY, ((LinearLayout) view).getGravity());
+      }
+
+
+      boolean csh = view instanceof LinearLayout
+              ? ((LinearLayout) view).getOrientation() == LinearLayout.HORIZONTAL
+              : canScrollHorizontally(view);
+      propertyMap.put(KEY_GRAVITY, csh ? KEY_HORIZONTAL : KEY_VERTICAL);
+    }
+
+//    viewPropertyListMap.put(view, (J) propertyMap);
+    return (J) propertyMap;
+  }
+
+  private JSONObject pixel2Obj(float pixel) {
+    return pixel2Obj(pixel, 0);
+  }
+  private JSONObject pixel2Obj(float pixel, float parentPixel) {
+    if (pixel == 0) {
+      return null;
+    }
+
+    JSONObject obj = new JSONObject(true);
+    obj.put("px", pixel);
+    obj.put("dp", px2dp(pixel));
+    obj.put("sp", px2sp(pixel));
+    if (parentPixel > 0) {
+      obj.put("parentPercent", pixel/parentPixel);
+    }
+    obj.put("windowPercent", pixel/windowWidth);
+    return obj;
+  }
+
+  private JSONObject color2Obj(int color) {
+    if (color == 0) {
+      return null;
+    }
+
+    JSONObject obj = new JSONObject(true);
+    obj.put("value", color);
+    try {
+      obj.put("string", Color.valueOf(color).getColorSpace().getName());
+    } catch (Throwable e) {
+      e.printStackTrace();
+    }
+    obj.put("idName", getResIdName(color));
+
+    return obj;
+  }
+
+
+  private JSONObject putUIViewId(JSONObject obj, int id) {
+    if (obj == null) {
+      obj = new JSONObject();
+    }
+    obj.put(KEY_VIEW_ID, id);
+    return obj;
+  }
+
+  private JSONObject putUIRef(JSONObject obj, String input, String output) {
+    if (obj == null) {
+      obj = new JSONObject();
+    }
+    obj.put(KEY_INPUT, input);
+    obj.put(KEY_OUTPUT, output);
+    return obj;
+  }
+
+  public static final JSONArray PIXEL_UNIT_LIST;
+  static {
+    PIXEL_UNIT_LIST = new JSONArray(new ArrayList<>(Arrays.asList("dp", "%", "px")));
+  }
+
+  private JSONObject putUIPixel(JSONObject obj, float pixel) {
+    if (obj == null) {
+      obj = new JSONObject();
+    }
+    obj.put(KEY_VALUE, pixel <= 0 ? pixel : px2dp(pixel));
+    obj.put(KEY_VALUE_INPUT_TYPE, InputType.TYPE_NUMBER_FLAG_SIGNED);
+    obj.put(KEY_TYPE, "dp");
+    // obj.put(KEY_TYPE_OPTIONS, new ArrayList<>(PIXEL_UNIT_LIST));
+    return obj;
+  }
+
+  private static final String KEY_VISIBLE = "visible";
+  private static final String KEY_HIDDEN = "hidden";
+  private static final String KEY_GONE = "gone";
+
+  private static final Map<View, JSONArray> VIEW_PARENT_MAP;
+  private static final Map<View, JSONArray> VIEW_CHILDREN_MAP;
+
+  private static final JSONArray IMAGE_LIST;
+  private static final JSONArray COLOR_NAME_LIST;
+  private static final Map<String, Integer> COLOR_NAME_VALUE_MAP;
+  private static final Map<Integer, String> COLOR_VALUE_NAME_MAP;
+  static {
+    VIEW_PARENT_MAP = new LinkedHashMap<>();
+    VIEW_CHILDREN_MAP = new LinkedHashMap<>();
+
+    IMAGE_LIST = new JSONArray();
+
+    COLOR_NAME_VALUE_MAP = new LinkedHashMap<>();
+    COLOR_NAME_VALUE_MAP.put("black", Color.BLACK);
+    COLOR_NAME_VALUE_MAP.put("darkgray", Color.DKGRAY);
+    COLOR_NAME_VALUE_MAP.put("gray", Color.GRAY);
+    COLOR_NAME_VALUE_MAP.put("lightgray", Color.LTGRAY);
+    COLOR_NAME_VALUE_MAP.put("white", Color.WHITE);
+    COLOR_NAME_VALUE_MAP.put("red", Color.RED);
+    COLOR_NAME_VALUE_MAP.put("green", Color.GREEN);
+    COLOR_NAME_VALUE_MAP.put("blue", Color.BLUE);
+    COLOR_NAME_VALUE_MAP.put("yellow", Color.YELLOW);
+    COLOR_NAME_VALUE_MAP.put("orange", 0xFFFFA500);
+    COLOR_NAME_VALUE_MAP.put("cyan", Color.CYAN);
+    COLOR_NAME_VALUE_MAP.put("magenta", Color.MAGENTA);
+    COLOR_NAME_VALUE_MAP.put("aqua", 0xFF00FFFF);
+    COLOR_NAME_VALUE_MAP.put("fuchsia", 0xFFFF00FF);
+    COLOR_NAME_VALUE_MAP.put("darkgrey", Color.DKGRAY);
+    COLOR_NAME_VALUE_MAP.put("grey", Color.GRAY);
+    COLOR_NAME_VALUE_MAP.put("lightgrey", Color.LTGRAY);
+    COLOR_NAME_VALUE_MAP.put("lime", 0xFF00FF00);
+    COLOR_NAME_VALUE_MAP.put("maroon", 0xFF800000);
+    COLOR_NAME_VALUE_MAP.put("navy", 0xFF000080);
+    COLOR_NAME_VALUE_MAP.put("olive", 0xFF808000);
+    COLOR_NAME_VALUE_MAP.put("purple", 0xFF800080);
+    COLOR_NAME_VALUE_MAP.put("silver", 0xFFC0C0C0);
+    COLOR_NAME_VALUE_MAP.put("teal", 0xFF008080);
+
+    COLOR_NAME_LIST = new JSONArray(new ArrayList<>(COLOR_NAME_VALUE_MAP.keySet()));
+
+    COLOR_VALUE_NAME_MAP = new LinkedHashMap<>();
+    for (int i = 0; i < COLOR_NAME_LIST.size(); i++) {
+      String key = COLOR_NAME_LIST.getString(i);
+      COLOR_VALUE_NAME_MAP.put(COLOR_NAME_VALUE_MAP.get(key), key);
+    }
+  }
+
+  private JSONObject putUIColor(JSONObject obj, int color) {
+    String s = COLOR_VALUE_NAME_MAP.get(color);
+    return putUIColor(obj, s != null ? s : Color.valueOf(color).getColorSpace().getName());
+  }
+  private JSONObject putUIColor(JSONObject obj, String color) {
+    if (obj == null) {
+      obj = new JSONObject();
+    }
+    obj.put(KEY_VALUE, color);
+    obj.put(KEY_VALUE_EDITABLE, true);
+    // obj.put(KEY_VALUE_OPTIONS, COLOR_NAME_LIST);
+    return obj;
+  }
+
+  private JSONObject putUIAction(JSONObject obj) {
+    return putUIAction(obj, KEY_JUMP);
+  }
+  private JSONObject putUIAction(JSONObject obj, String action) {
+    if (obj == null) {
+      obj = new JSONObject();
+    }
+    obj.put(KEY_TYPE, action);
+    // obj.put(KEY_TYPE_OPTIONS, ACTION_NAME_LIST);
+    return obj;
+  }
+
+  public static JSONArray GRAVITY_NAME_LIST;
+  public static Map<String, Integer> GRAVITY_NAME_VALUE_MAP;
+  public static Map<Integer, String> GRAVITY_VALUE_NAME_MAP;
+  static {
+    GRAVITY_NAME_VALUE_MAP = new LinkedHashMap<>();
+    GRAVITY_NAME_VALUE_MAP.put("center", Gravity.CENTER);
+    GRAVITY_NAME_VALUE_MAP.put("center_horizontal", Gravity.CENTER_HORIZONTAL);
+    GRAVITY_NAME_VALUE_MAP.put("center_vertical", Gravity.CENTER_VERTICAL);
+    GRAVITY_NAME_VALUE_MAP.put("left", Gravity.LEFT);
+    GRAVITY_NAME_VALUE_MAP.put("top", Gravity.TOP);
+    GRAVITY_NAME_VALUE_MAP.put("right", Gravity.RIGHT);
+    GRAVITY_NAME_VALUE_MAP.put("bottom", Gravity.BOTTOM);
+    GRAVITY_NAME_VALUE_MAP.put("left,top", Gravity.LEFT | Gravity.TOP);
+    GRAVITY_NAME_VALUE_MAP.put("left,bottom", Gravity.LEFT | Gravity.BOTTOM);
+    GRAVITY_NAME_VALUE_MAP.put("right,top", Gravity.RIGHT | Gravity.TOP);
+    GRAVITY_NAME_VALUE_MAP.put("right,bottom", Gravity.RIGHT | Gravity.BOTTOM);
+    GRAVITY_NAME_VALUE_MAP.put("left,center_vertical", Gravity.LEFT | Gravity.CENTER_VERTICAL);
+    GRAVITY_NAME_VALUE_MAP.put("right,center_vertical", Gravity.RIGHT | Gravity.CENTER_VERTICAL);
+    GRAVITY_NAME_VALUE_MAP.put("top,center_horizontal", Gravity.TOP | Gravity.CENTER_HORIZONTAL);
+    GRAVITY_NAME_VALUE_MAP.put("bottom,center_horizontal", Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL);
+
+    GRAVITY_NAME_LIST = new JSONArray(new ArrayList<>(GRAVITY_NAME_VALUE_MAP.keySet()));
+    GRAVITY_VALUE_NAME_MAP = new LinkedHashMap<>();
+    for (int i = 0; i < GRAVITY_NAME_LIST.size(); i++) {
+      String key = GRAVITY_NAME_LIST.getString(i);
+      GRAVITY_VALUE_NAME_MAP.put(GRAVITY_NAME_VALUE_MAP.get(key), key);
+    }
+  }
+
+  private String gravityInt2Str(Integer gravity) {
+    return GRAVITY_VALUE_NAME_MAP.get(gravity);
+  }
+  private int gravityStr2Int(String gravity) {
+    Integer g = GRAVITY_NAME_VALUE_MAP.get(gravity);
+    return g == null ? 0 : g;
+  }
+
+  private JSONObject putUIGravity(JSONObject obj) {
+    return putUIGravity(obj, null);
+  }
+  private JSONObject putUIGravity(JSONObject obj, int gravity) {
+    return putUIGravity(obj, gravityInt2Str(gravity));
+  }
+  private JSONObject putUIGravity(JSONObject obj, String gravity) {
+    if (obj == null) {
+      obj = new JSONObject();
+    }
+    obj.put(KEY_KEY, KEY_GRAVITY);
+    obj.put(KEY_NAME, "Gravity");
+    obj.put(KEY_VALUE, gravity); // gravity == null ? "center" : gravity);
+    // obj.put(KEY_VALUE_OPTIONS, GRAVITY_NAME_LIST);
+    return obj;
+  }
+
+  private static final JSONArray BOOLEAN_LIST;
+  private static final JSONArray VISIBILITY_LIST;
+  private static final JSONArray ACTION_NAME_LIST;
+  public static final JSONArray BACKGROUND_TYPE_LIST;
+  // public static final List<String> COLOR_NAME_LIST;
+  // public static final List<String> PIXEL_UNIT_LIST;
+  public static final JSONArray TEXT_SIZE_UNIT_LIST;
+  public static final JSONArray ORIENTATION_LIST;
+
+  public static final Map<String, JSONArray> KEY_OPTIONS_MAP;
+  static {
+    BOOLEAN_LIST = new JSONArray(new ArrayList<>(Arrays.asList(true, false)));
+    VISIBILITY_LIST = new JSONArray(new ArrayList<>(Arrays.asList(KEY_VISIBLE, KEY_HIDDEN, KEY_GONE)));
+    ACTION_NAME_LIST = new JSONArray(Arrays.asList("", KEY_HTTP, KEY_JUMP, KEY_BACK, KEY_EDIT, KEY_MENU, KEY_OPTION, KEY_DIALOG, KEY_TOAST, KEY_SUBMIT));
+    BACKGROUND_TYPE_LIST = new JSONArray(new ArrayList<>(Arrays.asList(KEY_IMAGE, KEY_COLOR, KEY_URL)));
+    // COLOR_NAME_LIST = new ArrayList<>(Arrays.asList(KEY_IMAGE, KEY_COLOR, KEY_URL));
+    // PIXEL_UNIT_LIST = new ArrayList<>(Arrays.asList(KEY_IMAGE, KEY_COLOR, KEY_URL));
+    TEXT_SIZE_UNIT_LIST = new JSONArray(new ArrayList<>(Arrays.asList("sp", "dp")));
+    ORIENTATION_LIST = new JSONArray(new ArrayList<>(Arrays.asList(KEY_HORIZONTAL, KEY_VERTICAL)));
+
+    KEY_OPTIONS_MAP = new HashMap<>();
+//    KEY_OPTIONS_MAP.put(KEY_TYPE + "_" + KEY_VALUE_OPTIONS, VIEW_NAME_LIST);
+    KEY_OPTIONS_MAP.put(KEY_VISIBILITY + "_" + KEY_VALUE_OPTIONS, VISIBILITY_LIST);
+    KEY_OPTIONS_MAP.put(KEY_FOCUSABLE + "_" + KEY_VALUE_OPTIONS, BOOLEAN_LIST);
+    KEY_OPTIONS_MAP.put(KEY_BACKGROUND + "_" + KEY_TYPE_OPTIONS, BACKGROUND_TYPE_LIST);
+    KEY_OPTIONS_MAP.put(KEY_BACKGROUND + "_" + KEY_IMAGE_OPTIONS, IMAGE_LIST);
+
+    KEY_OPTIONS_MAP.put(KEY_WIDTH + "_" + KEY_TYPE_OPTIONS, PIXEL_UNIT_LIST);
+    KEY_OPTIONS_MAP.put(KEY_HEIGHT + "_" + KEY_TYPE_OPTIONS, PIXEL_UNIT_LIST);
+    KEY_OPTIONS_MAP.put(KEY_X + "_" + KEY_TYPE_OPTIONS, PIXEL_UNIT_LIST);
+    KEY_OPTIONS_MAP.put(KEY_Y + "_" + KEY_TYPE_OPTIONS, PIXEL_UNIT_LIST);
+    KEY_OPTIONS_MAP.put(KEY_Z + "_" + KEY_TYPE_OPTIONS, PIXEL_UNIT_LIST);
+    KEY_OPTIONS_MAP.put(KEY_PADDING_LEFT + "_" + KEY_TYPE_OPTIONS, PIXEL_UNIT_LIST);
+    KEY_OPTIONS_MAP.put(KEY_PADDING_TOP + "_" + KEY_TYPE_OPTIONS, PIXEL_UNIT_LIST);
+    KEY_OPTIONS_MAP.put(KEY_PADDING_RIGHT + "_" + KEY_TYPE_OPTIONS, PIXEL_UNIT_LIST);
+    KEY_OPTIONS_MAP.put(KEY_PADDING_BOTTOM + "_" + KEY_TYPE_OPTIONS, PIXEL_UNIT_LIST);
+    KEY_OPTIONS_MAP.put(KEY_MARGIN_LEFT + "_" + KEY_TYPE_OPTIONS, PIXEL_UNIT_LIST);
+    KEY_OPTIONS_MAP.put(KEY_MARGIN_TOP + "_" + KEY_TYPE_OPTIONS, PIXEL_UNIT_LIST);
+    KEY_OPTIONS_MAP.put(KEY_MARGIN_RIGHT + "_" + KEY_TYPE_OPTIONS, PIXEL_UNIT_LIST);
+    KEY_OPTIONS_MAP.put(KEY_MARGIN_BOTTOM + "_" + KEY_TYPE_OPTIONS, PIXEL_UNIT_LIST);
+
+    KEY_OPTIONS_MAP.put(KEY_TEXT_SIZE + "_" + KEY_TYPE_OPTIONS, TEXT_SIZE_UNIT_LIST);
+
+    KEY_OPTIONS_MAP.put(KEY_COLOR + "_" + KEY_VALUE_OPTIONS, COLOR_NAME_LIST);
+    KEY_OPTIONS_MAP.put(KEY_TEXT_COLOR + "_" + KEY_VALUE_OPTIONS, COLOR_NAME_LIST);
+    KEY_OPTIONS_MAP.put(KEY_HINT_COLOR + "_" + KEY_VALUE_OPTIONS, COLOR_NAME_LIST);
+
+    KEY_OPTIONS_MAP.put(KEY_GRAVITY + "_" + KEY_VALUE_OPTIONS, GRAVITY_NAME_LIST);
+    KEY_OPTIONS_MAP.put(KEY_LAYOUT_GRAVITY + "_" + KEY_VALUE_OPTIONS, GRAVITY_NAME_LIST);
+
+    KEY_OPTIONS_MAP.put(KEY_ORIENTATION + "_" + KEY_VALUE_OPTIONS, ORIENTATION_LIST);
+    KEY_OPTIONS_MAP.put(KEY_IMAGE + "_" + KEY_IMAGE_OPTIONS, IMAGE_LIST);
+
+    KEY_OPTIONS_MAP.put(KEY_ACTION, ACTION_NAME_LIST);
+    KEY_OPTIONS_MAP.put(KEY_TOUCH + "_" + KEY_TYPE_OPTIONS, ACTION_NAME_LIST);
+    KEY_OPTIONS_MAP.put(KEY_CLICK + "_" + KEY_TYPE_OPTIONS, ACTION_NAME_LIST);
+    KEY_OPTIONS_MAP.put(KEY_LONG_CLICK + "_" + KEY_TYPE_OPTIONS, ACTION_NAME_LIST);
+  }
+
+
   /* 非触屏、非按键的 其它事件，例如 Activity.onResume, HTTP Response 等
    */
   public void onEventChange(int position, int type) {
@@ -4335,7 +4959,7 @@ public class UIAutoApp { // extends Application {
   protected ExecutorService executorService = Executors.newSingleThreadExecutor();
 
   public void output(JSONObject out, Node<?> eventNode, Activity activity) {
-    if (eventNode == null) {
+    if (eventNode == null) { // || isReplay == false) {
       return;
     }
 
@@ -4366,7 +4990,23 @@ public class UIAutoApp { // extends Application {
 
           if (window != null && (node.item == null || node.action == MotionEvent.ACTION_DOWN)) {
             // 同步或用协程来上传图片
-//            obj.put("screenshotUrl", screenshot(directory == null || directory.exists() == false ? parentDirectory : directory, window, inputId, toInputId, node.orientation));
+            long start = System.currentTimeMillis();
+            obj.put("screenshotUrl", screenshot(directory == null || directory.exists() == false ? parentDirectory : directory, window, inputId, toInputId, node.orientation));
+            long end = System.currentTimeMillis();
+            Log.d(TAG, "\n\noutput screenshot start = " + start + "; duration = " + (end - start) + "; end = " + start + "\n\n\n");
+
+            start = System.currentTimeMillis();
+
+            JSON properties = null;
+            Map<View, JSONArray> viewPropertyListMap = new LinkedHashMap<>();
+            contentView = getCurrentContentView();
+            synchronized (contentView) {
+               properties = allView2Properties(contentView, viewPropertyListMap, false, true, true);
+            }
+            obj.put("viewList", properties);
+
+            end = System.currentTimeMillis();
+            Log.d(TAG, "\n\noutput allView2Properties start = " + start + "; duration = " + (end - start) + "; end = " + start + "\n\n\n");
           }
         }
         if (outputList == null) {
@@ -4388,14 +5028,25 @@ public class UIAutoApp { // extends Application {
       return null;
     }
 
-    String filePath = null;
     try {
       Bitmap bitmap; // 截屏等记录下来
 
       synchronized (decorView) { // 必须，且只能是 Window，用 Activity 或 decorView 都不行 解决某些界面会报错 cannot find container of decorView
-        decorView.setDrawingCacheEnabled(true);
-        // decorView.buildDrawingCache(true);
         bitmap = decorView.getDrawingCache();
+        if (bitmap == null) {
+          boolean isCache = decorView.isDrawingCacheEnabled();
+          decorView.setDrawingCacheEnabled(true);
+          bitmap = decorView.getDrawingCache();
+
+          if (bitmap == null) {
+            decorView.buildDrawingCache(true);
+            bitmap = decorView.getDrawingCache();
+          }
+
+          if (isCache == false) {
+            decorView.setDrawingCacheEnabled(isCache);
+          }
+        }
         int w = bitmap.getWidth();
         int h = bitmap.getHeight();
 
@@ -4410,59 +5061,113 @@ public class UIAutoApp { // extends Application {
         // matrix.postScale(scale, scale);
         // bitmap = Bitmap.createBitmap(bitmap, 0, 0, nw, nh, matrix, false);
 
-        decorView.destroyDrawingCache();
-        decorView.setDrawingCacheEnabled(false);
+//        decorView.destroyDrawingCache();
+//        decorView.setDrawingCacheEnabled(false);
       }
 
-      // 保存图片
-      File file = File.createTempFile("uiauto_screenshot_inputId_" + Math.abs(inputId) + "_time_" + System.currentTimeMillis(), ".png", directory);
-      filePath = file.getAbsolutePath();
-
-      Bitmap finalBitmap = bitmap;
-      String finalFilePath = filePath;
-      executorService.execute(new Runnable() {
-          @Override
-          public void run() {
-            FileOutputStream fos = null;
-            try {
-              fos = new FileOutputStream(finalFilePath);
-              finalBitmap.compress(Bitmap.CompressFormat.PNG, 100, fos);
-            }
-            catch (Throwable e) {
-              Log.e(TAG, "screenshot 截屏异常：" + e.getMessage());
-            }
-            finally {
-              if (finalBitmap != null) {
-                try {
-                  finalBitmap.recycle();
-                } catch (Throwable e) {
-                  e.printStackTrace();
-                }
-              }
-
-              if (fos != null) {
-                try {
-                  fos.flush();
-                } catch (Throwable e) {
-                  e.printStackTrace();
-                }
-                try {
-                  fos.close();
-                } catch (Throwable e) {
-                  e.printStackTrace();
-                }
-              }
-            }
-          }
-      });
-
-      return file.getAbsolutePath(); // filePath = directory.getName() + "/" + file.getName();  // 返回相对路径
+      return saveImage(bitmap, directory.getAbsolutePath() + "/uiauto_screenshot_inputId_" + Math.abs(inputId) + "_time_" + System.currentTimeMillis(), ".png");
     }
     catch (Throwable e) {
       Log.e(TAG, "screenshot 截屏异常：" + e.getMessage());
     }
 
-    return filePath;
+    return null;
+  }
+
+  public static Bitmap drawableToBitmap(Drawable drawable) {
+    Bitmap bitmap = null;
+
+    if (drawable instanceof BitmapDrawable) {
+      BitmapDrawable bitmapDrawable = (BitmapDrawable) drawable;
+      if(bitmapDrawable.getBitmap() != null) {
+        return bitmapDrawable.getBitmap();
+      }
+    }
+
+    if(drawable.getIntrinsicWidth() <= 0 || drawable.getIntrinsicHeight() <= 0) {
+      bitmap = Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888); // Single color bitmap will be created of 1x1 pixel
+    } else {
+      bitmap = Bitmap.createBitmap(drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight(), Bitmap.Config.ARGB_8888);
+    }
+
+    Canvas canvas = new Canvas(bitmap);
+    drawable.setBounds(0, 0, canvas.getWidth(), canvas.getHeight());
+    drawable.draw(canvas);
+    return bitmap;
+  }
+
+  private String trySaveImage(Drawable drawable, String fileName, String fileSuffix) {
+    try {
+      return saveImage(drawable, fileName, fileSuffix);
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+    return null;
+  }
+
+  private String saveImage(Drawable drawable, String fileName, String fileSuffix) throws Exception {
+    File file = File.createTempFile(fileName, fileSuffix);
+    String filePath = file.getAbsolutePath();
+    executorService.execute(new Runnable() {
+      @Override
+      public void run() {
+        try {
+          saveImage(drawableToBitmap(drawable), filePath);
+        } catch (Throwable e) {
+          e.printStackTrace();
+//          throw new RuntimeException(e);
+        }
+      }
+    });
+
+    return file.getAbsolutePath();
+  }
+
+  private String saveImage(Bitmap bitmap, String fileName, String fileSuffix) throws Exception {
+    // 保存图片
+    File file = File.createTempFile(fileName, fileSuffix);
+    String filePath = file.getAbsolutePath();
+    return saveImage(bitmap, filePath);
+  }
+
+  private String saveImage(Bitmap bitmap, String filePath) throws Exception {
+    executorService.execute(new Runnable() {
+      @Override
+      public void run() {
+        FileOutputStream fos = null;
+        try {
+          fos = new FileOutputStream(filePath);
+          bitmap.compress(Bitmap.CompressFormat.PNG, 100, fos);
+        }
+        catch (Throwable e) {
+          Log.e(TAG, "保存图片异常：" + e.getMessage());
+        }
+        finally {
+          if (bitmap != null) {
+            try {
+              bitmap.recycle();
+            } catch (Throwable e) {
+              e.printStackTrace();
+            }
+          }
+
+          if (fos != null) {
+            try {
+              fos.flush();
+            } catch (Throwable e) {
+              e.printStackTrace();
+            }
+            try {
+              fos.close();
+            } catch (Throwable e) {
+              e.printStackTrace();
+            }
+          }
+        }
+      }
+    });
+
+    return filePath; // filePath = directory.getName() + "/" + file.getName();  // 返回相对路径
   }
 
 
@@ -4508,6 +5213,7 @@ public class UIAutoApp { // extends Application {
     }
 
     JSONObject lastItem = eventList == null || eventList.isEmpty() ? null : eventList.getJSONObject(eventList.size() - 1); ; // currentEventNode == null ? null : currentEventNode.item;
+    boolean isOutput = false;
 
     if (ie instanceof KeyEvent) {
       KeyEvent event = (KeyEvent) ie;
@@ -4670,6 +5376,8 @@ public class UIAutoApp { // extends Application {
         obj.put("textIndex", textIndex);
         obj.put("leftText", leftText);
         obj.put("rightText", rightText);
+
+        isOutput = true;
       }
       else if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
         onViewReachParentBound(currentScrollableView);
@@ -4787,6 +5495,11 @@ public class UIAutoApp { // extends Application {
     }
 
     obj.put("eventTime", eventTime);
+
+    if (isOutput) { // FIXME 太卡！干脆只在回放时导出，以第一次回放为准
+      Node<InputEvent> node = obj2EventNode(obj, currentEventNode, step);
+      output(null, node, activity);
+    }
 
     return addEvent(obj, type != InputUtil.EVENT_TYPE_TOUCH || action != MotionEvent.ACTION_MOVE);
   }
