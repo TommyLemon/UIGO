@@ -145,6 +145,7 @@ import java.util.concurrent.Executors;
 
 import unitauto.NotNull;
 import unitauto.apk.UnitAutoApp;
+import zuo.biao.apijson.JSONRequest;
 
 
 /**Application
@@ -210,6 +211,7 @@ public class UIAutoApp { // extends Application {
   private Map<String, List<Node<InputEvent>>> waitMap = new LinkedHashMap<>();
   private Node<InputEvent> lastWaitNode = null;
 
+  private boolean isRunning = false;
   private boolean isReplay = false;
   @SuppressLint("HandlerLeak")
   private final Handler handler = new Handler() {
@@ -257,6 +259,8 @@ public class UIAutoApp { // extends Application {
         mainHandler.removeCallbacks(timeoutRunnable);
 
         if (isOver) {
+          isRunning = false;
+
           tvControllerPlay.setText(R.string.replay);
           showCoverAndSplit(true, false);
           isSplitShowing = false;
@@ -626,6 +630,10 @@ public class UIAutoApp { // extends Application {
     addTextChangedListener(decorView);
 
     contentView = decorView.findViewById(android.R.id.content);
+    if (contentView == null && decorView instanceof ViewGroup) {
+      contentView = ((ViewGroup) decorView).getChildAt(0);
+    }
+
     View dlgView = contentView == null ? decorView : contentView;
     if (dialog != null && dlgView != null) {
       View dv = dlgView instanceof ViewGroup ? ((ViewGroup) dlgView).getChildAt(0) : null; // contentView.findViewById(android.R.id.content);
@@ -1325,6 +1333,14 @@ public class UIAutoApp { // extends Application {
         }
         setCurrentPopupWindow(popupWindowMap.get(activity), viewMap.get(activity), null, activity, null);
         onUIEvent(InputUtil.UI_ACTION_RESUME, activity, activity);
+
+        viewPropertyListMap = pageViewListMap.get(activity);
+        if (viewPropertyListMap == null) {
+          viewPropertyListMap = new LinkedHashMap<>();
+        }
+        if (viewPropertyListMap.isEmpty()) {
+          allView2Properties(getCurrentContentView(), viewPropertyListMap);
+        }
       }
 
       @Override
@@ -1362,6 +1378,8 @@ public class UIAutoApp { // extends Application {
         if (activityList == null || activityList.isEmpty()) { // Application.onTerminate 只在模拟器调用，真机不调用
           saveAllBallPositions();
         }
+
+        pageViewListMap.remove(activity);
       }
 
     });
@@ -2741,6 +2759,8 @@ public class UIAutoApp { // extends Application {
       vFloatBall.setOnLongClickListener(new View.OnLongClickListener() {
         @Override
         public boolean onLongClick(View v) {
+          isRunning = false;
+
           double dx = lastBallUpX - lastBallDownX; // lastUpEvent == null ? 0 : lastUpEvent.getX() - (lastDownEvent == null ? lastUpEvent.getRawX() : lastDownEvent.getX());
           double dy = lastBallUpY - lastBallDownY; // lastUpEvent == null ? 0 : lastUpEvent.getY() - (lastDownEvent == null ? lastUpEvent.getRawY() : lastDownEvent.getY());
 //          lastDownEvent = null;
@@ -2753,6 +2773,9 @@ public class UIAutoApp { // extends Application {
           }
 
           saveAllBallPositions();
+
+          pageViewListMap = new LinkedHashMap<>();
+          viewPropertyListMap = new LinkedHashMap<>();
 
           dismiss();
 
@@ -3640,6 +3663,7 @@ public class UIAutoApp { // extends Application {
     replay(0);
   }
   public void replay(int step) {
+    isRunning = true;
     isReplay = true;
 //        List<InputEvent> list = new LinkedList<>();
     if (step <= 0 || step >= allStep || currentEventNode == null) {
@@ -4182,8 +4206,7 @@ public class UIAutoApp { // extends Application {
   public static final String KEY_OUTPUT = "output";
   public static final String KEY_REQUEST = "request";
   public static final String KEY_RESPONSE = "response";
-  // public static final String KEY_INPUT_AT = "input@";
-  // public static final String KEY_OUTPUT_AT = "output@";
+
   public static final String KEY_TYPE = "type";
   public static final String KEY_PARENT = "parent";
   public static final String KEY_PARENT_TYPE = "parentType";
@@ -4191,6 +4214,7 @@ public class UIAutoApp { // extends Application {
   public static final String KEY_CHILDREN = "children";
   public static final String KEY_ACTION = "action";
   public static final String KEY_VIEW_ID = "viewId";
+  public static final String KEY_VIEW_ID_NAME = "viewIdName";
   public static final String KEY_KEY = "key";
   public static final String KEY_FOCUSABLE = "focusable";
   public static final String KEY_TICK = "tick";
@@ -4200,31 +4224,6 @@ public class UIAutoApp { // extends Application {
   public static final String KEY_TIME = "time";
   public static final String KEY_STATE = "state";
   public static final String KEY_DETAIL = "detail";
-  public static final String KEY_VALUE_VISIBLE = "valueVisible";
-  public static final String KEY_TYPE_VISIBLE = "typeVisible";
-  public static final String KEY_IMAGE_VISIBLE = "imageVisible";
-  public static final String KEY_VALUE_INPUT_TYPE = "valueInputType";
-  public static final String KEY_TYPE_INPUT_TYPE = "typeInputType";
-  public static final String KEY_VALUE_OPTIONS = "valueOptions";
-  public static final String KEY_TYPE_OPTIONS = "typeOptions";
-  public static final String KEY_IMAGE_OPTIONS = "imageOptions";
-  public static final String KEY_VALUE_EDITABLE = "valueEditable";
-  public static final String KEY_TYPE_EDITABLE = "typeEditable";
-  public static final String KEY_IMAGE_EDITABLE = "imageEditable";
-
-  public static final String KEY_SHOW = "@show"; // 是否必要？
-  public static final String KEY_HIDE = "@hide";
-  public static final String KEY_TOUCH = "touch"; // @touch
-  public static final String KEY_CLICK = "click"; // @click ?
-  public static final String KEY_LONG_CLICK = "longClick";
-  public static final String KEY_NEXT = "next"; // 在某个事件后的处理
-
-  public static final String KEY_HTTP = "http";
-  public static final String KEY_BACK = "back";
-  public static final String KEY_EDIT = "edit";
-  public static final String KEY_JUMP = "jump";
-  public static final String KEY_MENU = "menu";
-  public static final String KEY_OPTION = "option";
 
   public static final String KEY_DIALOG = "dialog";
   public static final String KEY_TOAST = "toast";
@@ -4234,8 +4233,11 @@ public class UIAutoApp { // extends Application {
   public static final String KEY_ID = "id";
   public static final String KEY_VISIBILITY = "visibility";
   public static final String KEY_X = "x";
+  public static final String KEY_TX = "translationX";
   public static final String KEY_Y = "y";
+  public static final String KEY_TY = "translationY";
   public static final String KEY_Z = "z";
+  public static final String KEY_TZ = "translationZ";
   public static final String KEY_WEIGHT = "weight";
   public static final String KEY_WIDTH = "width";
   public static final String KEY_HEIGHT = "height";
@@ -4250,10 +4252,10 @@ public class UIAutoApp { // extends Application {
   public static final String KEY_GRAVITY = "gravity";
   public static final String KEY_LAYOUT_GRAVITY = "layoutGravity";
   public static final String KEY_BACKGROUND = "background";
-  public static final String KEY_FOREGROUND = "foreground";
-  public static final String KEY_ORIENTATION = "orientation";
   public static final String KEY_HORIZONTAL = "horizontal";
   public static final String KEY_VERTICAL = "vertical";
+  public static final String KEY_ORIENTATION = "orientation";
+
   public static final String KEY_IMAGE = "image";
   public static final String KEY_URL = "url";
   public static final String KEY_TEXT = "text";
@@ -4265,87 +4267,15 @@ public class UIAutoApp { // extends Application {
   public static final String KEY_TEXT_COLOR = "textColor";
   public static final String KEY_HINT_COLOR = "hintTextColor";
 
+  public Map<Window.Callback, Map<View, JSONObject>> pageViewListMap = new LinkedHashMap<>();
+  public Map<View, JSONObject> viewPropertyListMap = new LinkedHashMap<>();
 
-  long activityId;
-  String pageKey;
-  String pageName;
-
-  boolean selectedEditable = false;
-  boolean isSelectType = false;
-  String selectedKey = null;
-  Object selectedValue = null;
-  Node<JSONObject> selectedAction = null;
-  View selectedPropertyView = null;
-  JSONObject selectedPropertyItem = null;
-  JSONArray optionList = new JSONArray();
-
-  JSONArray propertyList = new JSONArray();
-
-  public final Map<String, Map<View, ? extends JSON>> pageViewListMap = new LinkedHashMap<>();
-  // public final Map<String, View> pageContentViewMap = new LinkedHashMap<>();
-  public Map<View, ? extends JSON> viewPropertyListMap = new LinkedHashMap<>();
-  public Map<View, ? extends JSON> removedViewPropertyListMap = new LinkedHashMap<>();
-  private boolean isContainProperty(JSONArray propertyList, String key) {
-    return getProperty(propertyList, key) != null;
-  }
-
-  private JSONObject getProperty(JSONArray propertyList, String key) {
-    return getProperty(propertyList, key, false);
-  }
-  private JSONObject getProperty(JSONArray propertyList, String key, boolean null2Empty) {
-    if (propertyList == null || propertyList.isEmpty() || key == null) {
-      return null;
-    }
-
-    for (int i = 0; i < propertyList.size(); i++) {
-      Object obj = propertyList.get(i);
-      if (obj instanceof JSONObject == false) {
-        continue;
-      }
-
-      JSONObject prop = (JSONObject) obj;
-      String k = prop.getString(KEY_KEY);
-      if (key.equals(k)) {
-        return prop;
-      }
-    }
-
-    if (null2Empty) {
-      JSONObject prop = new JSONObject();
-      prop.put(KEY_KEY, key);
-      propertyList.add(prop);
-      return prop;
-    }
-
-    return null;
-  }
-
-  private boolean canAddType(Set<String> keySet, String type, Set<String> addedKeySet) {
-    if (addedKeySet.contains(type) == false) {
-      addedKeySet.add(type);
-    }
-    return ! keySet.contains(type);
-  }
-
-
-//  public <J extends JSON> void allView2Properties(View view, String pageKey, boolean isGenId, boolean isKeyValue) {
-//    Map<View, J> map = pageViewListMap.get(pageKey);
-////  避免选中 View 后被选中的反而在 parentView 前面，顺序错乱   if (map == null) {
-//    map = new LinkedHashMap<>();
-////      pageViewListMap.put(pageKey, map);
-////    }
-//    allView2Properties(view, map, isGenId, isKeyValue, true);
-//    pageViewListMap.put(pageKey, map);
-//  }
-  public <J extends JSON> J allView2Properties(View view, Map<View, J> viewPropertyListMap, boolean isGenId, boolean isKeyValue, boolean isRoot) {
+  public JSONObject allView2Properties(View view, Map<View, JSONObject> viewPropertyListMap) {
     if (view == null) {
       return null;
     }
 
-    J properties = null;
-    if (isRoot == false || isKeyValue) {
-       properties = ui2propertyArray(view, viewPropertyListMap, isGenId, isKeyValue);
-    }
+    JSONObject properties = ui2propertyArray(view, viewPropertyListMap);
 
     if (view instanceof ViewGroup) {
       ViewGroup vg = (ViewGroup) view;
@@ -4354,27 +4284,25 @@ public class UIAutoApp { // extends Application {
               ? Math.min(3, vg.getChildCount()) : vg.getChildCount();
       JSONArray cl = new JSONArray(size);
       for (int i = 0; i < size; i++) {
-        Map<View, J> map = new LinkedHashMap<>();
-        J ppty = allView2Properties(vg.getChildAt(i), map, isGenId, isKeyValue, false);
+        JSONObject ppty = allView2Properties(vg.getChildAt(i), viewPropertyListMap);
         cl.add(ppty);
       }
 
-      if (properties instanceof JSONObject) {
-        ((JSONObject) properties).put("childList", cl);
+      if (properties == null) {
+        properties = new JSONObject(true);
       }
+      properties.put("childList", cl);
     }
 
     return properties;
   }
 
-  private <J extends JSON> J ui2propertyArray(View view, Map<View, J> viewPropertyListMap, boolean isGenId, boolean isKeyValue) {
+  private JSONObject ui2propertyArray(View view, Map<View, JSONObject> viewPropertyListMap) {
     if (view == null) {
       return null;
     }
 
     File dty = directory != null && directory.exists() ? directory : parentDirectory;
-
-    // Activity context = getCurrentActivity();
 
     boolean isViewGroup = view instanceof ViewGroup;
     boolean isImage = isViewGroup == false && view instanceof ImageView;
@@ -4382,128 +4310,173 @@ public class UIAutoApp { // extends Application {
     boolean isText = isViewGroup == false && isImage == false && view instanceof TextView;
     boolean canScroll = canScroll(view);
 
-    JSON properties = viewPropertyListMap == null ? null : viewPropertyListMap.get(view);
-
-    JSONObject propertyMap = properties instanceof JSONObject ? (JSONObject) properties : new JSONObject(true);
+    JSONObject propertyMap = viewPropertyListMap == null ? null : viewPropertyListMap.get(view);
+    boolean noCache = propertyMap == null;
+    if (noCache) {
+      propertyMap = new JSONObject(true);
+    }
 
     int id = view.getId();
+
     ViewParent vp = view.getParent();
     float parentWidth = vp instanceof View ? ((View) vp).getWidth() : 0;
     float parentHeight = vp instanceof View ? ((View) vp).getHeight() : 0;
-
-    int index = 0;
-    if (vp != null) {
-      if (isKeyValue) {
-        JSONArray pl = new JSONArray();
-
-        int pid = isGenId ? vp.hashCode() : View.NO_ID;
-        if (vp instanceof View) {
-          pid = ((View) vp).getId();
-          if (isGenId && pid <= 0) {
-            pid = View.generateViewId();
-            ((View) vp).setId(pid);
-          }
-        }
-
-//        if (id <= 0) {
-//          id = View.generateViewId();
-//          view.setId(id);
-//        }
-
-        propertyMap.put(KEY_PARENT_TYPE, vp.getClass().getName());
-        propertyMap.put(KEY_PARENT_ID, pid);
-      }
-
-      propertyMap.put(KEY_INDEX, vp instanceof ViewGroup ? ((ViewGroup) vp).indexOfChild(view) : 0);
-    }
-
-    if (isGenId && id <= 0) {
-      id = View.generateViewId();
-      view.setId(id);
-    }
 
     ViewGroup.LayoutParams lp = view.getLayoutParams();
     int width = lp == null ? WRAP_CONTENT : lp.width; // view.getWidth();
     int height = lp == null ? WRAP_CONTENT : lp.height; // view.getHeight();
 
-    Class<?> type = view.getClass();
-    propertyMap.put(KEY_TYPE, type == null ? null : type.getName());
+    if (noCache) {
+      propertyMap.put(KEY_TYPE, view.getClass().getName());
+      propertyMap.put(KEY_VIEW_ID, id);
+      propertyMap.put(KEY_VIEW_ID_NAME, getResIdName(id));
+    }
 
     boolean focusable = view.isFocusable() || view.isFocusableInTouchMode();
-    propertyMap.put(KEY_FOCUSABLE, focusable);
+    if (focusable) {
+      propertyMap.put(KEY_FOCUSABLE, focusable);
+    }
 
     String visibility = view.getVisibility() == View.GONE ? KEY_GONE : (view.getVisibility() == View.INVISIBLE ? KEY_HIDDEN : KEY_VISIBLE);
-    propertyMap.put(KEY_VISIBILITY, visibility); // view.getVisibility());
+    if (view.getVisibility() != View.VISIBLE) {
+      propertyMap.put(KEY_VISIBILITY, visibility);
+    }
 
     Drawable bkgd = view.getBackground();
-    propertyMap.put(KEY_BACKGROUND, trySaveImage(bkgd, dty.getAbsolutePath() + "/uiauto_background_" + id + "_time_" + System.currentTimeMillis(), ".png"));
+    if (bkgd != null) {
+      propertyMap.put(KEY_BACKGROUND, trySaveImage(bkgd, dty.getAbsolutePath() + "/uiauto_background_" + id + "_time_" + System.currentTimeMillis(), ".png"));
+    }
 
-    propertyMap.put(KEY_X, pixel2Obj(view.getX()));
-    propertyMap.put("translationX", pixel2Obj(view.getTranslationX()));
+    float x = view.getX();
+    if (x != 0) {
+      propertyMap.put(KEY_X, pixel2Obj(x));
+    }
+    float tx = view.getTranslationX();
+    if (tx != 0) {
+      propertyMap.put(KEY_TX, pixel2Obj(tx));
+    }
 
-    propertyMap.put(KEY_Y, pixel2Obj(view.getY()));
-    propertyMap.put("translationY", pixel2Obj(view.getTranslationY()));
+    float y = view.getY();
+    if (y != 0) {
+      propertyMap.put(KEY_Y, pixel2Obj(y));
+    }
+    float ty = view.getTranslationY();
+    if (ty != 0) {
+      propertyMap.put(KEY_TY, pixel2Obj(ty));
+    }
 
-    propertyMap.put(KEY_Z, pixel2Obj(view.getZ()));
-    propertyMap.put("translationZ", pixel2Obj(view.getTranslationZ()));
+    float z = view.getY();
+    if (z != 0) {
+      propertyMap.put(KEY_Z, pixel2Obj(z));
+    }
+    float tz = view.getTranslationZ();
+    if (tz != 0) {
+      propertyMap.put(KEY_TZ, pixel2Obj(tz));
+    }
 
-    propertyMap.put(KEY_WIDTH, pixel2Obj(width, parentWidth));
-    propertyMap.put(KEY_HEIGHT, pixel2Obj(height, parentHeight));
+    if (width != 0) {
+      propertyMap.put(KEY_WIDTH, width < 0 ? new JSONRequest("px", width) : pixel2Obj(width, parentWidth));
+    }
+    if (height != 0) {
+      propertyMap.put(KEY_HEIGHT, height < 0 ? new JSONRequest("px", height) : pixel2Obj(height, parentHeight));
+    }
 
-    if (lp instanceof ViewGroup.MarginLayoutParams) {
+    if (noCache && lp instanceof ViewGroup.MarginLayoutParams) {
       ViewGroup.MarginLayoutParams mlp = (ViewGroup.MarginLayoutParams) lp;
 
       if (mlp instanceof LinearLayoutCompat.LayoutParams) {
         float weight = ((LinearLayoutCompat.LayoutParams) mlp).weight;
-        propertyMap.put(KEY_HEIGHT, weight);
+        if (weight != 0) {
+          propertyMap.put(KEY_WEIGHT, weight);
+        }
       }
 
-      propertyMap.put(KEY_MARGIN_LEFT, pixel2Obj(mlp.leftMargin, parentWidth));
-      propertyMap.put(KEY_MARGIN_TOP, pixel2Obj(mlp.topMargin, parentHeight));
-      propertyMap.put(KEY_MARGIN_RIGHT, pixel2Obj(mlp.rightMargin, parentWidth));
-      propertyMap.put(KEY_MARGIN_BOTTOM, pixel2Obj(mlp.bottomMargin, parentWidth));
+      if (mlp.leftMargin != 0) {
+        propertyMap.put(KEY_MARGIN_LEFT, pixel2Obj(mlp.leftMargin, parentWidth));
+      }
+      if (mlp.rightMargin != 0) {
+        propertyMap.put(KEY_MARGIN_RIGHT, pixel2Obj(mlp.rightMargin, parentWidth));
+      }
+      if (mlp.topMargin != 0) {
+        propertyMap.put(KEY_MARGIN_TOP, pixel2Obj(mlp.topMargin, parentHeight));
+      }
+      if (mlp.bottomMargin != 0) {
+        propertyMap.put(KEY_MARGIN_BOTTOM, pixel2Obj(mlp.bottomMargin, parentHeight));
+      }
     }
 
-    propertyMap.put(KEY_PADDING_LEFT, pixel2Obj(view.getPaddingLeft(), parentWidth));
-    propertyMap.put(KEY_PADDING_TOP, pixel2Obj(view.getPaddingTop(), parentHeight));
-    propertyMap.put(KEY_PADDING_RIGHT, pixel2Obj(view.getPaddingRight(), parentWidth));
-    propertyMap.put(KEY_PADDING_BOTTOM, pixel2Obj(view.getPaddingBottom(), parentHeight));
+    int pl = noCache ? view.getPaddingLeft() : 0;
+    if (pl != 0) {
+      propertyMap.put(KEY_PADDING_LEFT, pixel2Obj(pl, parentWidth));
+    }
+    int pr = noCache ? view.getPaddingRight() : 0;
+    if (pr != 0) {
+      propertyMap.put(KEY_PADDING_RIGHT, pixel2Obj(pr, parentWidth));
+    }
+    int pt = noCache ? view.getPaddingTop() : 0;
+    if (pt != 0) {
+      propertyMap.put(KEY_PADDING_TOP, pixel2Obj(pt, parentHeight));
+    }
+    int pb = noCache ? view.getPaddingBottom() : 0;
+    if (pb != 0) {
+      propertyMap.put(KEY_PADDING_BOTTOM, pixel2Obj(pb, parentHeight));
+    }
 
     if (isText) {
       TextView tv = (TextView) view;
 
-      propertyMap.put(KEY_GRAVITY, tv.getGravity());
-      propertyMap.put(KEY_TEXT, tv.getText());
-      propertyMap.put(KEY_HINT, tv.getHint());
-      propertyMap.put(KEY_TEXT_SIZE, pixel2Obj(tv.getTextSize()));
-      propertyMap.put(KEY_TEXT_COLOR, color2Obj(tv.getCurrentTextColor()));
-      propertyMap.put(KEY_HINT_COLOR, color2Obj(tv.getCurrentHintTextColor()));
+      if (noCache && tv.getGravity() != 0) {
+        propertyMap.put(KEY_GRAVITY, tv.getGravity());
+      }
+      if (tv.getText() != null) {
+        propertyMap.put(KEY_TEXT, tv.getText());
+      }
+      if (noCache && tv.getHint() != null) {
+        propertyMap.put(KEY_HINT, tv.getHint());
+      }
 
-      if (isCheck) {
-        propertyMap.put(KEY_CHECK, ((CheckBox) view).isChecked());
+      if (noCache) {
+        propertyMap.put(KEY_TEXT_SIZE, pixel2Obj(tv.getTextSize()));
+      }
+
+      if (tv.getCurrentTextColor() != 0) {
+        propertyMap.put(KEY_TEXT_COLOR, color2Obj(tv.getCurrentTextColor()));
+      }
+      if (noCache && tv.getCurrentHintTextColor() != 0) {
+        propertyMap.put(KEY_HINT_COLOR, color2Obj(tv.getCurrentHintTextColor()));
+      }
+
+      if (isCheck && ((CheckBox) view).isChecked()) {
+        propertyMap.put(KEY_CHECK, true);
       }
     }
     else if (isImage) {
       Drawable img = ((ImageView) view).getDrawable();
-      propertyMap.put(KEY_IMAGE, trySaveImage(img, dty.getAbsolutePath() + "/uiauto_image_" + id + "_time_" + System.currentTimeMillis(), ".png"));
+      if (img != null) {
+        propertyMap.put(KEY_IMAGE, trySaveImage(img, dty.getAbsolutePath() + "/uiauto_image_" + id + "_time_" + System.currentTimeMillis(), ".png"));
+      }
     }
-    else if (view instanceof RelativeLayout) {
-      propertyMap.put(KEY_GRAVITY, ((RelativeLayout) view).getGravity());
+    else if (noCache && view instanceof RelativeLayout) {
+      if (((RelativeLayout) view).getGravity() != 0) {
+        propertyMap.put(KEY_GRAVITY, ((RelativeLayout) view).getGravity());
+      }
     }
-    else if (view instanceof LinearLayout || canScroll) {
-      if (view instanceof LinearLayout) {
+    else if (noCache && (canScroll || view instanceof LinearLayout)) {
+      boolean isLl = view instanceof LinearLayout;
+      if (isLl && ((LinearLayout) view).getGravity() != 0) {
         propertyMap.put(KEY_GRAVITY, ((LinearLayout) view).getGravity());
       }
 
-
-      boolean csh = view instanceof LinearLayout
+      boolean csh = isLl
               ? ((LinearLayout) view).getOrientation() == LinearLayout.HORIZONTAL
               : canScrollHorizontally(view);
-      propertyMap.put(KEY_GRAVITY, csh ? KEY_HORIZONTAL : KEY_VERTICAL);
+      propertyMap.put(KEY_ORIENTATION, csh ? KEY_HORIZONTAL : KEY_VERTICAL);
     }
 
-//    viewPropertyListMap.put(view, (J) propertyMap);
-    return (J) propertyMap;
+    if (viewPropertyListMap != null) {
+      viewPropertyListMap.put(view, propertyMap);
+    }
+    return propertyMap;
   }
 
   private JSONObject pixel2Obj(float pixel) {
@@ -4543,56 +4516,14 @@ public class UIAutoApp { // extends Application {
   }
 
 
-  private JSONObject putUIViewId(JSONObject obj, int id) {
-    if (obj == null) {
-      obj = new JSONObject();
-    }
-    obj.put(KEY_VIEW_ID, id);
-    return obj;
-  }
-
-  private JSONObject putUIRef(JSONObject obj, String input, String output) {
-    if (obj == null) {
-      obj = new JSONObject();
-    }
-    obj.put(KEY_INPUT, input);
-    obj.put(KEY_OUTPUT, output);
-    return obj;
-  }
-
-  public static final JSONArray PIXEL_UNIT_LIST;
-  static {
-    PIXEL_UNIT_LIST = new JSONArray(new ArrayList<>(Arrays.asList("dp", "%", "px")));
-  }
-
-  private JSONObject putUIPixel(JSONObject obj, float pixel) {
-    if (obj == null) {
-      obj = new JSONObject();
-    }
-    obj.put(KEY_VALUE, pixel <= 0 ? pixel : px2dp(pixel));
-    obj.put(KEY_VALUE_INPUT_TYPE, InputType.TYPE_NUMBER_FLAG_SIGNED);
-    obj.put(KEY_TYPE, "dp");
-    // obj.put(KEY_TYPE_OPTIONS, new ArrayList<>(PIXEL_UNIT_LIST));
-    return obj;
-  }
-
   private static final String KEY_VISIBLE = "visible";
   private static final String KEY_HIDDEN = "hidden";
   private static final String KEY_GONE = "gone";
 
-  private static final Map<View, JSONArray> VIEW_PARENT_MAP;
-  private static final Map<View, JSONArray> VIEW_CHILDREN_MAP;
-
-  private static final JSONArray IMAGE_LIST;
   private static final JSONArray COLOR_NAME_LIST;
   private static final Map<String, Integer> COLOR_NAME_VALUE_MAP;
   private static final Map<Integer, String> COLOR_VALUE_NAME_MAP;
   static {
-    VIEW_PARENT_MAP = new LinkedHashMap<>();
-    VIEW_CHILDREN_MAP = new LinkedHashMap<>();
-
-    IMAGE_LIST = new JSONArray();
-
     COLOR_NAME_VALUE_MAP = new LinkedHashMap<>();
     COLOR_NAME_VALUE_MAP.put("black", Color.BLACK);
     COLOR_NAME_VALUE_MAP.put("darkgray", Color.DKGRAY);
@@ -4626,32 +4557,6 @@ public class UIAutoApp { // extends Application {
       String key = COLOR_NAME_LIST.getString(i);
       COLOR_VALUE_NAME_MAP.put(COLOR_NAME_VALUE_MAP.get(key), key);
     }
-  }
-
-  private JSONObject putUIColor(JSONObject obj, int color) {
-    String s = COLOR_VALUE_NAME_MAP.get(color);
-    return putUIColor(obj, s != null ? s : Color.valueOf(color).getColorSpace().getName());
-  }
-  private JSONObject putUIColor(JSONObject obj, String color) {
-    if (obj == null) {
-      obj = new JSONObject();
-    }
-    obj.put(KEY_VALUE, color);
-    obj.put(KEY_VALUE_EDITABLE, true);
-    // obj.put(KEY_VALUE_OPTIONS, COLOR_NAME_LIST);
-    return obj;
-  }
-
-  private JSONObject putUIAction(JSONObject obj) {
-    return putUIAction(obj, KEY_JUMP);
-  }
-  private JSONObject putUIAction(JSONObject obj, String action) {
-    if (obj == null) {
-      obj = new JSONObject();
-    }
-    obj.put(KEY_TYPE, action);
-    // obj.put(KEY_TYPE_OPTIONS, ACTION_NAME_LIST);
-    return obj;
   }
 
   public static JSONArray GRAVITY_NAME_LIST;
@@ -4707,66 +4612,6 @@ public class UIAutoApp { // extends Application {
     // obj.put(KEY_VALUE_OPTIONS, GRAVITY_NAME_LIST);
     return obj;
   }
-
-  private static final JSONArray BOOLEAN_LIST;
-  private static final JSONArray VISIBILITY_LIST;
-  private static final JSONArray ACTION_NAME_LIST;
-  public static final JSONArray BACKGROUND_TYPE_LIST;
-  // public static final List<String> COLOR_NAME_LIST;
-  // public static final List<String> PIXEL_UNIT_LIST;
-  public static final JSONArray TEXT_SIZE_UNIT_LIST;
-  public static final JSONArray ORIENTATION_LIST;
-
-  public static final Map<String, JSONArray> KEY_OPTIONS_MAP;
-  static {
-    BOOLEAN_LIST = new JSONArray(new ArrayList<>(Arrays.asList(true, false)));
-    VISIBILITY_LIST = new JSONArray(new ArrayList<>(Arrays.asList(KEY_VISIBLE, KEY_HIDDEN, KEY_GONE)));
-    ACTION_NAME_LIST = new JSONArray(Arrays.asList("", KEY_HTTP, KEY_JUMP, KEY_BACK, KEY_EDIT, KEY_MENU, KEY_OPTION, KEY_DIALOG, KEY_TOAST, KEY_SUBMIT));
-    BACKGROUND_TYPE_LIST = new JSONArray(new ArrayList<>(Arrays.asList(KEY_IMAGE, KEY_COLOR, KEY_URL)));
-    // COLOR_NAME_LIST = new ArrayList<>(Arrays.asList(KEY_IMAGE, KEY_COLOR, KEY_URL));
-    // PIXEL_UNIT_LIST = new ArrayList<>(Arrays.asList(KEY_IMAGE, KEY_COLOR, KEY_URL));
-    TEXT_SIZE_UNIT_LIST = new JSONArray(new ArrayList<>(Arrays.asList("sp", "dp")));
-    ORIENTATION_LIST = new JSONArray(new ArrayList<>(Arrays.asList(KEY_HORIZONTAL, KEY_VERTICAL)));
-
-    KEY_OPTIONS_MAP = new HashMap<>();
-//    KEY_OPTIONS_MAP.put(KEY_TYPE + "_" + KEY_VALUE_OPTIONS, VIEW_NAME_LIST);
-    KEY_OPTIONS_MAP.put(KEY_VISIBILITY + "_" + KEY_VALUE_OPTIONS, VISIBILITY_LIST);
-    KEY_OPTIONS_MAP.put(KEY_FOCUSABLE + "_" + KEY_VALUE_OPTIONS, BOOLEAN_LIST);
-    KEY_OPTIONS_MAP.put(KEY_BACKGROUND + "_" + KEY_TYPE_OPTIONS, BACKGROUND_TYPE_LIST);
-    KEY_OPTIONS_MAP.put(KEY_BACKGROUND + "_" + KEY_IMAGE_OPTIONS, IMAGE_LIST);
-
-    KEY_OPTIONS_MAP.put(KEY_WIDTH + "_" + KEY_TYPE_OPTIONS, PIXEL_UNIT_LIST);
-    KEY_OPTIONS_MAP.put(KEY_HEIGHT + "_" + KEY_TYPE_OPTIONS, PIXEL_UNIT_LIST);
-    KEY_OPTIONS_MAP.put(KEY_X + "_" + KEY_TYPE_OPTIONS, PIXEL_UNIT_LIST);
-    KEY_OPTIONS_MAP.put(KEY_Y + "_" + KEY_TYPE_OPTIONS, PIXEL_UNIT_LIST);
-    KEY_OPTIONS_MAP.put(KEY_Z + "_" + KEY_TYPE_OPTIONS, PIXEL_UNIT_LIST);
-    KEY_OPTIONS_MAP.put(KEY_PADDING_LEFT + "_" + KEY_TYPE_OPTIONS, PIXEL_UNIT_LIST);
-    KEY_OPTIONS_MAP.put(KEY_PADDING_TOP + "_" + KEY_TYPE_OPTIONS, PIXEL_UNIT_LIST);
-    KEY_OPTIONS_MAP.put(KEY_PADDING_RIGHT + "_" + KEY_TYPE_OPTIONS, PIXEL_UNIT_LIST);
-    KEY_OPTIONS_MAP.put(KEY_PADDING_BOTTOM + "_" + KEY_TYPE_OPTIONS, PIXEL_UNIT_LIST);
-    KEY_OPTIONS_MAP.put(KEY_MARGIN_LEFT + "_" + KEY_TYPE_OPTIONS, PIXEL_UNIT_LIST);
-    KEY_OPTIONS_MAP.put(KEY_MARGIN_TOP + "_" + KEY_TYPE_OPTIONS, PIXEL_UNIT_LIST);
-    KEY_OPTIONS_MAP.put(KEY_MARGIN_RIGHT + "_" + KEY_TYPE_OPTIONS, PIXEL_UNIT_LIST);
-    KEY_OPTIONS_MAP.put(KEY_MARGIN_BOTTOM + "_" + KEY_TYPE_OPTIONS, PIXEL_UNIT_LIST);
-
-    KEY_OPTIONS_MAP.put(KEY_TEXT_SIZE + "_" + KEY_TYPE_OPTIONS, TEXT_SIZE_UNIT_LIST);
-
-    KEY_OPTIONS_MAP.put(KEY_COLOR + "_" + KEY_VALUE_OPTIONS, COLOR_NAME_LIST);
-    KEY_OPTIONS_MAP.put(KEY_TEXT_COLOR + "_" + KEY_VALUE_OPTIONS, COLOR_NAME_LIST);
-    KEY_OPTIONS_MAP.put(KEY_HINT_COLOR + "_" + KEY_VALUE_OPTIONS, COLOR_NAME_LIST);
-
-    KEY_OPTIONS_MAP.put(KEY_GRAVITY + "_" + KEY_VALUE_OPTIONS, GRAVITY_NAME_LIST);
-    KEY_OPTIONS_MAP.put(KEY_LAYOUT_GRAVITY + "_" + KEY_VALUE_OPTIONS, GRAVITY_NAME_LIST);
-
-    KEY_OPTIONS_MAP.put(KEY_ORIENTATION + "_" + KEY_VALUE_OPTIONS, ORIENTATION_LIST);
-    KEY_OPTIONS_MAP.put(KEY_IMAGE + "_" + KEY_IMAGE_OPTIONS, IMAGE_LIST);
-
-    KEY_OPTIONS_MAP.put(KEY_ACTION, ACTION_NAME_LIST);
-    KEY_OPTIONS_MAP.put(KEY_TOUCH + "_" + KEY_TYPE_OPTIONS, ACTION_NAME_LIST);
-    KEY_OPTIONS_MAP.put(KEY_CLICK + "_" + KEY_TYPE_OPTIONS, ACTION_NAME_LIST);
-    KEY_OPTIONS_MAP.put(KEY_LONG_CLICK + "_" + KEY_TYPE_OPTIONS, ACTION_NAME_LIST);
-  }
-
 
   /* 非触屏、非按键的 其它事件，例如 Activity.onResume, HTTP Response 等
    */
@@ -4945,21 +4790,18 @@ public class UIAutoApp { // extends Application {
 
     JSONArray outputList = app.getOutputList();
     int size = outputList == null ? 0 : outputList.size();
-    if (size <= 0) {
-      return app.isSplitShowing ? new JSONArray() : null;
+    if (size <= 0 || offset >= size) {
+      return app.isRunning ? null : new JSONArray();
     }
 
-    if (offset >= size) {
-      return app.isSplitShowing ? new JSONArray() : null;
-    }
-
-    return outputList.subList(offset, Math.min(offset + limit, size));
+    List<Object> list = outputList.subList(offset, Math.min(offset + limit, size));
+    return list == null || list.isEmpty() ? null : list;
   }
 
   protected ExecutorService executorService = Executors.newSingleThreadExecutor();
-
+  public boolean isOutput = false;
   public void output(JSONObject out, Node<?> eventNode, Activity activity) {
-    if (eventNode == null) { // || isReplay == false) {
+    if (eventNode == null || isOutput == false) { // || isReplay == false) {
       return;
     }
 
@@ -4998,12 +4840,18 @@ public class UIAutoApp { // extends Application {
             start = System.currentTimeMillis();
 
             JSON properties = null;
-            Map<View, JSONArray> viewPropertyListMap = new LinkedHashMap<>();
             contentView = getCurrentContentView();
             synchronized (contentView) {
-               properties = allView2Properties(contentView, viewPropertyListMap, false, true, true);
+               properties = allView2Properties(contentView, viewPropertyListMap);
             }
-            obj.put("viewList", properties);
+
+            String str = JSON.toJSONString(properties);
+            executorService.execute(new Runnable() {
+              @Override
+              public void run() {
+                obj.put("viewTree", zuo.biao.apijson.JSON.parse(str));
+              }
+            });
 
             end = System.currentTimeMillis();
             Log.d(TAG, "\n\noutput allView2Properties start = " + start + "; duration = " + (end - start) + "; end = " + start + "\n\n\n");
@@ -5949,12 +5797,13 @@ public class UIAutoApp { // extends Application {
 
   private File directory;
   public void prepareReplay(JSONArray eventList) {
-    prepareReplay(eventList, 0, false);
+    prepareReplay(eventList, 0, false, false);
   }
-  public void prepareReplay(JSONArray eventList, int step, boolean start) {
+  public void prepareReplay(JSONArray eventList, int step, boolean start, boolean output) {
     setEventList(eventList, step);
     isShowing = true;
     isReplay = true;
+    isOutput = output;
     this.step = step;
     allStep = eventList == null ? 0 : eventList.size();
     duration = 0;
@@ -5996,11 +5845,14 @@ public class UIAutoApp { // extends Application {
   }
 
   public void prepareRecord() {
-    prepareRecord(true);
+    prepareRecord(true, false);
   }
-  public void prepareRecord(boolean clear) {
+  public void prepareRecord(boolean clear, boolean output) {
     isShowing = true;
+    isRunning = true;
     isReplay = false;
+    isOutput = output;
+
     Node<InputEvent> eventNode = new Node<>(null, null, null);
     if (clear) {
 	    setEventList(null);

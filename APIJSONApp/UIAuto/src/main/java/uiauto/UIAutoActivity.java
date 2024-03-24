@@ -111,6 +111,10 @@ public class UIAutoActivity extends UnitAutoActivity {
                 switchProxy(v);
             }
         });
+
+        if (isSignedIn == false) {
+            signIn(tvUISignIn);
+        }
     }
 
 
