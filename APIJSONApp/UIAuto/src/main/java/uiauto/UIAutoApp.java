@@ -4344,7 +4344,7 @@ public class UIAutoApp { // extends Application {
 
     Drawable bkgd = view.getBackground();
     if (bkgd != null) {
-      propertyMap.put(KEY_BACKGROUND, trySaveImage(bkgd, dty.getAbsolutePath() + "/uiauto_background_" + id + "_time_" + System.currentTimeMillis(), ".png"));
+      propertyMap.put(KEY_BACKGROUND, trySaveImage(bkgd, dty.getAbsolutePath() + "/uiauto_background_" + id + "_time_" + System.currentTimeMillis() + ".png"));
     }
 
     float x = view.getX();
@@ -4453,7 +4453,7 @@ public class UIAutoApp { // extends Application {
     else if (isImage) {
       Drawable img = ((ImageView) view).getDrawable();
       if (img != null) {
-        propertyMap.put(KEY_IMAGE, trySaveImage(img, dty.getAbsolutePath() + "/uiauto_image_" + id + "_time_" + System.currentTimeMillis(), ".png"));
+        propertyMap.put(KEY_IMAGE, trySaveImage(img, dty.getAbsolutePath() + "/uiauto_image_" + id + "_time_" + System.currentTimeMillis() + ".png"));
       }
     }
     else if (noCache && view instanceof RelativeLayout) {
@@ -4880,9 +4880,9 @@ public class UIAutoApp { // extends Application {
       Bitmap bitmap; // 截屏等记录下来
 
       synchronized (decorView) { // 必须，且只能是 Window，用 Activity 或 decorView 都不行 解决某些界面会报错 cannot find container of decorView
+        boolean isCache = decorView.isDrawingCacheEnabled();
         bitmap = decorView.getDrawingCache();
         if (bitmap == null) {
-          boolean isCache = decorView.isDrawingCacheEnabled();
           decorView.setDrawingCacheEnabled(true);
           bitmap = decorView.getDrawingCache();
 
@@ -4890,17 +4890,23 @@ public class UIAutoApp { // extends Application {
             decorView.buildDrawingCache(true);
             bitmap = decorView.getDrawingCache();
           }
-
-          if (isCache == false) {
-            decorView.setDrawingCacheEnabled(isCache);
-          }
         }
-        int w = bitmap.getWidth();
-        int h = bitmap.getHeight();
 
-        Matrix matrix = new Matrix();
-        matrix.postRotate(w <= h ? 0 : -90);
-        bitmap = Bitmap.createBitmap(bitmap, 0, 0, w, h, matrix, false);
+        int w = bitmap == null || bitmap.isRecycled() ? 0 : bitmap.getWidth();
+        int h = w <= 1 ? 0 : bitmap.getHeight();
+        if (h <= 1) {
+          return null;
+        }
+
+        synchronized (bitmap) {
+          Matrix matrix = new Matrix();
+          matrix.postRotate(w <= h ? 0 : -90);
+          bitmap = Bitmap.createBitmap(bitmap, 0, 0, w, h, matrix, false);
+        }
+
+        if (isCache == false) {
+          decorView.setDrawingCacheEnabled(isCache);
+        }
 
         // 宽居然不是和高一样等比缩放，貌似没缩放
         // double scale = 720f/w;
@@ -4913,7 +4919,7 @@ public class UIAutoApp { // extends Application {
 //        decorView.setDrawingCacheEnabled(false);
       }
 
-      return saveImage(bitmap, directory.getAbsolutePath() + "/uiauto_screenshot_inputId_" + Math.abs(inputId) + "_time_" + System.currentTimeMillis(), ".png");
+      return saveImage(bitmap, directory.getAbsolutePath() + "/uiauto_screenshot_inputId_" + Math.abs(inputId) + "_time_" + System.currentTimeMillis() +".png");
     }
     catch (Throwable e) {
       Log.e(TAG, "screenshot 截屏异常：" + e.getMessage());
@@ -4932,35 +4938,54 @@ public class UIAutoApp { // extends Application {
       }
     }
 
-    if(drawable.getIntrinsicWidth() <= 0 || drawable.getIntrinsicHeight() <= 0) {
-      bitmap = Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888); // Single color bitmap will be created of 1x1 pixel
+    if(drawable.getIntrinsicWidth() <= 1 || drawable.getIntrinsicHeight() <= 1) {
+      return null;
+//      bitmap = Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888); // Single color bitmap will be created of 1x1 pixel
     } else {
       bitmap = Bitmap.createBitmap(drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight(), Bitmap.Config.ARGB_8888);
     }
 
-    Canvas canvas = new Canvas(bitmap);
-    drawable.setBounds(0, 0, canvas.getWidth(), canvas.getHeight());
-    drawable.draw(canvas);
+    if (bitmap == null || bitmap.isRecycled()) {
+      return null;
+    }
+
+    synchronized (bitmap) {
+      Canvas canvas = new Canvas(bitmap);
+      drawable.setBounds(0, 0, canvas.getWidth(), canvas.getHeight());
+      drawable.draw(canvas);
+    }
+
     return bitmap;
   }
 
-  private String trySaveImage(Drawable drawable, String fileName, String fileSuffix) {
+  private String trySaveImage(Drawable drawable, String filePath) {
     try {
-      return saveImage(drawable, fileName, fileSuffix);
-    } catch (Exception e) {
+      return saveImage(drawable, filePath);
+    } catch (Throwable e) {
       e.printStackTrace();
     }
     return null;
   }
 
-  private String saveImage(Drawable drawable, String fileName, String fileSuffix) throws Exception {
-    File file = File.createTempFile(fileName, fileSuffix);
-    String filePath = file.getAbsolutePath();
+  private String saveImage(Drawable drawable, String filePath) throws Exception {
     executorService.execute(new Runnable() {
       @Override
       public void run() {
         try {
-          saveImage(drawableToBitmap(drawable), filePath);
+          Bitmap bitmap = drawableToBitmap(drawable);
+          int w = bitmap == null || bitmap.isRecycled() ? 0 : bitmap.getWidth();
+          int h = w <= 1 ? 0 : bitmap.getHeight();
+          if (h <= 1) {
+            return;
+          }
+
+          synchronized (bitmap) {
+            Matrix matrix = new Matrix();
+            matrix.postRotate(w <= h ? 0 : -90);
+            bitmap = Bitmap.createBitmap(bitmap, 0, 0, w, h, matrix, false);
+          }
+
+//          saveImage(bitmap, filePath);
         } catch (Throwable e) {
           e.printStackTrace();
 //          throw new RuntimeException(e);
@@ -4968,52 +4993,69 @@ public class UIAutoApp { // extends Application {
       }
     });
 
-    return file.getAbsolutePath();
+    return filePath;
   }
 
-  private String saveImage(Bitmap bitmap, String fileName, String fileSuffix) throws Exception {
-    // 保存图片
-    File file = File.createTempFile(fileName, fileSuffix);
-    String filePath = file.getAbsolutePath();
-    return saveImage(bitmap, filePath);
-  }
+//  private String saveImage(Bitmap bitmap, String fileName, String fileSuffix) throws Exception {
+//    // 保存图片
+//    File file = new File(fileName + fileSuffix); // File.createTempFile(fileName, fileSuffix);
+//    String filePath = file.getAbsolutePath();
+//    return saveImage(bitmap, filePath);
+//  }
 
   private String saveImage(Bitmap bitmap, String filePath) throws Exception {
-    executorService.execute(new Runnable() {
-      @Override
-      public void run() {
-        FileOutputStream fos = null;
-        try {
-          fos = new FileOutputStream(filePath);
-          bitmap.compress(Bitmap.CompressFormat.PNG, 100, fos);
-        }
-        catch (Throwable e) {
-          Log.e(TAG, "保存图片异常：" + e.getMessage());
-        }
-        finally {
-          if (bitmap != null) {
-            try {
-              bitmap.recycle();
-            } catch (Throwable e) {
-              e.printStackTrace();
-            }
-          }
+    if (bitmap == null || bitmap.isRecycled()) {
+      return null;
+    }
 
-          if (fos != null) {
-            try {
-              fos.flush();
-            } catch (Throwable e) {
-              e.printStackTrace();
+    synchronized (bitmap) {
+      executorService.execute(new Runnable() {
+        @Override
+        public void run() {
+          FileOutputStream fos = null;
+          try {
+            File file = new File(filePath);
+            if (file.exists()) {
+              file.delete();
             }
-            try {
-              fos.close();
-            } catch (Throwable e) {
-              e.printStackTrace();
+            file.createNewFile();
+
+            fos = new FileOutputStream(filePath);
+
+            if (bitmap == null || bitmap.isRecycled()) {
+              return;
+            }
+
+            synchronized (bitmap) {
+              bitmap.compress(Bitmap.CompressFormat.PNG, 100, fos);
+            }
+          } catch (Throwable e) {
+            Log.e(TAG, "保存图片异常：" + e.getMessage());
+          } finally {
+            if (bitmap != null && bitmap.isRecycled() == false) {
+              try {
+                bitmap.recycle();
+              } catch (Throwable e) {
+                e.printStackTrace();
+              }
+            }
+
+            if (fos != null) {
+              try {
+                fos.flush();
+              } catch (Throwable e) {
+                e.printStackTrace();
+              }
+              try {
+                fos.close();
+              } catch (Throwable e) {
+                e.printStackTrace();
+              }
             }
           }
         }
-      }
-    });
+      });
+    }
 
     return filePath; // filePath = directory.getName() + "/" + file.getName();  // 返回相对路径
   }
