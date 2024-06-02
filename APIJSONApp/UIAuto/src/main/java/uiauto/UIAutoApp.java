@@ -233,10 +233,11 @@ public class UIAutoApp { // extends Application {
         //根据递归链表来实现，能精准地实现两个事件之间的间隔，不受处理时间不一致，甚至卡顿等影响。还能及时终止
 
         Node<InputEvent> curNode = (Node<InputEvent>) msg.obj; // isReplayingTouch 导致有时候会回退步骤，需要跳过
-        while (curNode != null && (curNode.disable || curNode.step < step)) { // (curNode.disable || curNode.item == null)) {
+        int stp = step;
+        while (curNode != null && (curNode.disable || curNode.step < stp)) { // (curNode.disable || curNode.item == null)) {
           currentEventNode = curNode = curNode.next;
-//          if (curNode != null && curNode.step >= step) {
-//            step ++;
+//          if (curNode != null && curNode.step > stp) {
+//            step = Math.max(step + 1, curNode.step);
 //          }
 
           // if (curNode != null && curNode.item != null) {
@@ -244,11 +245,15 @@ public class UIAutoApp { // extends Application {
           // }
         }
         currentEventNode = curNode;
-        step = curNode == null ? step + 1 : curNode.step;  // step ++;
+        step = curNode == null ? step + 1 : Math.max(step, curNode.step);
 
         // output(null, curNode, activity);
 
         boolean isOver = step > allStep || curNode == null;
+        if (isOver && step < allStep) {
+          step = allStep + 1;
+        }
+
         boolean canRefreshUI = isOver || curNode.type != InputUtil.EVENT_TYPE_TOUCH || curNode.action != MotionEvent.ACTION_MOVE;
 
         if (canRefreshUI) {
@@ -404,14 +409,16 @@ public class UIAutoApp { // extends Application {
 //          }
 // 导致重复添加到 waitMap          handleMessage(msg);
 
-          dispatchEventToCurrentWindow(curNode, curItem, false);
           isReplayingTouch = isRT;
+          dispatchEventToCurrentWindow(curNode, curItem, false);
+//          isReplayingTouch = isRT;
           handleMessage(msg);
         }
         else {
           output(null, curNode, activity);
-          dispatchEventToCurrentWindow(curNode, curItem, false);
           isReplayingTouch = isRT;
+          dispatchEventToCurrentWindow(curNode, curItem, false);
+//          isReplayingTouch = isRT;
 
           long duration = calcDuration(curNode, nextNode);
 
