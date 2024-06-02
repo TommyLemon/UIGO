@@ -233,12 +233,11 @@ public class UIAutoApp { // extends Application {
         //根据递归链表来实现，能精准地实现两个事件之间的间隔，不受处理时间不一致，甚至卡顿等影响。还能及时终止
 
         Node<InputEvent> curNode = (Node<InputEvent>) msg.obj; // isReplayingTouch 导致有时候会回退步骤，需要跳过
-        int stp = curNode == null ? -1 : curNode.step;
-        while (curNode != null && (curNode.disable || stp < step)) { // (curNode.disable || curNode.item == null)) {
+        while (curNode != null && (curNode.disable || curNode.step < step)) { // (curNode.disable || curNode.item == null)) {
           currentEventNode = curNode = curNode.next;
-          if (stp >= step) {
-            step ++;
-          }
+//          if (curNode != null && curNode.step >= step) {
+//            step ++;
+//          }
 
           // if (curNode != null && curNode.item != null) {
           //   output(null, curNode, activity);
@@ -276,12 +275,16 @@ public class UIAutoApp { // extends Application {
         boolean isTouch = curNode.type == InputUtil.EVENT_TYPE_TOUCH && curItem instanceof MotionEvent;
         int action = isTouch ? ((MotionEvent) curItem).getAction() : -1;
         boolean isDown = action == MotionEvent.ACTION_DOWN;
+        boolean isRT = isReplayingTouch;
         if (isTouch && isDown) {
-          isReplayingTouch = true;
+          isReplayingTouch = isRT = true;
+        }
+        else if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
+          isRT = false;
         }
 
         //暂停，等待时机
-        if (isReplayingTouch == false && (curItem == null
+        if (isRT == false && (curItem == null
                 || (waitMap.isEmpty() == false && curNode.type == InputUtil.EVENT_TYPE_HTTP))) { // curNode.type == InputUtil.EVENT_TYPE_UI || curNode.type == InputUtil.EVENT_TYPE_HTTP) {
           long timeout = curNode.timeout;
           if (timeout <= 0) {
@@ -344,7 +347,7 @@ public class UIAutoApp { // extends Application {
 //        step = curNode == null ? step + 1 : curNode.step;
         // long lastTime = nextNode == null ? 0 : nextNode.time;
 
-        if (isReplayingTouch == false) {
+        if (isRT == false) {
           waitMap = new LinkedHashMap<>();
           lastWaitNode = null;
         }
@@ -383,7 +386,7 @@ public class UIAutoApp { // extends Application {
           lastStep ++;
         }
 
-        if (isReplayingTouch == false && lastWaitNode != null) {
+        if (isRT == false && lastWaitNode != null) {
           nextNode = lastWaitNode;
 //          step = lastWaitStep;
         }
@@ -402,11 +405,13 @@ public class UIAutoApp { // extends Application {
 // 导致重复添加到 waitMap          handleMessage(msg);
 
           dispatchEventToCurrentWindow(curNode, curItem, false);
+          isReplayingTouch = isRT;
           handleMessage(msg);
         }
         else {
           output(null, curNode, activity);
           dispatchEventToCurrentWindow(curNode, curItem, false);
+          isReplayingTouch = isRT;
 
           long duration = calcDuration(curNode, nextNode);
 
@@ -418,10 +423,6 @@ public class UIAutoApp { // extends Application {
 //            dispatchEventToCurrentWindow(curItem, false);
             sendMessageDelayed(msg, duration); // 相邻执行事件时间差本身就包含了  + (lastTime <= 0 || firstTime <= 0 ? 10 : lastTime - firstTime)  // 补偿 disable 项跳过的等待时间
           }
-        }
-
-        if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
-          isReplayingTouch = false;
         }
 
       }
