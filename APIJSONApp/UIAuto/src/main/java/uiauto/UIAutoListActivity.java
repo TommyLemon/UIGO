@@ -33,6 +33,8 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.CheckBox;
+import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.ProgressBar;
@@ -127,6 +129,7 @@ public class UIAutoListActivity extends Activity implements HttpManager.OnHttpRe
     private boolean hasTempTouchList = false;
     private JSONArray eventList = null;
 
+    private CheckBox cbUIAutoListDevice;
     private EditText etUIAutoListName;
     private TextView tvUIAutoListCount;
     private ListView lvUIAutoList;
@@ -141,6 +144,8 @@ public class UIAutoListActivity extends Activity implements HttpManager.OnHttpRe
     String cacheKey;
     String tempKey;
     String name;
+    DisplayMetrics metric = new DisplayMetrics();
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -195,6 +200,13 @@ public class UIAutoListActivity extends Activity implements HttpManager.OnHttpRe
             }
         }
 
+        Display display = getWindowManager().getDefaultDisplay();
+        display.getRealMetrics(metric);
+
+        cbUIAutoListDevice = findViewById(R.id.cbUIAutoListDevice);
+        boolean isEnableFilter = isLocal == false && isTouch == false;
+        cbUIAutoListDevice.setEnabled(isEnableFilter);
+        cbUIAutoListDevice.setText(Build.BRAND + " " + Build.MODEL + ", " + metric.widthPixels + "X" + metric.heightPixels + ", " + Build.BRAND + " " + Build.VERSION.RELEASE);
 
         etUIAutoListName = findViewById(R.id.etUIAutoListName);
         tvUIAutoListCount = findViewById(R.id.tvUIAutoListCount);
@@ -222,6 +234,16 @@ public class UIAutoListActivity extends Activity implements HttpManager.OnHttpRe
         tvUIAutoListCount.setText((isLocal ? "0" : count + "/") + count);
         btnUIAutoListGet.setText(isLocal ? "post" : "get");
 
+        isFilter = cbUIAutoListDevice.isEnabled() && cbUIAutoListDevice.isChecked();
+        cbUIAutoListDevice.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                isFilter = isChecked;
+
+                page = 0;
+                send();
+            }
+        });
 
         etUIAutoListName.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
@@ -244,8 +266,10 @@ public class UIAutoListActivity extends Activity implements HttpManager.OnHttpRe
 //                        finish();
                     }
                     else {
+                        JSONObject flow = obj == null ? null : obj.getJSONObject("flow");
                         startActivityForResult(UIAutoListActivity.createIntent(
-                                context, obj == null ? 0 : obj.getLongValue("id"), obj.getString("name")
+                                context, flow == null ? 0 : flow.getLongValue("id")
+                                , flow == null ? null : flow.getString("name")
                         ), REQUEST_EVENT_LIST);
                     }
                 }
@@ -377,7 +401,12 @@ public class UIAutoListActivity extends Activity implements HttpManager.OnHttpRe
                                 list.add("[" + state + "]" + " " + new Date(obj.getLongValue("time")).toLocaleString() + "UNKNOWN !!!");
                             }
                         } else {
-                            list.add("[" + state + "]" + " " + new Date(obj.getLongValue("time")).toLocaleString() + "\n" + obj.getString("name"));
+                            JSONObject device = obj.getJSONObject("device");
+                            JSONObject system = obj.getJSONObject("system");
+                            JSONObject flow = obj.getJSONObject("flow");
+
+                            list.add("[" + state + "] " + (isFilter || isTouch ? "" : getTitleText(device, system) + "\n")
+                                    + new Date(flow.getLongValue("time")).toLocaleString() + "\n" + flow.getString("name"));
                         }
                     }
                 }
@@ -387,6 +416,22 @@ public class UIAutoListActivity extends Activity implements HttpManager.OnHttpRe
         }).start();
     }
 
+    private String getTitleText(JSONObject device, JSONObject system) {
+        if (device == null) {
+            device = new JSONObject();
+        }
+
+        if (system == null) {
+            system = new JSONObject();
+        }
+
+        return StringUtil.getOrDefault(device.getString("brand"), "[Brand]")
+                + " " + StringUtil.getOrDefault(device.getString("model"), "[Model]")
+                + ", " + StringUtil.getOrDefault(device.getString("width"), "[Width]")
+                + "X" + StringUtil.getOrDefault(device.getString("height"), "[Height]")
+                + ", " + StringUtil.getOrDefault(system.getString("brand"), "[System]")
+                + " " + StringUtil.getOrDefault(system.getString("versionName"), "[Version]");
+    }
 
 
     private int remoteCount = 0;
@@ -424,9 +469,6 @@ public class UIAutoListActivity extends Activity implements HttpManager.OnHttpRe
 
                 if (deviceId <= 0) {
                     table = "Device";
-                    DisplayMetrics metric = new DisplayMetrics();
-                    Display display = getWindowManager().getDefaultDisplay();
-                    display.getRealMetrics(metric);
 
                     request.put("width", metric.widthPixels);
                     request.put("height", metric.heightPixels);
@@ -514,6 +556,8 @@ public class UIAutoListActivity extends Activity implements HttpManager.OnHttpRe
             }
         }).start();
     }
+
+    private boolean isFilter = false;
 
     public void send() {
         needLoading = true;
@@ -635,6 +679,25 @@ public class UIAutoListActivity extends Activity implements HttpManager.OnHttpRe
                     JSONRequest request = new JSONRequest();
 
                     if (isTouch) {
+                        {   // Flow <<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+                            JSONRequest flow = new JSONRequest();
+                            flow.put("id", flowId);
+                            request.put("Flow", flow);
+                        }   // Flow >>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+                        {   // Device <<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+                            JSONRequest device = new JSONRequest();
+                            device.put("id@", "Flow/deviceId");
+                            request.put("Device", device);
+                        }   // Device >>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+                        {   // System <<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+                            JSONRequest system = new JSONRequest();
+                            system.put("id@", "Flow/systemId");
+                            system.put("@order", "versionCode-,versionName-");
+                            request.put("System", system);
+                        }   // System >>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
                         {   // Input[] <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                             JSONRequest touchItem = new JSONRequest();
                             {   // Input <<<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -645,18 +708,44 @@ public class UIAutoListActivity extends Activity implements HttpManager.OnHttpRe
                                 }
                                 touchItem.put("Input", input);
                             }   // Input >>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
                             request.putAll(touchItem.toArray(count, page, "Input"));
                         }   // Input[] >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
                     }
                     else {
                         {   // Flow[] <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-                            JSONRequest flowItem = new JSONRequest();
+                            JSONRequest item = new JSONRequest();
                             {   // Flow <<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                                 JSONRequest flow = new JSONRequest();
                                 flow.put("@order", "time-");
-                                flowItem.put("Flow", flow);
+                                item.put("Flow", flow);
                             }   // Flow >>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-                            request.putAll(flowItem.toArray(count, page, "Flow"));
+
+                            {   // Device <<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+                                JSONRequest device = new JSONRequest();
+                                device.put("id@", "/Flow/deviceId");
+                                if (isFilter) {
+                                    device.put("maker", Build.MANUFACTURER);
+                                    device.put("brand", Build.BRAND);
+                                    device.put("model", Build.MODEL);
+                                }
+                                item.put("Device", device);
+                            }   // Device >>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+                            {   // System <<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+                                JSONRequest system = new JSONRequest();
+                                system.put("id@", "/Flow/systemId");
+                                if (isFilter) {
+                                    system.put("type", 0); // Android
+                                    system.put("brand", Build.BRAND);
+                                    system.put("versionCode", Build.VERSION.SDK_INT);
+                                    system.put("versionName", Build.VERSION.RELEASE);
+                                }
+                                system.put("@order", "versionCode-,versionName-");
+                                item.put("System", system);
+                            }   // System >>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+                            request.putAll(item.toArray(count, page));
                         }   // Flow[] >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
                     }
 
@@ -763,7 +852,18 @@ public class UIAutoListActivity extends Activity implements HttpManager.OnHttpRe
             Log.e(TAG, "onHttpResponse e = " + e.getMessage());
         }
         JSONResponse response = new JSONResponse(resultJson);
-        JSONArray arr = response.getArray(isTouch ? "Input[]" : "Flow[]");
+        if (isLocal == false && isTouch) {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    JSONObject device = response.getJSONObject("device");
+                    JSONObject system = response.getJSONObject("system");
+                    cbUIAutoListDevice.setText(getTitleText(device, system));
+                }
+            });
+        }
+
+        JSONArray arr = response.getArray(isTouch ? "Input[]" : "[]");
         noMore = arr == null || arr.isEmpty();
         if (arr == null) {
             arr = new JSONArray();

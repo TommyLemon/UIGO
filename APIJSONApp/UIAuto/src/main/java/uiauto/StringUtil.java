@@ -57,4 +57,7 @@ public class StringUtil extends zuo.biao.apijson.StringUtil {
 		Toast.makeText(context, "已复制\n" + value, Toast.LENGTH_SHORT).show();
 	}
 
+	public static String getOrDefault(String s, String defaultVale) {
+		return isEmpty(s, true) ? defaultVale : s;
+	}
 }

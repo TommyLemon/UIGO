@@ -9,6 +9,13 @@
     android:orientation="vertical"
     >
 
+    <CheckBox
+        android:id="@+id/cbUIAutoListDevice"
+        style="@style/match_wrap"
+        android:text="Xiaomi 12 Pro, 3200X1440, Android 12 MIUI 13.0.41"
+        android:layout_margin="6dp"
+        />
+
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="45dp"
