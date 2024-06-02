@@ -198,7 +198,7 @@ public class UIAutoApp { // extends Application {
   private final Runnable timeoutRunnable = new Runnable() {
     @Override
     public void run() {
-      if (isTimeout && isShowing && isReplay && tvControllerForward != null) {
+      if (isTimeout && isShowing && isRunning && isReplay && tvControllerForward != null) {
         tvControllerForward.performClick();
       }
     }
@@ -271,14 +271,11 @@ public class UIAutoApp { // extends Application {
         }
 
         InputEvent curItem = curNode.item;
-        if (curItem instanceof MotionEvent) {
-          int action = ((MotionEvent) curItem).getAction();
-          if (action == MotionEvent.ACTION_DOWN) {
-            isReplayingTouch = true;
-          }
-          else if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
-            isReplayingTouch = false;
-          }
+        boolean isTouch = curNode.type == InputUtil.EVENT_TYPE_TOUCH && curItem instanceof MotionEvent;
+        int action = isTouch ? ((MotionEvent) curItem).getAction() : -1;
+        boolean isDown = action == MotionEvent.ACTION_DOWN;
+        if (isTouch && isDown) {
+          isReplayingTouch = true;
         }
 
         //暂停，等待时机
@@ -297,7 +294,7 @@ public class UIAutoApp { // extends Application {
           return;
         }
 
-        if (canRefreshUI && curNode.type == InputUtil.EVENT_TYPE_TOUCH && curNode.action == MotionEvent.ACTION_DOWN) {
+        if (canRefreshUI && isTouch && isDown) {
           isSplit2Showing = curNode.isSplit2Show;
           splitX = curNode.splitX;
           splitY = curNode.splitY;
@@ -331,7 +328,6 @@ public class UIAutoApp { // extends Application {
 
         // 分拆为下面两条，都放在 UI 操作后，减少延迟
         // dispatchEventToCurrentActivity(curItem, false);
-
 
         Node<InputEvent> nextNode = curNode.next;
 //        long firstTime = nextNode == null ? 0 : nextNode.time;
@@ -385,7 +381,7 @@ public class UIAutoApp { // extends Application {
           lastStep ++;
         }
 
-        if (lastWaitNode != null) {
+        if (isReplayingTouch == false && lastWaitNode != null) {
           nextNode = lastWaitNode;
 //          step = lastWaitStep;
         }
@@ -420,6 +416,10 @@ public class UIAutoApp { // extends Application {
 //            dispatchEventToCurrentWindow(curItem, false);
             sendMessageDelayed(msg, duration); // 相邻执行事件时间差本身就包含了  + (lastTime <= 0 || firstTime <= 0 ? 10 : lastTime - firstTime)  // 补偿 disable 项跳过的等待时间
           }
+        }
+
+        if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
+          isReplayingTouch = false;
         }
 
       }
