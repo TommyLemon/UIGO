@@ -177,6 +177,8 @@ public class UIAutoActivity extends UnitAutoActivity {
     private String verify;
 
     public void signInOrUp(boolean isSignUp, View pb) {
+        boolean isSignIn = ! isSignUp;
+
         pb.setVisibility(View.VISIBLE);
 
         server = StringUtil.getTrimedString(etUnitProxy);
@@ -256,9 +258,8 @@ public class UIAutoActivity extends UnitAutoActivity {
                     public void run() {
                         boolean isOk = response.isSuccess();
                         if (isOk) {
-                            if (isSignUp == false) {
+                            if (isSignIn) {
                                 isSignedIn = ! isSignedIn;
-                                tvUISignIn.setText(isSignedIn ? R.string.sign_out : R.string.sign_in);
                             }
 
                             cache.edit()
@@ -268,12 +269,18 @@ public class UIAutoActivity extends UnitAutoActivity {
                         }
                         else {
                             verify = null;
+                            isSignedIn = false;
                         }
 
-                        Toast.makeText(context, (isSignUp ? "Sign up" : "Sign in")
+                        Toast.makeText(context, (isSignUp ? R.string.sign_up : (isSignedIn ? R.string.sign_out : R.string.sign_in))
                                 + (isOk ? " succeed! " : " failed! " + response.getMsg()), Toast.LENGTH_LONG)
                                 .show();
-                        pb.setVisibility(isSignedIn == false || isSignUp ? View.GONE : View.VISIBLE);
+
+                        if (isSignIn) {
+                            tvUISignIn.setText(isSignedIn ? R.string.sign_out : R.string.sign_in);
+                        }
+
+                        pb.setVisibility(isSignIn || isSignUp ? View.GONE : View.VISIBLE);
                         tvUnitResponse.setText(json);
                     }
                 });
