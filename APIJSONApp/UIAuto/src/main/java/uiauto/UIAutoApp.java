@@ -235,7 +235,9 @@ public class UIAutoApp { // extends Application {
         Node<InputEvent> curNode = (Node<InputEvent>) msg.obj; // isReplayingTouch 导致有时候会回退步骤，需要跳过
         while (curNode != null && (curNode.disable || curNode.step < step)) { // (curNode.disable || curNode.item == null)) {
           currentEventNode = curNode = curNode.next;
-          step ++;
+          if (curNode.step >= step) {
+            step ++;
+          }
 
           // if (curNode != null && curNode.item != null) {
           //   output(null, curNode, activity);
@@ -3678,6 +3680,8 @@ public class UIAutoApp { // extends Application {
   public void replay(int step) {
     isRunning = true;
     isReplay = true;
+    isReplayingTouch = false;
+
 //        List<InputEvent> list = new LinkedList<>();
     if (step <= 0 || step >= allStep || currentEventNode == null) {
       step = 0;
