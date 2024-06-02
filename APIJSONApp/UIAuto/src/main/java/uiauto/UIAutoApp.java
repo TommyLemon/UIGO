@@ -213,6 +213,7 @@ public class UIAutoApp { // extends Application {
 
   private boolean isRunning = false;
   private boolean isReplay = false;
+  private boolean isReplayingTouch = false;
   @SuppressLint("HandlerLeak")
   private final Handler handler = new Handler() {
     @Override
@@ -270,9 +271,19 @@ public class UIAutoApp { // extends Application {
         }
 
         InputEvent curItem = curNode.item;
+        if (curItem instanceof MotionEvent) {
+          int action = ((MotionEvent) curItem).getAction();
+          if (action == MotionEvent.ACTION_DOWN) {
+            isReplayingTouch = true;
+          }
+          else if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
+            isReplayingTouch = false;
+          }
+        }
 
         //暂停，等待时机
-        if (curItem == null || (waitMap.isEmpty() == false && curNode.type == InputUtil.EVENT_TYPE_HTTP)) { // curNode.type == InputUtil.EVENT_TYPE_UI || curNode.type == InputUtil.EVENT_TYPE_HTTP) {
+        if (isReplayingTouch == false && (curItem == null
+                || (waitMap.isEmpty() == false && curNode.type == InputUtil.EVENT_TYPE_HTTP))) { // curNode.type == InputUtil.EVENT_TYPE_UI || curNode.type == InputUtil.EVENT_TYPE_HTTP) {
           long timeout = curNode.timeout;
           if (timeout <= 0) {
             timeout = STEP_TIMEOUT;
@@ -335,10 +346,13 @@ public class UIAutoApp { // extends Application {
 //        step = curNode == null ? step + 1 : curNode.step;
         // long lastTime = nextNode == null ? 0 : nextNode.time;
 
-        waitMap = new LinkedHashMap<>();
-//        int lastStep = step;
-//        int lastWaitStep = 0;
-        lastWaitNode = null;
+        if (isReplayingTouch == false) {
+          waitMap = new LinkedHashMap<>();
+          lastWaitNode = null;
+        }
+
+        //        int lastStep = step;
+        //        int lastWaitStep = 0;
         Node<InputEvent> lastNextNode = nextNode;
 
         Activity activity = getCurrentActivity();
@@ -4745,7 +4759,7 @@ public class UIAutoApp { // extends Application {
 
         // if (curNode != null // && curNode.type == InputUtil.EVENT_TYPE_HTTP && curNode.action == action
 //        && (url != null && url.equals(curNode.url))
-        if (curNode == null || curNode.disable || waitMap.isEmpty()) {
+        if (curNode == null || curNode.disable || (isReplayingTouch == false && waitMap.isEmpty())) {
           lastWaitNode = null;
 
           InputEvent curItem = curNode == null || curNode.disable ? null : curNode.item;
