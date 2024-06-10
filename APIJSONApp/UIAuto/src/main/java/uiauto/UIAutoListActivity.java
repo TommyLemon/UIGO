@@ -404,6 +404,12 @@ public class UIAutoListActivity extends Activity implements HttpManager.OnHttpRe
                             JSONObject device = obj.getJSONObject("device");
                             JSONObject system = obj.getJSONObject("system");
                             JSONObject flow = obj.getJSONObject("flow");
+                            if (flow == null) {
+                                flow = obj.getJSONObject("Flow");
+                                if (flow == null) {
+                                    flow = new JSONObject();
+                                }
+                            }
 
                             list.add("[" + state + "] " + (isFilter || isTouch ? "" : getTitleText(device, system) + "\n")
                                     + new Date(flow.getLongValue("time")).toLocaleString() + "\n" + flow.getString("name"));
