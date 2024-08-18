@@ -3,7 +3,7 @@
 </h1>
  
 <p align="center">📱 零代码快准稳 UI 智能录制回放平台 🚀</p>
-<p align="center">像素级自动兼容任意宽高比分辨率屏幕，毫秒级自动精准等待网络请求，录制回放快、准、稳！</p>
+<p align="center">3 像素内自动精准定位，2 毫秒内自动精准等待，录制回放快、准、稳！</p>
 <p align="center" >
   <a href="https://github.com/TommyLemon/UIGO/tree/master/UIAuto-Android"><img src="https://img.shields.io/badge/Demo-Android26%2B-brightgreen.svg?style=flat"></a>
   <a href="https://github.com/TommyLemon/UIGO/tree/master/APIJSONApp"><img src="https://img.shields.io/badge/App-Android26%2B-brightgreen.svg?style=flat"></a>
@@ -31,7 +31,7 @@
 <img width="1280" src="https://github.com/TommyLemon/UIGO/assets/5738175/032de745-e49a-43f3-b368-84fdbd6a97d7" href="https://search.bilibili.com/all?keyword=UIGO" />
 
 ## UIGO - 📱 零代码快准稳 UI 智能录制回放平台 🚀 
-**像素级自动兼容任意宽高比分辨率屏幕，毫秒级自动精准等待网络请求，录制回放快、准、稳！**<br />
+**3 像素内自动精准定位，2 毫秒内自动精准等待，录制回放快、准、稳！**<br />
 适用于 一次录制到处回放、反复回归界面操作、App UI/功能 自动化测试、<br />
 帮助开发快速复现和排查 bug、方便判断 bug 原因出在前端还是后端 等，<br />
 **大量减少耗时费力又无聊的重复手工操作，大幅提高手工和自动化测试效率，**<br />
