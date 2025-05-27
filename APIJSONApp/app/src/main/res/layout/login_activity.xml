@@ -19,7 +19,7 @@
     <TextView
         style="@style/text_small"
         android:layout_width="match_parent"
-        android:text="长按标题5-8秒可设置服务器\n部分功能不可用，持续更新中..." />
+        android:text="点击标题可设置服务器" />
 
     <View
         style="@style/divider_horizontal_1px"

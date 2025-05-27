@@ -30,10 +30,8 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.View.OnClickListener;
-import android.view.View.OnTouchListener;
 import android.widget.EditText;
 import apijson.demo.R;
 import apijson.demo.application.DemoApplication;
@@ -45,7 +43,7 @@ import apijson.demo.server.model.Login;
 /**登录界面
  * @author Lemon
  */
-public class LoginActivity extends BaseActivity implements OnClickListener, OnTouchListener, OnBottomDragListener{
+public class LoginActivity extends BaseActivity implements OnClickListener, OnBottomDragListener{
 	private static final String TAG = "LoginActivity";
 
 
@@ -69,7 +67,7 @@ public class LoginActivity extends BaseActivity implements OnClickListener, OnTo
 	}
 
 	public static final int RESULT_LOGIN = 41;
-	public static final String RESULT_LOGINED = "RESULT_LOGINED";
+	public static final String RESULT_LOGGED_IN = "RESULT_LOGGED_IN";
 
 
 	@Override
@@ -221,8 +219,10 @@ public class LoginActivity extends BaseActivity implements OnClickListener, OnTo
 
 	@Override
 	public void initEvent() {//必须调用
-
-		tvBaseTitle.setOnTouchListener(this);
+		// TODO
+		//		if (BuildConfig.DEBUG) {
+			tvBaseTitle.setOnClickListener(this);
+		//		}
 
 		findViewById(R.id.tvLoginForget).setOnClickListener(this);
 		findViewById(R.id.tvLoginLogin).setOnClickListener(this);
@@ -249,49 +249,23 @@ public class LoginActivity extends BaseActivity implements OnClickListener, OnTo
 	@Override
 	public void onClick(View v) {
 		switch (v.getId()) {
-		case R.id.tvLoginForget:
-			showForget();
-			break;
-		case R.id.tvLoginLogin:
-			login(Login.TYPE_PASSWORD);
-			break;
-		default:
-			break;
+			case R.id.tvBaseTitle:
+				toActivity(ServerSettingActivity.createIntent(context
+								, SettingUtil.getServerAddress(false), SettingUtil.getServerAddress(true)
+								, SettingUtil.APP_SETTING, Context.MODE_PRIVATE
+								, SettingUtil.KEY_SERVER_ADDRESS_NORMAL, SettingUtil.KEY_SERVER_ADDRESS_TEST)
+						, REQUEST_TO_SERVER_SETTING);
+				break;
+			case R.id.tvLoginForget:
+				showForget();
+				break;
+			case R.id.tvLoginLogin:
+				login(Login.TYPE_PASSWORD);
+				break;
+			default:
+				break;
 		}
 	}
-
-
-	private long touchDownTime = 0;
-	@SuppressLint("ClickableViewAccessibility")
-	@Override
-	public boolean onTouch(View v, MotionEvent event) {
-		switch (event.getAction()) {
-		case MotionEvent.ACTION_DOWN:
-			if (v.getId() == R.id.tvBaseTitle) {
-				touchDownTime = System.currentTimeMillis();
-				Log.i(TAG, "onTouch MotionEvent.ACTION: touchDownTime=" + touchDownTime);
-				return true;
-			}
-		case MotionEvent.ACTION_UP:
-			if (v.getId() == R.id.tvBaseTitle) {
-				long time = System.currentTimeMillis() - touchDownTime;
-				if (time > 5000 && time < 8000) {
-					toActivity(ServerSettingActivity.createIntent(context
-							, SettingUtil.getServerAddress(false), SettingUtil.getServerAddress(true)
-							, SettingUtil.APP_SETTING, Context.MODE_PRIVATE
-							, SettingUtil.KEY_SERVER_ADDRESS_NORMAL, SettingUtil.KEY_SERVER_ADDRESS_TEST)
-							, REQUEST_TO_SERVER_SETTING);
-					return true;
-				}
-			}
-			break;
-		default:
-			break;
-		}
-
-		return false;
-	}
-
 
 
 	//类相关监听<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -303,7 +277,7 @@ public class LoginActivity extends BaseActivity implements OnClickListener, OnTo
 			showShortToast("未登录，有些内容会加载不出来~");
 		}
 
-		setResult(RESULT_OK, new Intent().putExtra(RESULT_LOGINED, DemoApplication.getInstance().isLoggedIn()));
+		setResult(RESULT_OK, new Intent().putExtra(RESULT_LOGGED_IN, DemoApplication.getInstance().isLoggedIn()));
 		super.finish();
 	}
 
