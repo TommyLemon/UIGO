@@ -12,6 +12,7 @@
 
         <TextView
             style="@style/topbar_title"
+            android:id="@+id/tvBaseTitle"
             android:layout_centerHorizontal="true"
             android:text="钱包" />
     </RelativeLayout>
