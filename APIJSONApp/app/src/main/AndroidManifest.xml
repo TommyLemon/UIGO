@@ -19,6 +19,10 @@
     <uses-permission android:name="com.android.launcher.permission.READ_SETTINGS" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
+    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
+    <uses-permission android:name="android.permission.READ_MEDIA_VISUAL_USER_SELECTED" />
     <uses-permission android:name="android.permission.BROADCAST_STICKY" />
 <!--    <uses-permission android:name="android.permission.WRITE_SETTINGS" />-->
     <uses-permission android:name="android.permission.READ_CONTACTS" />
@@ -66,6 +70,18 @@
         android:label="@string/app_name"
         android:screenOrientation="portrait"
         android:theme="@style/AppTheme" >
+
+        <provider
+            android:name="android.support.v4.content.FileProvider"
+            android:authorities="${applicationId}.provider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/filepaths"
+                />
+        </provider>
+
         <activity
             android:name=".activity_fragment.SplashActivity"
             android:screenOrientation="portrait"
@@ -131,12 +147,12 @@
         <!-- ZBLibrary <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< -->
 
         <activity
-            android:name="zuo.biao.library.ui.SelectPictureActivity"
+            android:name=".activity_fragment.SelectPictureActivity"
             android:screenOrientation="portrait"
             android:theme="@style/WindowCompleteAlpha"
             android:windowSoftInputMode="stateAlwaysHidden" />
         <activity
-            android:name="zuo.biao.library.ui.CutPictureActivity"
+            android:name=".activity_fragment.CutPictureActivity"
             android:screenOrientation="portrait"
             android:theme="@style/Window"
             android:windowSoftInputMode="stateAlwaysHidden" />

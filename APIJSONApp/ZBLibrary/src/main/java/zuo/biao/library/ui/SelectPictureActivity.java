@@ -16,6 +16,7 @@ package zuo.biao.library.ui;
 
 import java.io.File;
 
+import uiauto.UIAutoApp;
 import zuo.biao.library.R;
 import zuo.biao.library.base.BaseActivity;
 import zuo.biao.library.util.CommonUtil;
@@ -27,8 +28,11 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.StrictMode;
 import android.provider.MediaStore;
 import android.view.Gravity;
+import android.view.InputEvent;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Toast;
@@ -61,6 +65,16 @@ public class SelectPictureActivity extends BaseActivity implements OnClickListen
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.select_picture_activity);
+
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
+			try {
+				StrictMode.VmPolicy.Builder builder = new StrictMode.VmPolicy.Builder();
+				builder.detectFileUriExposure();
+				StrictMode.setVmPolicy(builder.build());
+			} catch (Throwable e) {
+				e.printStackTrace();
+			}
+		}
 
 		//功能归类分区方法，必须调用<<<<<<<<<<
 		initView();
@@ -103,16 +117,20 @@ public class SelectPictureActivity extends BaseActivity implements OnClickListen
 	 * 照相获取图片
 	 */
 	public void selectPicFromCamera() {
-		if (!CommonUtil.isExitsSdcard()) {
+		if (! CommonUtil.isExitsSdcard()) {
 			showShortToast("SD卡不存在，不能拍照");
 			return;
 		}
 
-		intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+		Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
 		// 指定调用相机拍照后照片的储存路径
 		cameraFile = new File(DataKeeper.imagePath, "photo" + System.currentTimeMillis() + ".jpg");
 		cameraFile.getParentFile().mkdirs();
 		intent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(cameraFile));
+		if (Build.VERSION.SDK_INT > Build.VERSION_CODES.M) {
+			intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+		}
+
 		toActivity(intent, REQUEST_CODE_CAMERA);
 	}
 
@@ -122,12 +140,17 @@ public class SelectPictureActivity extends BaseActivity implements OnClickListen
 	 */
 	public void selectPicFromLocal() {
 		Intent intent;
-		if (Build.VERSION.SDK_INT < 19) {
+		if (Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT) {
 			intent = new Intent(Intent.ACTION_GET_CONTENT);
 			intent.setType("image/*");
 		} else {
 			intent = new Intent(Intent.ACTION_PICK, android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
 		}
+
+		if (Build.VERSION.SDK_INT > Build.VERSION_CODES.M) {
+			intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+		}
+
 		toActivity(intent, REQUEST_CODE_LOCAL);
 	}
 
@@ -136,31 +159,70 @@ public class SelectPictureActivity extends BaseActivity implements OnClickListen
 	 * @param selectedImage
 	 */
 	private void sendPicByUri(Uri selectedImage) {
-		Cursor cursor = getContentResolver().query(selectedImage, null, null, null, null);
-		if (cursor != null) {
-			cursor.moveToFirst();
-			int columnIndex = cursor.getColumnIndex("_data");
-			picturePath = cursor.getString(columnIndex);
-			cursor.close();
-			cursor = null;
+		try {
+			Cursor cursor = getContentResolver().query(selectedImage, null, null, null, null);
+			if (cursor != null) {
+				cursor.moveToFirst();
+				int columnIndex = cursor.getColumnIndex("_data");
+				picturePath = cursor.getString(columnIndex);
+				cursor.close();
 
-			if (picturePath == null || picturePath.equals("null")) {
-				Toast toast = Toast.makeText(this, "找不到图片", Toast.LENGTH_SHORT);
+				if (picturePath == null || picturePath.equals("null")) {
+					Toast toast = Toast.makeText(this, "找不到图片", Toast.LENGTH_SHORT);
+					toast.setGravity(Gravity.CENTER, 0, 0);
+					toast.show();
+					return;
+				}
+			} else {
+				File file = new File(selectedImage.getPath());
+				if (!file.exists()) {
+					Toast toast = Toast.makeText(this, "找不到图片", Toast.LENGTH_SHORT);
+					toast.setGravity(Gravity.CENTER, 0, 0);
+					toast.show();
+					return;
+
+				}
+				picturePath = file.getAbsolutePath();
+			}
+		} catch (SecurityException e) {
+			// 处理MIUI等系统的权限拒绝异常
+			e.printStackTrace();
+			try {
+				// 尝试使用MediaStore API获取图片路径
+				Cursor cursor = getContentResolver().query(
+						MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+						new String[]{MediaStore.Images.Media.DATA},
+						MediaStore.Images.Media._ID + "=?",
+						new String[]{selectedImage.getLastPathSegment()},
+						null
+				);
+
+				if (cursor != null && cursor.moveToFirst()) {
+					int columnIndex = cursor.getColumnIndex(MediaStore.Images.Media.DATA);
+					picturePath = cursor.getString(columnIndex);
+					cursor.close();
+
+					if (picturePath == null || picturePath.equals("null")) {
+						Toast toast = Toast.makeText(this, "找不到图片", Toast.LENGTH_SHORT);
+						toast.setGravity(Gravity.CENTER, 0, 0);
+						toast.show();
+						return;
+					}
+				} else {
+					Toast toast = Toast.makeText(this, "无法访问图片，请尝试其他图片", Toast.LENGTH_SHORT);
+					toast.setGravity(Gravity.CENTER, 0, 0);
+					toast.show();
+					return;
+				}
+			} catch (Exception ex) {
+				ex.printStackTrace();
+				Toast toast = Toast.makeText(this, "图片访问失败，请重试", Toast.LENGTH_SHORT);
 				toast.setGravity(Gravity.CENTER, 0, 0);
 				toast.show();
 				return;
 			}
-		} else {
-			File file = new File(selectedImage.getPath());
-			if (!file.exists()) {
-				Toast toast = Toast.makeText(this, "找不到图片", Toast.LENGTH_SHORT);
-				toast.setGravity(Gravity.CENTER, 0, 0);
-				toast.show();
-				return;
-
-			}
-			picturePath = file.getAbsolutePath();
 		}
+
 		setResult(RESULT_OK, new Intent().putExtra(RESULT_PICTURE_PATH, picturePath));
 	}
 
@@ -209,7 +271,24 @@ public class SelectPictureActivity extends BaseActivity implements OnClickListen
 			switch (requestCode) {
 			case REQUEST_TO_BOTTOM_MENU:
 				if (data != null) {
-					switch (data.getIntExtra(BottomMenuWindow.RESULT_ITEM_ID, -1)) {
+					int menu = data.getIntExtra(BottomMenuWindow.RESULT_ITEM_ID, -1);
+
+					UIAutoApp app = UIAutoApp.getInstance();
+					if ((menu == 0 || menu == 1) && app.isReplaying()) {
+						UIAutoApp.Node<InputEvent> node = app.getCurrentEventNode();
+						if (node.mock == null || node.mock) {
+	//						new Handler().postDelayed(new Runnable() {
+	//							@Override
+	//							public void run() {
+//								app.sendActivityResult(node);
+								onActivityResult(node.requestCode, node.resultCode, node.intent);
+	//							}
+	//						}, 1000);
+							return;
+						}
+					}
+
+					switch (menu) {
 					case 0:
 						selectPicFromCamera();//照相
 						return;
@@ -239,7 +318,14 @@ public class SelectPictureActivity extends BaseActivity implements OnClickListen
 			}
 		}
 
+//		UIAutoApp.getInstance().onUIAutoActivityResult(this, requestCode, resultCode, data == null ? null : (Intent) data.clone(), true);
+
 		finish();
+
+		if (requestCode == REQUEST_CODE_CAMERA || requestCode == REQUEST_CODE_LOCAL) {
+			UIAutoApp.getInstance().onUIAutoActivityResult(this, requestCode, resultCode, data, true);
+//			UIAutoApp.getInstance().onUIAutoActivityResult(this, requestCode, resultCode, new Intent(data), true);
+		}
 	}
 
 	@Override

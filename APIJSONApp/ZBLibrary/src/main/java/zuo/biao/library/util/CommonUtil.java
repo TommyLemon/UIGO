@@ -14,6 +14,10 @@ limitations under the License.*/
 
 package zuo.biao.library.util;
 
+import android.Manifest;
+import android.content.pm.PackageManager;
+import android.os.Build;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -34,6 +38,7 @@ import android.graphics.Bitmap;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
+import android.support.v4.app.ActivityCompat;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -237,8 +242,9 @@ public class CommonUtil {
 		showProgressDialog(context, null, dialogMessage);
 	}
 	/**展示加载进度条
-	 * @param dialog Title 标题
-	 * @param dialog Message 信息
+	 * @param context
+	 * @param dialogTitle Title 标题
+	 * @param dialogMessage Message 信息
 	 */
 	public static void showProgressDialog(final Activity context, final String dialogTitle, final String dialogMessage){
 		if (context == null) {
@@ -285,7 +291,7 @@ public class CommonUtil {
 	//show short toast 方法<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 	/**快捷显示short toast方法，需要long toast就用 Toast.makeText(string, Toast.LENGTH_LONG).show(); ---不常用所以这个类里不写
 	 * @param context
-	 * @param string
+	 * @param stringResId
 	 */
 	public static void showShortToast(final Context context, int stringResId) {
 		try {
@@ -321,7 +327,7 @@ public class CommonUtil {
 	/**照片裁剪
 	 * @param context
 	 * @param requestCode
-	 * @param fromFile
+	 * @param fileUri
 	 * @param width
 	 * @param height
 	 */
@@ -461,6 +467,48 @@ public class CommonUtil {
 		return false;
 	}
 
+	/**检查是否有存储权限
+	 * @param context
+	 * @return
+	 */
+	public static boolean isHaveStoragePermission(Context context){
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+			// Android 13+ 使用新的权限
+			return isHavePermission(context, Manifest.permission.READ_MEDIA_IMAGES);
+		} else {
+			// Android 12及以下使用旧权限
+			return isHavePermission(context, Manifest.permission.READ_EXTERNAL_STORAGE);
+		}
+	}
 
+	/**请求存储权限
+	 * @param activity
+	 * @param requestCode
+	 */
+	public static void requestStoragePermission(Activity activity, int requestCode) {
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+			// Android 13+ 请求新的权限
+			ActivityCompat.requestPermissions(activity,
+				new String[]{Manifest.permission.READ_MEDIA_IMAGES}, requestCode);
+		} else {
+			// Android 12及以下请求旧权限
+			ActivityCompat.requestPermissions(activity, 
+				new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, requestCode);
+		}
+	}
+
+	/**检查并请求存储权限
+	 * @param activity
+	 * @param requestCode
+	 * @return true表示已有权限，false表示需要请求权限
+	 */
+	public static boolean checkAndRequestStoragePermission(Activity activity, int requestCode) {
+		if (isHaveStoragePermission(activity)) {
+			return true; // 已有权限
+		} else {
+			requestStoragePermission(activity, requestCode);
+			return false; // 需要请求权限
+		}
+	}
 
 }

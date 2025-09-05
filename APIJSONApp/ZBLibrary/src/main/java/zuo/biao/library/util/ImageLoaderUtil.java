@@ -45,12 +45,17 @@ import com.bumptech.glide.request.target.Target;
 //import com.nostra13.universalimageloader.core.display.RoundedBitmapDisplayer;
 //import com.nostra13.universalimageloader.core.listener.ImageLoadingListener;
 
+import android.app.Activity;
+
 /**图片加载工具类
  * @author Lemon
  * @use ImageLoaderUtil.loadImage(...)
  */
 public class ImageLoaderUtil {
 	private static final String TAG = "ImageLoaderUtil";
+	
+	/** 存储权限请求码 */
+	public static final int REQUEST_STORAGE_PERMISSION = 1001;
 
 //	private static ImageLoader imageLoader;
 	/**初始化方法
@@ -106,38 +111,24 @@ public class ImageLoaderUtil {
 	 * @param uri 网址url或本地路径path
 	 */
 	public static void loadImage(final ImageView iv, String uri, final int type) {
-		if (iv == null) {// || iv.getWidth() <= 0) {
+		if (iv == null) {
 			Log.i(TAG, "loadImage  iv == null >> return;");
 			return;
 		}
 		Log.i(TAG, "loadImage  iv" + (iv == null ? "==" : "!=") + "null; uri=" + uri);
 
 		uri = getCorrectUri(uri);
+		
+		// 检查是否是本地文件路径，如果是则检查权限
+		if (isLocalFileUri(uri) && iv.getContext() instanceof Activity) {
+			Activity activity = (Activity) iv.getContext();
+			if (!CommonUtil.checkAndRequestStoragePermission(activity, REQUEST_STORAGE_PERMISSION)) {
+				Log.w(TAG, "Storage permission not granted, cannot load local image: " + uri);
+				return; // 权限未授予，不加载图片
+			}
+		}
 
 		Glide.with(iv.getContext()).load(uri)
-//				.listener(new RequestListener<Drawable>() {
-//			@Override
-//			public boolean onLoadFailed(@Nullable GlideException e, Object model, Target<Drawable> target, boolean isFirstResource) {
-//				return false;
-//			}
-//
-//			@Override
-//			public boolean onResourceReady(Drawable resource, Object model, Target<Drawable> target, DataSource dataSource, boolean isFirstResource) {
-//				resource.
-//				switch (type) {
-//				case TYPE_OVAL:
-//					iv.setImageBitmap(toRoundCorner(loadedImage, loadedImage.getWidth()/2));
-//					break;
-//				case TYPE_ROUND_CORNER:
-//					iv.setImageBitmap(toRoundCorner(loadedImage, 10));
-//					break;
-//				default:
-//					iv.setImageBitmap(loadedImage);
-//					break;
-//				}
-//				return false;
-//			}
-//		})
 				.into(iv);
 
 //		//新的加载图片
@@ -190,6 +181,19 @@ public class ImageLoaderUtil {
 
 		Log.i(TAG, "getCorrectUri  return uri = " + uri + " >>>>> ");
 		return uri;
+	}
+
+
+	/**检查是否是本地文件URI
+	 * @param uri
+	 * @return
+	 */
+	public static boolean isLocalFileUri(String uri) {
+		if (uri == null) return false;
+		return uri.startsWith(FILE_PATH_PREFIX) || 
+			   uri.startsWith("/storage/") || 
+			   uri.startsWith("/sdcard/") ||
+			   (!uri.toLowerCase().startsWith("http"));
 	}
 
 

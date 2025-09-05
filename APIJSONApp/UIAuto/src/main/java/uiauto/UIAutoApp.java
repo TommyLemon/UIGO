@@ -34,8 +34,10 @@ import static uiauto.InputUtil.Y_GRAVITIES;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.ActivityManager;
 import android.app.Application;
 import android.app.Dialog;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -50,6 +52,7 @@ import android.graphics.Point;
 import android.graphics.Rect;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
@@ -111,6 +114,8 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.TypeReference;
+import com.alibaba.fastjson.parser.deserializer.ParseProcess;
+import com.alibaba.fastjson.parser.deserializer.PropertyProcessable;
 import com.alibaba.fastjson.serializer.PropertyFilter;
 import com.yhao.floatwindow.FloatWindow;
 import com.yhao.floatwindow.IFloatWindow;
@@ -124,7 +129,10 @@ import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.lang.annotation.Annotation;
 import java.lang.ref.WeakReference;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.Type;
 import java.net.URLEncoder;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
@@ -194,12 +202,28 @@ public class UIAutoApp { // extends Application {
     return getApp().getAssets();
   }
 
+
+  public boolean isRecording() {
+    return isShowing && isRunning && ! isReplay;
+  }
+  public boolean isReplaying() {
+    return isShowing && isRunning && isReplay;
+  }
+
+
+
   private boolean isTimeout = false;
   private final Runnable timeoutRunnable = new Runnable() {
     @Override
     public void run() {
-      if (isTimeout && isShowing && isRunning && isReplay && tvControllerForward != null) {
-        tvControllerForward.performClick();
+      if (isTimeout && isShowing && isRunning && isReplay) {
+        if (currentEventNode != null && currentEventNode.action == InputUtil.UI_ACTION_RESULT
+                && (currentEventNode.mock == null || currentEventNode.mock)
+                && sendActivityResult(currentEventNode)) {
+          return;
+        }
+
+        forward(false);
       }
     }
   };
@@ -266,6 +290,7 @@ public class UIAutoApp { // extends Application {
         mainHandler.removeCallbacks(timeoutRunnable);
 
         if (isOver) {
+          //TODO output()
           isRunning = false;
 
           tvControllerPlay.setText(R.string.replay);
@@ -362,7 +387,7 @@ public class UIAutoApp { // extends Application {
         Node<InputEvent> lastNextNode = nextNode;
 
         Activity activity = getCurrentActivity();
-        while (lastNextNode != null && (lastNextNode.disable || lastNextNode.item == null)
+        while (lastNextNode != null && (lastNextNode.disable || (lastNextNode.item == null && lastNextNode.action != InputUtil.UI_ACTION_RESULT))
 //                && (activity == null || Objects.equals(lastNextNode.activity, activity.getClass().getName()))
         ) {
           String url = lastNextNode.url;
@@ -1775,38 +1800,7 @@ public class UIAutoApp { // extends Application {
     tvControllerForward.setOnClickListener(new View.OnClickListener() {
       @Override
       public void onClick(View v) {
-//        handler.removeMessages(0);
-        if (step <= allStep) {
-          step ++;
-          tvControllerCount.setText(step + "/" + allStep);
-          onEventChange(step - 1, 0L);
-        }
-
-        Collection<List<Node<InputEvent>>> values = waitMap.values();
-        for (List<Node<InputEvent>> list : values) {
-          if (list == null || list.isEmpty()) {
-            continue;
-          }
-
-          for (Node<InputEvent> node : list) {
-            if (node == null) {
-              continue;
-            }
-
-            node.disable = true;
-          }
-        }
-
-        waitMap = new LinkedHashMap<>();
-
-        Node<InputEvent> node = currentEventNode == null ? null : currentEventNode.next;
-        if (node != null) {
-          node.disable = true;
-        }
-
-        Message msg = handler.obtainMessage();
-        msg.obj = node;
-        handler.sendMessage(msg);
+        forward(true);
       }
     });
     tvControllerForward.setOnLongClickListener(new View.OnLongClickListener() {
@@ -2148,6 +2142,43 @@ public class UIAutoApp { // extends Application {
         toast(isSplit2Showing ? R.string.long_press_ball_to_finish : R.string.click_ball_to_finish);
       }
     }
+  }
+
+  public void forward(boolean skip) {
+    //        handler.removeMessages(0);
+    if (step <= allStep) {
+      step ++;
+      tvControllerCount.setText(step + "/" + allStep);
+      onEventChange(step - 1, 0L);
+    }
+
+    if (skip) {
+      Collection<List<Node<InputEvent>>> values = waitMap.values();
+      for (List<Node<InputEvent>> list : values) {
+        if (list == null || list.isEmpty()) {
+          continue;
+        }
+
+        for (Node<InputEvent> node : list) {
+          if (node == null) {
+            continue;
+          }
+
+          node.disable = true;
+        }
+      }
+    }
+
+    waitMap = new LinkedHashMap<>();
+
+    Node<InputEvent> node = currentEventNode == null ? null : currentEventNode.next;
+    if (skip && node != null) {
+      node.disable = true;
+    }
+
+    Message msg = handler.obtainMessage();
+    msg.obj = node;
+    handler.sendMessage(msg);
   }
 
   public void toast(int id) {
@@ -3124,6 +3155,9 @@ public class UIAutoApp { // extends Application {
 //      }
 //    }
 
+    if (node.action == InputUtil.UI_ACTION_RESULT) {
+      return sendActivityResult(node);
+    }
 
     Window.Callback callback_ = callback;
     View view_ = view;
@@ -3631,6 +3665,55 @@ public class UIAutoApp { // extends Application {
     return callback_ != null || view_ != null;
   }
 
+  public boolean sendActivityResult(Node<InputEvent> node) {
+    try {
+      Activity activity = getCurrentActivity();
+//      try {
+//        Intent intent = new Intent(Intent.ACTION_MAIN);
+//        intent.addCategory(Intent.CATEGORY_HOME);
+//        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+//        startActivity(intent);
+//      } catch (Throwable e) {
+//        e.printStackTrace();
+//      }
+
+      if (! isForeground(activity)) {
+        Intent intent = new Intent(getApp(), activity.getClass());
+        intent.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+        startActivity(intent);
+
+//        if (! isForeground(activity)) {
+//          Window window = getCurrentWindow();
+//
+//          KeyEvent event = new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_BACK);
+////          activity.onKeyDown(KeyEvent.KEYCODE_BACK, event);
+////        event.dispatch(activity);
+//          window.superDispatchKeyEvent(event);
+//
+//          KeyEvent event2 = new KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_BACK);
+////          activity.onKeyUp(KeyEvent.KEYCODE_BACK, event2);
+//          window.superDispatchKeyEvent(event2);
+//        }
+      }
+
+      Method method = Activity.class.getDeclaredMethod("onActivityResult", int.class, int.class, Intent.class);
+      method.setAccessible(true);
+      method.invoke(activity, node.requestCode, node.resultCode, node.intent);
+      return true;
+    } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+      e.printStackTrace();
+      return false;
+    }
+  }
+
+  public static boolean isForeground(Activity activity) {
+    ActivityManager am = (ActivityManager) activity.getSystemService(Context.ACTIVITY_SERVICE);
+    List<ActivityManager.RunningTaskInfo> tasks = am.getRunningTasks(1);
+    ActivityManager.RunningTaskInfo task = tasks == null || tasks.isEmpty() ? null : tasks.get(0);
+    ComponentName topActivity = task == null ? null : task.topActivity;
+    return topActivity != null && Objects.equals(topActivity.getClassName(), activity.getClass().getName());
+  }
+
   private void dispatchTouchEvent(Window.Callback callback_, View view_, MotionEvent event, MotionEvent viewEvent) {
     if (viewEvent == null) {
       viewEvent = event;
@@ -3674,7 +3757,13 @@ public class UIAutoApp { // extends Application {
   }
 
   private Node<InputEvent> firstEventNode;
+  public Node<InputEvent> getFirstEventNode() {
+    return firstEventNode;
+  }
   private Node<InputEvent> currentEventNode;
+  public Node<InputEvent> getCurrentEventNode() {
+    return currentEventNode;
+  }
 
   private long duration = 0;
   private int allStep = 0;
@@ -4133,6 +4222,58 @@ public class UIAutoApp { // extends Application {
     eventNode.method = obj.getString("method");
     eventNode.host = obj.getString("host");
     eventNode.url = obj.getString("url");
+    eventNode.requestCode = obj.getIntValue("requestCode");
+    eventNode.resultCode = obj.getIntValue("resultCode");
+
+    Intent intent = obj.getObject("intent", Intent.class);
+//    String uri = eventNode.url; // obj.getString("url");
+
+    Object itt = obj.get("intent");
+    if (itt == null) {
+      //
+    } else if (itt instanceof Intent) {
+      intent = (Intent) itt;
+    } else {
+      String s = itt instanceof String ? (String) itt : JSON.toJSONString(itt);
+      Uri[] uris = new Uri[1];
+      try {
+        uris[0] = Uri.parse(eventNode.url);
+      } catch (Throwable e) {
+        e.printStackTrace();
+      }
+
+//      if (uris[0] == null) {
+        intent = JSON.parseObject(s, Intent.class, new PropertyProcessable() {
+          @Override
+          public Type getType(String s) {
+            return "data".equals(s) ? Uri.class : null;
+          }
+
+          @Override
+          public void apply(String s, Object o) {
+            if ("data".equals(s)) {
+//            Uri uri = new Uri(); // Uri.parse()
+              uris[0] = Uri.parse(o.toString());
+            }
+          }
+        });
+//      }
+
+      if (uris[0] != null) {
+        if (intent == null) {
+          intent = new Intent();
+        }
+
+        if (StringUtil.isEmpty(intent.getType(), true)) {
+          intent.setDataAndType(uris[0], obj.getString("dataType"));
+        } else {
+          intent.setDataAndType(uris[0], intent.getType());
+        }
+      }
+    }
+
+    eventNode.intent = intent;
+
 //      eventNode.header = obj.getString("header");
 //      eventNode.request = obj.getString("request");
 //      eventNode.response = obj.getString("response");
@@ -4663,6 +4804,68 @@ public class UIAutoApp { // extends Application {
     }, delayMillis);
   }
 
+  public void onUIAutoActivityResult(@NonNull Fragment fragment, int requestCode, int resultCode, Intent data, Boolean mock) {
+    onUIAutoActivityResult(fragment.getActivity(), fragment, requestCode, resultCode, data, mock);
+  }
+  public void onUIAutoActivityResult(@NonNull Activity activity, int requestCode, int resultCode, Intent data, Boolean mock) {
+    onUIAutoActivityResult(activity, null, requestCode, resultCode, data, mock);
+  }
+  public void onUIAutoActivityResult(@NonNull Activity activity, Fragment fragment, int requestCode, int resultCode, Intent intent, Boolean mock) {
+    if (isSplitShowing == false) {
+      Log.e(TAG, "onUIEvent  isSplitShowing == false >> return null;");
+      return;
+    }
+
+    if (fragment != null && "com.bumptech.glide.manager.SupportRequestManagerFragment".equals(fragment.getClass().getName())) {
+      if (activity == null) {
+        return;
+      }
+      fragment = null;
+    }
+
+    if (activity == null && fragment != null) {
+      activity = fragment.getActivity();
+    }
+
+    output(null, currentEventNode, activity);
+    if (isReplay) {
+      Node<InputEvent> curNode = currentEventNode;
+      Activity curAct = getCurrentActivity();
+      if (curNode == null || curNode.disable || (curNode.action == InputUtil.UI_ACTION_RESULT
+              && (
+                      (activity == null || Objects.equals(curNode.activity, activity.getClass().getName())
+                              || Objects.equals(curAct.getClass(), activity.getClass())
+                      )
+//                && (Objects.equals(curNode.fragment, fragment == null ? null : fragment.getClass().getName()))
+                )
+      )) {
+//        waitMap = new LinkedHashMap<>();
+        Node<InputEvent> nextNode = curNode == null ? null : curNode.next;
+        long duration = calcDuration(curNode, nextNode);
+
+        Message msg = handler.obtainMessage();
+        msg.obj = nextNode;
+        handler.sendMessageDelayed(msg, duration);
+      }
+    }
+    else {
+      JSONObject obj = newEvent(callback, activity, fragment, dialog);
+      obj.put("type", InputUtil.EVENT_TYPE_UI);
+      obj.put("action", InputUtil.UI_ACTION_RESULT);
+      obj.put("mock", mock);
+//      obj.put("currentActivity", getCurrentActivity());
+      obj.put("requestCode", requestCode);
+      obj.put("resultCode", resultCode);
+      obj.put("intent", intent);
+
+      Uri uri = intent == null ? null : intent.getData();
+      obj.put("url", uri == null ? null : uri.toString());
+      obj.put("dataType", intent == null ? null : intent.getType());
+
+      addEvent(obj);
+    }
+  }
+
   public void onUIEvent(int action, Window.Callback callback, Activity activity) {
     onUIEvent(action, callback, activity, null);
   }
@@ -4743,7 +4946,7 @@ public class UIAutoApp { // extends Application {
   }
   public synchronized void onHTTPEvent(int action, String format, String method, String host, String url
           , String header, String request, String response, Activity activity, Fragment fragment, Dialog dialog) {
-    if (isSplitShowing == false) {
+    if (isSplitShowing == false || isSplitShowing) { //FIXME  仅调试用
       Log.e(TAG, "onHTTPEvent  isSplitShowing == false >> return null;");
       return;
     }
@@ -6164,6 +6367,7 @@ public class UIAutoApp { // extends Application {
     }
   }
 
+
   public static class Node<E> {
     E item;
     Node<E> next;
@@ -6175,6 +6379,7 @@ public class UIAutoApp { // extends Application {
     long id;
     long flowId;
     boolean disable;
+    public Boolean mock;
     int type;
     int action;
     long time;
@@ -6208,6 +6413,11 @@ public class UIAutoApp { // extends Application {
     String url;
 //    String request;
 //    String response;
+
+    public int requestCode;
+    public int resultCode;
+    public Intent intent;
+
 
     public Node(Node<E> prev, E element, Node<E> next) {
       this.item = element;

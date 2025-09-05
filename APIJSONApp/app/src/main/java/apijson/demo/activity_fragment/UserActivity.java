@@ -18,6 +18,7 @@ import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.support.v7.widget.MenuPopupWindow;
 import android.view.MotionEvent;
@@ -32,6 +33,7 @@ import android.widget.GridView;
 import android.widget.ListAdapter;
 import uiauto.ListPopupWindow;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -60,14 +62,15 @@ import zuo.biao.library.ui.AlertDialog.OnDialogButtonClickListener;
 import zuo.biao.library.ui.BottomMenuView;
 import zuo.biao.library.ui.BottomMenuView.OnBottomMenuItemClickListener;
 import zuo.biao.library.ui.BottomMenuWindow;
-import zuo.biao.library.ui.CutPictureActivity;
+//import zuo.biao.library.ui.CutPictureActivity;
 import zuo.biao.library.ui.EditTextInfoActivity;
 import zuo.biao.library.ui.EditTextInfoWindow;
 import zuo.biao.library.ui.GridAdapter;
-import zuo.biao.library.ui.SelectPictureActivity;
+//import zuo.biao.library.ui.SelectPictureActivity;
 import zuo.biao.library.ui.WebViewActivity;
 import zuo.biao.library.util.CommonUtil;
 import zuo.biao.library.util.DataKeeper;
+import zuo.biao.library.util.ImageLoaderUtil;
 import zuo.biao.library.util.JSON;
 import zuo.biao.library.util.Log;
 import zuo.biao.library.util.StringUtil;
@@ -607,6 +610,20 @@ public class UserActivity extends BaseActivity implements OnClickListener, OnBot
 
 	//类相关监听<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
+	@Override
+	public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+		super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+		if (requestCode == ImageLoaderUtil.REQUEST_STORAGE_PERMISSION) {
+			if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+				// 权限已授予，可以重新加载图片
+				// 重新调用加载图片的方法
+			} else {
+				// 权限被拒绝，显示提示
+				Toast.makeText(this, "需要存储权限才能加载本地图片", Toast.LENGTH_SHORT).show();
+			}
+		}
+	}
+
 	private static final int REQUEST_TO_BOTTOM_MENU = 1;
 	private static final int REQUEST_TO_SELECT_PICTURE = 2;
 	private static final int REQUEST_TO_CUT_PICTURE = 3;
@@ -657,7 +674,12 @@ public class UserActivity extends BaseActivity implements OnClickListener, OnBot
 			break;
 		case REQUEST_TO_SELECT_PICTURE:
 			if (data != null) {
-				cutPicture(data.getStringExtra(SelectPictureActivity.RESULT_PICTURE_PATH));
+//				cutPicture(data.getStringExtra(SelectPictureActivity.RESULT_PICTURE_PATH));
+				isDataChanged = true;
+
+				user = getUser();
+				user.setHead(data.getStringExtra(CutPictureActivity.RESULT_PICTURE_PATH));
+				setUser(user);
 			}
 			break;
 		case REQUEST_TO_CUT_PICTURE:

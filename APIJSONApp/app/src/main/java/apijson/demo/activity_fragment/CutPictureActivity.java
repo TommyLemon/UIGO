@@ -12,7 +12,20 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.*/
 
-package zuo.biao.library.ui;
+package apijson.demo.activity_fragment;
+
+import android.app.Activity;
+import android.content.Context;
+import android.content.Intent;
+import android.graphics.Bitmap;
+import android.net.Uri;
+import android.os.Build;
+import android.os.Bundle;
+import android.os.StrictMode;
+import android.provider.MediaStore;
+import android.support.v4.content.FileProvider;
+import android.util.Log;
+import android.view.InputEvent;
 
 import java.io.File;
 
@@ -22,19 +35,6 @@ import zuo.biao.library.base.BaseActivity;
 import zuo.biao.library.util.CommonUtil;
 import zuo.biao.library.util.DataKeeper;
 import zuo.biao.library.util.StringUtil;
-import android.app.Activity;
-import android.content.Context;
-import android.content.Intent;
-import android.graphics.Bitmap;
-import android.net.Uri;
-import android.os.Build;
-import android.os.Bundle;
-import android.os.Handler;
-import android.os.StrictMode;
-import android.provider.MediaStore;
-import android.support.v4.content.FileProvider;
-import android.util.Log;
-import android.view.InputEvent;
 
 /**通用获取裁剪单张照片Activity
  * @author Lemon
@@ -179,8 +179,9 @@ public class CutPictureActivity extends BaseActivity {
 		if (Build.VERSION.SDK_INT >= 23) {
 			File outputImage = new File(DataKeeper.imagePath, "output_image" + System.currentTimeMillis() + ".jpg"); 
 			cuttedPicturePath = outputImage.getAbsolutePath();
-			Uri photoURI = FileProvider.getUriForFile(context, context.getApplicationContext().getPackageName() + ".provider", outputImage);
-//			Uri photoURI = FileProvider.getUriForFile(context,  "apijson.demo.provider", outputImage);
+//			Uri photoURI = Uri.fromFile(outputImage);
+//			Uri photoURI = FileProvider.getUriForFile(context, getPackageName() + ".provider", outputImage);
+			Uri photoURI = FileProvider.getUriForFile(context,  "apijson.demo.provider", outputImage);
 			intent.putExtra("scale", true);
 			intent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI); // Uri.fromFile(outputImage));
 			intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);

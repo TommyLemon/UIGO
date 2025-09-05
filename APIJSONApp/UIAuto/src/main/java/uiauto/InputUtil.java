@@ -123,6 +123,7 @@ public class InputUtil {
     public static final int UI_ACTION_RESTART = 11;
     public static final int UI_ACTION_PREATTACH = 12;
     public static final int UI_ACTION_PRECREATE = 13;
+    public static final int UI_ACTION_RESULT = 14;
 
     public static final String UI_ACTION_ATTACH_NAME = "ATTACH";
     public static final String UI_ACTION_CREATE_NAME = "CREATE";
@@ -138,12 +139,13 @@ public class InputUtil {
     public static final String UI_ACTION_RESTART_NAME = "RESTART";
     public static final String UI_ACTION_PREATTACH_NAME = "PREATTACH";
     public static final String UI_ACTION_PRECREATE_NAME = "PRECREATE";
+    public static final String UI_ACTION_RESULT_NAME = "RESULT";
 
     public static final String[] UI_ACTION_NAMES = new String[] {
             UI_ACTION_ATTACH_NAME, UI_ACTION_CREATE_NAME, UI_ACTION_CREATE_VIEW_NAME, UI_ACTION_ACTIVITY_CREATED_NAME
             , UI_ACTION_START_NAME, UI_ACTION_RESUME_NAME, UI_ACTION_PAUSE_NAME, UI_ACTION_STOP_NAME
             , UI_ACTION_DESTROY_VIEW_NAME, UI_ACTION_DESTROY_NAME, UI_ACTION_DETACH_NAME, UI_ACTION_RESTART_NAME
-            , UI_ACTION_PREATTACH_NAME, UI_ACTION_PRECREATE_NAME
+            , UI_ACTION_PREATTACH_NAME, UI_ACTION_PRECREATE_NAME, UI_ACTION_RESULT_NAME
     };
     public static final List<String> UI_ACTION_NAME_LIST = Arrays.asList(UI_ACTION_NAMES);
 
