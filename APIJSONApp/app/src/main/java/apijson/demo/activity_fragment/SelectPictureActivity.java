@@ -21,6 +21,7 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.StrictMode;
 import android.provider.MediaStore;
 import android.view.Gravity;
@@ -338,8 +339,6 @@ public class SelectPictureActivity extends BaseActivity implements OnClickListen
 	private void handleReplayMode(Uri selectedImage, UIAutoApp.Node<InputEvent> node) {
 		try {
 			// 在回放模式下，尝试从Intent中获取之前保存的图片路径
-			UIAutoApp app = UIAutoApp.getInstance();
-			
 			if (node != null && node.intent != null) {
 				String savedPath = node.intent.getStringExtra(RESULT_PICTURE_PATH);
 				if (savedPath != null && !savedPath.isEmpty()) {
@@ -457,13 +456,13 @@ public class SelectPictureActivity extends BaseActivity implements OnClickListen
 					if ((menu == 0 || menu == 1) && app.isReplaying()) {
 						UIAutoApp.Node<InputEvent> node = app.getCurrentEventNode();
 						if (node.mock == null || node.mock) {
-	//						new Handler().postDelayed(new Runnable() {
-	//							@Override
-	//							public void run() {
-//								app.sendActivityResult(node);
-								onActivityResult(node.requestCode, node.resultCode, node.intent);
-	//							}
-	//						}, 1000);
+							new Handler().postDelayed(new Runnable() {
+								@Override
+								public void run() {
+//									app.sendActivityResult(node);
+									onActivityResult(node.requestCode, node.resultCode, node.intent);
+								}
+							}, 1000);
 							return;
 						}
 					}
@@ -479,28 +478,26 @@ public class SelectPictureActivity extends BaseActivity implements OnClickListen
 						break;
 					}
 				}
-			break;
+				break;
 			case REQUEST_CODE_CAMERA: //发送照片
 				if (cameraFile != null && cameraFile.exists()) {
 					picturePath = cameraFile.getAbsolutePath();
 					setResult(RESULT_OK, new Intent().putExtra(RESULT_PICTURE_PATH, picturePath));
 				}
+				break;
 			case REQUEST_CODE_LOCAL: //发送本地图片
 				if (data != null) {
 					Uri selectedImage = data.getData();
 					if (selectedImage != null) {
 						// 检查是否为回放模式
-//						UIAutoApp app = UIAutoApp.getInstance();
-//						if (app.isReplaying()) {
-//							UIAutoApp.Node<InputEvent> node = app.getCurrentEventNode();
-//							if (node != null && (node.mock == null || node.mock)) {
-//								// 在回放模式下，如果是mock操作，直接返回模拟结果
-//								handleReplayMode(selectedImage, node);
-//								return;
-//							}
-//						}
-
-						sendPicByUri(selectedImage);
+						UIAutoApp app = UIAutoApp.getInstance();
+						UIAutoApp.Node<InputEvent> node = app.isReplaying() ? app.getCurrentEventNode() : null;
+						if (node != null && (node.mock == null || node.mock)) {
+							// 在回放模式下，如果是mock操作，直接返回模拟结果
+							handleReplayMode(selectedImage, node);
+						} else {
+							sendPicByUri(selectedImage);
+						}
 					}
 				}
 				break;

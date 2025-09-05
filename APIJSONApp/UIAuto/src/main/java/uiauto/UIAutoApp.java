@@ -4830,11 +4830,11 @@ public class UIAutoApp { // extends Application {
     output(null, currentEventNode, activity);
     if (isReplay) {
       Node<InputEvent> curNode = currentEventNode;
-      Activity curAct = getCurrentActivity();
+//      Activity curAct = getCurrentActivity();
       if (curNode == null || curNode.disable || (curNode.action == InputUtil.UI_ACTION_RESULT
               && (
                       (activity == null || Objects.equals(curNode.activity, activity.getClass().getName())
-                              || Objects.equals(curAct.getClass(), activity.getClass())
+//                              || Objects.equals(curAct.getClass(), activity.getClass())
                       )
 //                && (Objects.equals(curNode.fragment, fragment == null ? null : fragment.getClass().getName()))
                 )
@@ -4946,7 +4946,7 @@ public class UIAutoApp { // extends Application {
   }
   public synchronized void onHTTPEvent(int action, String format, String method, String host, String url
           , String header, String request, String response, Activity activity, Fragment fragment, Dialog dialog) {
-    if (isSplitShowing == false || isSplitShowing) { //FIXME  仅调试用
+    if (isSplitShowing == false) {
       Log.e(TAG, "onHTTPEvent  isSplitShowing == false >> return null;");
       return;
     }
