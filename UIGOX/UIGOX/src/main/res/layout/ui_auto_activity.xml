@@ -1,0 +1,346 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/rlRoot"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context="uigo.x.UIAutoActivity"
+    >
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:layout_weight="1"
+        >
+
+        <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_weight="1" >
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="horizontal" >
+
+                <TextView
+                    android:id="@+id/tvUnitRequest"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:padding="2dp"
+                    android:layout_weight="1"
+                    android:background="@null"
+                    android:gravity="top|left"
+                    android:hint="request"
+                    android:textSize="14sp"
+                    android:textIsSelectable="true"
+                    android:textColor="@android:color/white"
+                    />
+
+                <View
+                    android:layout_width="1dp"
+                    android:layout_height="match_parent"
+                    android:background="@android:color/white" />
+
+                <TextView
+                    android:id="@+id/tvUnitResponse"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:padding="2dp"
+                    android:layout_weight="2"
+                    android:background="@null"
+                    android:gravity="top|left"
+                    android:hint="response"
+                    android:textIsSelectable="true"
+                    android:textSize="14sp"
+                    android:textColor="@android:color/white"
+                    />
+            </LinearLayout>
+        </ScrollView>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@android:color/white" />
+
+        <LinearLayout
+            android:layout_height="45dp"
+            android:layout_width="match_parent"
+            android:orientation="horizontal"
+            android:background="@android:color/white"
+            >
+
+            <Button
+                android:id="@+id/tvUnitOrient"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:onClick="orient"
+                android:text="@string/horizontal" />
+
+            <Button
+                android:id="@+id/tvUnitStop"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:text="@string/stop"
+                android:onClick="stop"
+                />
+
+            <TextView
+                android:id="@+id/tvUnitIP"
+                android:text="192.168.0.1:"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:singleLine="true"
+                android:onClick="ip"
+                android:ellipsize="middle"
+                android:textSize="16sp"
+                />
+
+            <EditText
+                android:id="@+id/etUnitPort"
+                android:hint="8080"
+                android:inputType="number"
+                android:maxLength="5"
+                android:minEms="2"
+                android:digits="1234567890"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:gravity="left|center_vertical"
+                android:enabled="true"
+                android:textSize="16sp"
+                />
+
+            <ProgressBar
+                android:id="@+id/pbUnit"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent" />
+
+            <Button
+                android:id="@+id/tvUnitStart"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:text="@string/start"
+                android:onClick="start"
+                />
+
+        </LinearLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@android:color/white" />
+
+        <LinearLayout
+            android:layout_height="45dp"
+            android:layout_width="match_parent"
+            android:orientation="horizontal"
+            android:background="@android:color/white"
+            >
+
+            <TextView
+                android:text="@string/proxy_"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:singleLine="true"
+                android:onClick="ip"
+                android:ellipsize="middle"
+                android:textSize="16sp"
+                android:layout_marginLeft="1dp"
+                />
+
+            <EditText
+                android:id="@+id/etUnitProxy"
+                android:hint="http://apijson.cn:9090"
+                android:inputType="textUri"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="left|center_vertical"
+                android:enabled="true"
+                android:textSize="16sp"
+                android:layout_weight="1"
+                />
+
+            <ProgressBar
+                android:id="@+id/pbUnitProxy"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent" />
+
+            <Button
+                android:id="@+id/tvUnitProxy"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:text="@string/start"
+                android:onClick="switchProxy"
+                />
+
+        </LinearLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@android:color/white" />
+
+        <LinearLayout
+            android:layout_height="45dp"
+            android:layout_width="match_parent"
+            android:orientation="horizontal"
+            android:background="@android:color/white"
+            >
+
+            <TextView
+                android:text="@string/account_"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:singleLine="true"
+                android:onClick="ip"
+                android:ellipsize="middle"
+                android:textSize="16sp"
+                android:layout_marginLeft="1dp"
+                />
+
+            <EditText
+                android:id="@+id/etUIAccount"
+                android:hint="13000082001"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="left|center_vertical"
+                android:enabled="true"
+                android:textSize="16sp"
+                android:layout_weight="1"
+                />
+
+            <ProgressBar
+                android:id="@+id/pbUISignIn"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:visibility="gone"
+                tools:visibility="visible"
+                />
+
+            <Button
+                android:id="@+id/tvUISignIn"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:text="@string/sign_in"
+                android:onClick="signIn"
+                />
+
+        </LinearLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@android:color/white" />
+
+        <LinearLayout
+            android:layout_height="45dp"
+            android:layout_width="match_parent"
+            android:orientation="horizontal"
+            android:background="@android:color/white"
+            >
+
+            <TextView
+                android:text="@string/password_"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:singleLine="true"
+                android:onClick="ip"
+                android:ellipsize="middle"
+                android:textSize="16sp"
+                android:layout_marginLeft="1dp"
+                />
+
+            <EditText
+                android:id="@+id/etUIPassword"
+                android:hint="123456"
+                android:inputType="textPassword"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="left|center_vertical"
+                android:enabled="true"
+                android:textSize="16sp"
+                android:layout_weight="1"
+                />
+
+            <ProgressBar
+                android:id="@+id/pbUISignUp"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:visibility="gone"
+                tools:visibility="visible"
+                />
+
+            <Button
+                android:id="@+id/tvUISignUp"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:text="@string/sign_up"
+                android:onClick="signUp"
+                />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@android:color/white" />
+
+    <LinearLayout
+        android:layout_alignParentBottom="true"
+        android:layout_height="45dp"
+        android:layout_width="match_parent"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:background="@android:color/white"
+        >
+
+        <Button
+            android:id="@+id/tvUIRemote"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:onClick="toRemote"
+            android:text="@string/remote"
+            />
+
+        <Button
+            android:id="@+id/tvUILocal"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:onClick="toLocal"
+            android:layout_weight="1"
+            android:text="@string/local"
+            />
+
+        <Button
+            android:id="@+id/tvUIAdmin"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:text="@string/admin"
+            android:onClick="admin"
+            android:minWidth="60dp"
+            />
+
+        <Button
+            android:id="@+id/tvUIRecord"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:text="@string/record"
+            android:onClick="record"
+            android:minWidth="60dp"
+            />
+
+    </LinearLayout>
+
+</LinearLayout>

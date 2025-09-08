@@ -1,0 +1,17 @@
+<TextView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:minHeight="24dp"
+    android:gravity="center"
+    android:textSize="8sp"
+    android:textColor="@android:color/white"
+    android:paddingLeft="2dp"
+    android:paddingRight="2dp"
+    android:paddingTop="0dp"
+    android:paddingBottom="0dp"
+    android:text="MainActivity\nonResume"
+    android:background="@drawable/rectangle_solid_white"
+    tools:background="#3000"
+    />

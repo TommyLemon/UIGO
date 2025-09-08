@@ -1,0 +1,6 @@
+<paths>
+    <files-path path="images/" name="images" />
+<!--    <external-path path="." name="external_root" />-->
+    <!-- <external-path path="uigox.demo/" name="external_files" /> -->
+     <external-path path="uigox.demo/image/" name="external_images" />
+</paths>

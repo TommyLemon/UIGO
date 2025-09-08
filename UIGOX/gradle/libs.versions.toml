@@ -1,0 +1,44 @@
+[versions]
+agp = "8.13.0"
+appcompat = "1.7.1"
+material = "1.13.0"
+constraintlayout = "2.2.1"
+navigationFragment = "2.9.3"
+navigationUi = "2.9.3"
+kotlin = "2.2.0"
+coreKtx = "1.17.0"
+fastjson = "1.2.74"
+androidasync = "2.+"
+unitauto = "2.7.2"
+glide = "5.0.4"
+okhttp = "3.11.0"
+apijson = "7.9.0"
+jsoup = "1.21.2"
+floatwindow = "1.0.9"
+refreshlayoutkernel = "3.0.0-alpha"
+refreshheaderclassics = "3.0.0-alpha"
+refreshfooterclassics = "3.0.0-alpha"
+
+[libraries]
+appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
+material = { group = "com.google.android.material", name = "material", version.ref = "material" }
+constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" }
+navigation-fragment = { group = "androidx.navigation", name = "navigation-fragment", version.ref = "navigationFragment" }
+navigation-ui = { group = "androidx.navigation", name = "navigation-ui", version.ref = "navigationUi" }
+core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+fastjson = { group = "com.alibaba", name = "fastjson", version.ref = "fastjson" }
+androidasync = { group = "com.koushikdutta.async", name = "androidasync", version.ref = "androidasync" }
+unitauto = { group = "com.github.TommyLemon", name = "unitauto-java", version.ref = "unitauto" }
+glide = { group = "com.github.bumptech.glide", name = "glide", version.ref = "glide" }
+okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
+apijson = { group = "com.github.Tencent", name = "APIJSON", version.ref = "apijson" }
+jsoup = { group = "org.jsoup", name = "jsoup", version.ref = "jsoup" }
+floatwindow = { group = "com.github.yhaolpz", name = "floatwindow", version.ref = "floatwindow" }
+refreshlayoutkernel = { group = "io.github.scwang90", name = "refresh-layout-kernel", version.ref = "refreshlayoutkernel" }
+refreshheaderclassics = { group = "io.github.scwang90", name = "refresh-header-classics", version.ref = "refreshheaderclassics" }
+refreshfooterclassics = { group = "io.github.scwang90", name = "refresh-footer-classics", version.ref = "refreshfooterclassics" }
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }
+kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+android-library = { id = "com.android.library", version.ref = "agp" }
