@@ -94,8 +94,8 @@ public abstract class BaseListActivity<T, LV extends AbsListView, A extends List
 	 */
 	public void setAdapter(A adapter) {
 		if (adapter instanceof BaseAdapter) {
-			((zuo.biao.library.base.BaseAdapter) adapter).setOnItemClickListener(this);
-			((zuo.biao.library.base.BaseAdapter) adapter).setOnItemLongClickListener(this);
+			((BaseAdapter) adapter).setOnItemClickListener(this);
+			((BaseAdapter) adapter).setOnItemLongClickListener(this);
 		}
 		this.adapter = adapter;
 		lvBaseList.setAdapter(adapter);

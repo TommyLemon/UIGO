@@ -315,15 +315,13 @@ implements CacheCallBack<MomentItem>, OnHttpResponseListener, TopBarMenuCallback
 	public void initEvent() {//必须调用
 		super.initEvent();
 
-		lvBaseList.setOnItemClickListener(new OnItemClickListener() {
-
-			@Override
-			public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-				toActivity(MomentActivity.createIntent(context, id, false));
-			}
-		});
 	}
 
+	@Override
+	public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+		super.onItemClick(parent, view, position, id);
+		toActivity(MomentActivity.createIntent(context, id, false));
+	}
 
 	@Override
 	public void onDragBottom(boolean rightToLeft) {

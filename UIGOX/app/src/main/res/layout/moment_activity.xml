@@ -15,8 +15,14 @@
     <!-- 可以改为ListView，如果改的话对应DemoListActivity内也要改；padding会导致smoothScrollToPosition失效 -->
 
     <com.scwang.smart.refresh.layout.SmartRefreshLayout
+        android:id="@id/srlBaseHttpList"
         style="@style/match_match"
-        android:layout_weight="1">
+        android:layout_weight="1"
+        >
+
+        <com.scwang.smart.refresh.header.ClassicsHeader
+            style="@style/match_wrap"
+            />
 
         <ListView
             android:id="@id/lvBaseList"
@@ -24,6 +30,10 @@
             android:layout_weight="1"
             android:descendantFocusability="blocksDescendants"
             android:listSelector="@null" />
+
+        <com.scwang.smart.refresh.footer.ClassicsFooter
+            style="@style/match_wrap"
+            />
     </com.scwang.smart.refresh.layout.SmartRefreshLayout>
 
     <LinearLayout

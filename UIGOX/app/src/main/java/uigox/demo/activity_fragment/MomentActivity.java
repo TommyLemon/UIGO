@@ -148,6 +148,7 @@ implements CacheCallBack<CommentItem>, OnHttpResponseListener, OnCommentClickLis
 		initEvent();
 		//功能归类分区方法，必须调用>>>>>>>>>>
 
+		// 没用，需要 adapter.setOnLoadListener(null) //	srlBaseHttpList.setEnableAutoLoadMore(false);
 		srlBaseHttpList.autoRefresh();
 	}
 
@@ -194,6 +195,12 @@ implements CacheCallBack<CommentItem>, OnHttpResponseListener, OnCommentClickLis
 				}
 			}
 		});
+	}
+
+	@Override
+	public void setAdapter(CommentAdapter adapter) {
+		super.setAdapter(adapter);
+		adapter.setOnLoadListener(null); // SmartRefreshLayout 滚动太奇怪
 	}
 
 	@Override
@@ -496,12 +503,11 @@ implements CacheCallBack<CommentItem>, OnHttpResponseListener, OnCommentClickLis
 	private static final int HTTP_DELETE = 4;
 	@Override
 	public void onHttpResponse(final int requestCode, final String resultJson, final Exception e) {
+		JSONResponse response = new JSONResponse(resultJson);
 		runThread(TAG + "onHttpResponse", new Runnable() {
 
 			@Override
 			public void run() {
-
-				JSONResponse response = new JSONResponse(resultJson);
 				if (requestCode <= 0) {
 					if (requestCode == 0 && momentItem != null) {
 						setHead(momentItem.setCommentCount(response.getTotal()));

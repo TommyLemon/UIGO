@@ -2,7 +2,11 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     style="@style/ll_horizontal_match_wrap"
     android:background="@drawable/white_to_alpha"
-    android:padding="4dp" >
+    android:padding="4dp"
+    android:focusable="true"
+    android:focusableInTouchMode="true"
+    android:descendantFocusability="blocksDescendants"
+    >
 
     <ImageView
         android:id="@+id/ivUserViewHead"
@@ -11,6 +15,7 @@
         android:layout_height="60dp" />
 
     <LinearLayout
+        android:id="@+id/llUserView"
         style="@style/ll_vertical_match_wrap"
         android:gravity="left|center_vertical"
         android:paddingLeft="4dp" >

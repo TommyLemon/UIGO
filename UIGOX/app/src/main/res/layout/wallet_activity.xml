@@ -7,6 +7,7 @@
         <ImageView style="@style/topbar_return_img" />
 
         <ProgressBar
+            android:id="@+id/pbWallet"
             style="@style/topbar_title_pb"
             android:layout_toLeftOf="@id/tvBaseTitle" />
 

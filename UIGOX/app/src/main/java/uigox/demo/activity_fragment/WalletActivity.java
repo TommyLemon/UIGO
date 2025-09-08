@@ -26,6 +26,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import uigox.demo.R;
 import uigox.demo.base.BaseActivity;
@@ -68,14 +69,35 @@ public class WalletActivity extends BaseActivity implements OnClickListener, OnB
 
 	//UI显示区(操作UI，但不存在数据获取或处理代码，也不存在事件监听代码)<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
+	private ProgressBar pbWallet;
 	private TextView tvWalletCount;
 	@Override
 	public void initView() {//必须调用
 		autoSetTitle();
 
-		tvWalletCount = (TextView) findViewById(R.id.tvWalletCount);
+		pbWallet = findView(R.id.pbWallet);
+		tvWalletCount = findView(R.id.tvWalletCount);
 	}
 
+	@Override
+	public void showProgressDialog(String title, String message) {
+		runUiThread(new Runnable() {
+			@Override
+			public void run() {
+				pbWallet.setVisibility(View.VISIBLE);
+			}
+		});
+	}
+
+	@Override
+	public void dismissProgressDialog() {
+		runUiThread(new Runnable() {
+			@Override
+			public void run() {
+				pbWallet.setVisibility(View.GONE);
+			}
+		});
+	}
 
 	private Privacy privacy;
 	public void setWallet(Privacy privacy_) {
@@ -134,8 +156,9 @@ public class WalletActivity extends BaseActivity implements OnClickListener, OnB
 	@Override
 	public void initEvent() {//必须调用
 
-		findViewById(R.id.tvWalletRecharge).setOnClickListener(this);
-		findViewById(R.id.tvWalletWithdraw).setOnClickListener(this);
+		findView(R.id.tvBaseTitle).setOnClickListener(this);
+		findView(R.id.tvWalletRecharge).setOnClickListener(this);
+		findView(R.id.tvWalletWithdraw).setOnClickListener(this);
 	}
 
 	@Override
@@ -156,12 +179,11 @@ public class WalletActivity extends BaseActivity implements OnClickListener, OnB
 	private boolean isSucceed = true;
 	@Override
 	public void onHttpResponse(final int requestCode, final String resultJson, Exception e) {
+		JSONResponse response = new JSONResponse(resultJson);
 		runThread(TAG + "onHttpResponse", new Runnable() {
 
 			@Override
 			public void run() {
-
-				JSONResponse response = new JSONResponse(resultJson);
 				if (verifyHttpLogin(response.getCode()) == false) {
 					return;
 				}
@@ -204,7 +226,9 @@ public class WalletActivity extends BaseActivity implements OnClickListener, OnB
 	@Override
 	public void onClick(View v) {
         int id = v.getId();
-        if (id == R.id.tvWalletRecharge) {
+        if (id == R.id.tvBaseTitle) {
+			initData();
+		} else if (id == R.id.tvWalletRecharge) {
             toActivity(EditTextInfoWindow.createIntent(context, EditTextInfoWindow.TYPE_DECIMAL, "充值", null)
                     , REQUEST_RECHARGE, false);
         } else if (id == R.id.tvWalletWithdraw) {

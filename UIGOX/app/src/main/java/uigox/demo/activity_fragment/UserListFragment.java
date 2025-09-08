@@ -33,6 +33,7 @@ import java.io.Serializable;
 import java.util.List;
 
 import uigox.demo.R;
+import uigox.demo.adapter.CommentAdapter;
 import uigox.demo.adapter.UserAdapter;
 import uigox.demo.application.DemoApplication;
 import uigox.demo.base.BaseHttpListFragment;
@@ -237,6 +238,14 @@ implements CacheCallBack<User>, OnHttpResponseListener, OnBottomDragListener
 		return rightMenu;
 	}
 
+	@Override
+	public void setAdapter(UserAdapter adapter) {
+		super.setAdapter(adapter);
+		if (getActivity() instanceof MainTabActivity) {
+			adapter.setOnLoadListener(null); // SmartRefreshLayout 滚动太奇怪
+		}
+	}
+
 	//UI显示区(操作UI，但不存在数据获取或处理代码，也不存在事件监听代码)>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 
@@ -311,13 +320,12 @@ implements CacheCallBack<User>, OnHttpResponseListener, OnBottomDragListener
 	public void initEvent() {//必须调用
 		super.initEvent();
 
-		lvBaseList.setOnItemClickListener(new OnItemClickListener() {
+	}
 
-			@Override
-			public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-				toActivity(UserActivity.createIntent(context, id));
-			}
-		});
+	@Override
+	public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+		super.onItemClick(parent, view, position, id);
+		toActivity(UserActivity.createIntent(context, id));
 	}
 
 	@Override

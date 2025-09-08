@@ -135,7 +135,18 @@ public abstract class BaseView<T> extends RecyclerView.ViewHolder {
 	 */
 	public <V extends View> V findView(int id, OnClickListener listener) {
 		V v = findView(id);
-		v.setOnClickListener(listener);
+//		v.setOnClickListener(listener);
+		v.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				if (onViewClickListener != null) {
+					onViewClickListener.onViewClick(BaseView.this, v);
+					return;
+				}
+
+				listener.onClick(v);
+			}
+		});
 		return v;
 	}
 	/**通过id查找并获取控件，并setOnClickListener
