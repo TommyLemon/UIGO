@@ -25,5 +25,4 @@ rootProject.name = "UIGOX"
 include(":app")
 include(":UnitAuto-Apk")
 include(":UIGOX")
-include(":QRCodeLibrary")
 include(":ZBLibrary")

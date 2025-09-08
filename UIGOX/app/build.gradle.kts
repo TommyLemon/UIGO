@@ -56,14 +56,12 @@ dependencies {
     implementation(libs.apijson)
     implementation(libs.okhttp)
     implementation(libs.glide)
+    implementation(libs.zxinglite)
     implementation(libs.refreshlayoutkernel)
     implementation(libs.refreshheaderclassics)
     implementation(libs.refreshfooterclassics)
 //    implementation(project(":UnitAuto-Apk"))
 //    implementation(project(":UIGOX"))
-//    implementation(project(":QRCodeLibrary")) {
-//        exclude(group = "com.android.support")
-//    }
     api(project(":ZBLibrary")) {
         exclude(group = "com.android.support")
     }

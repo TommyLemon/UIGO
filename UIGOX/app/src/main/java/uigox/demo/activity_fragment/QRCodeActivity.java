@@ -34,8 +34,9 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import uigox.demo.R;
 
-import com.ericssonlabs.encoding.EncodingHandler;
+//import com.ericssonlabs.encoding.EncodingHandler;
 import com.google.zxing.WriterException;
+import com.king.zxing.util.CodeUtils;
 
 /**二维码界面Activity
  * @author Lemon
@@ -87,7 +88,7 @@ public class QRCodeActivity extends BaseActivity implements OnBottomDragListener
 	@Override
 	public void initView() {//必须调用
 		autoSetTitle();
-		
+
 		ivQRCodeHead = (ImageView) findViewById(R.id.ivQRCodeHead);
 		tvQRCodeName = (TextView) findViewById(R.id.tvQRCodeName);
 
@@ -113,7 +114,7 @@ public class QRCodeActivity extends BaseActivity implements OnBottomDragListener
 	private User user;
 	@Override
 	public void initData() {//必须调用
-		
+
 		ivQRCodeProgress.setVisibility(View.VISIBLE);
 		runThread(TAG + "initData", new Runnable() {
 
@@ -148,22 +149,25 @@ public class QRCodeActivity extends BaseActivity implements OnBottomDragListener
 
 		try {
 			//不能暴露用户隐私
-			qRCodeBitmap = EncodingHandler.createQRCode(HttpRequest.URL_GET
-					+ JSON.toJSONString(new JSONRequest(new uigox.demo.server.model.User(userId)))
-					, (int) (2 * getResources().getDimension(R.dimen.qrcode_size)));
-		} catch (WriterException e) {
+            qRCodeBitmap = CodeUtils.createQRCode(HttpRequest.URL_GET
+                            + JSON.toJSONString(new JSONRequest(new uigox.demo.server.model.User(userId)))
+                    , (int) (2 * getResources().getDimension(R.dimen.qrcode_size)));
+//			qRCodeBitmap = EncodingHandler.createQRCode(HttpRequest.URL_GET
+//					+ JSON.toJSONString(new JSONRequest(new uigox.demo.server.model.User(userId)))
+//					, (int) (2 * getResources().getDimension(R.dimen.qrcode_size)));
+		} catch (Throwable e) {
 			e.printStackTrace();
 			Log.e(TAG, "initData  try {Bitmap qrcode = EncodingHandler.createQRCode(contactJson, ivQRCodeCode.getWidth());" +
-					" >> } catch (WriterException e) {" + e.getMessage());
+					" >> } catch (Throwable e) {" + e.getMessage());
 		}
 
 		runUiThread(new Runnable() {
 			@Override
 			public void run() {
 					ivQRCodeProgress.setVisibility(View.GONE);
-					ivQRCodeCode.setImageBitmap(qRCodeBitmap);						
+					ivQRCodeCode.setImageBitmap(qRCodeBitmap);
 			}
-		});	
+		});
 	}
 
 	//Data数据区(存在数据获取或处理代码，但不存在事件监听代码)>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>

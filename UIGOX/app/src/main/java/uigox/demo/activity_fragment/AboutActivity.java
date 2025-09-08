@@ -16,11 +16,13 @@ package uigox.demo.activity_fragment;
 
 import java.io.File;
 
+import apijson.JSONRequest;
 import zuo.biao.library.base.BaseActivity;
 import zuo.biao.library.interfaces.OnBottomDragListener;
 import zuo.biao.library.ui.WebViewActivity;
 import zuo.biao.library.util.CommonUtil;
 import zuo.biao.library.util.DownloadUtil;
+import zuo.biao.library.util.JSON;
 import zuo.biao.library.util.SettingUtil;
 import android.app.Activity;
 import android.content.Context;
@@ -40,7 +42,8 @@ import uigox.demo.util.Constant;
 import uigox.demo.util.HttpRequest;
 
 import com.google.zxing.WriterException;
-import com.ericssonlabs.encoding.EncodingHandler;
+import com.king.zxing.util.CodeUtils;
+//import com.ericssonlabs.encoding.EncodingHandler;
 
 /**关于界面
  * @author Lemon
@@ -132,12 +135,15 @@ public class AboutActivity extends BaseActivity implements OnClickListener, OnLo
 			public void run() {
 
 				try {
-					qRCodeBitmap = EncodingHandler.createQRCode(Constant.APP_DOWNLOAD_WEBSITE
+					//不能暴露用户隐私
+					qRCodeBitmap = CodeUtils.createQRCode(Constant.APP_DOWNLOAD_WEBSITE
 							, (int) (2 * getResources().getDimension(R.dimen.qrcode_size)));
-				} catch (WriterException e) {
+//			qRCodeBitmap = EncodingHandler.createQRCode(Constant.APP_DOWNLOAD_WEBSITE
+//					, (int) (2 * getResources().getDimension(R.dimen.qrcode_size)));
+				} catch (Throwable e) {
 					e.printStackTrace();
-					Log.e(TAG, "initData  try {Bitmap qrcode = EncodingHandler.createQRCode(contactJson, ivContactQRCodeCode.getWidth());" +
-							" >> } catch (WriterException e) {" + e.getMessage());
+					zuo.biao.library.util.Log.e(TAG, "initData  try {Bitmap qrcode = EncodingHandler.createQRCode(Constant.APP_DOWNLOAD_WEBSITE, ivQRCodeCode.getWidth());" +
+							" >> } catch (Throwable e) {" + e.getMessage());
 				}
 
 				runUiThread(new Runnable() {

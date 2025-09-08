@@ -40,5 +40,4 @@ dependencies {
     implementation(libs.refreshheaderclassics)
     implementation(libs.refreshfooterclassics)
     api(project(":UIGOX"))
-    api(project(":QRCodeLibrary"))
 }

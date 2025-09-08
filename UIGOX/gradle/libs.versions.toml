@@ -18,6 +18,7 @@ floatwindow = "1.0.9"
 refreshlayoutkernel = "3.0.0-alpha"
 refreshheaderclassics = "3.0.0-alpha"
 refreshfooterclassics = "3.0.0-alpha"
+zxinglite = "3.2.0"
 
 [libraries]
 appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
@@ -37,6 +38,7 @@ floatwindow = { group = "com.github.yhaolpz", name = "floatwindow", version.ref 
 refreshlayoutkernel = { group = "io.github.scwang90", name = "refresh-layout-kernel", version.ref = "refreshlayoutkernel" }
 refreshheaderclassics = { group = "io.github.scwang90", name = "refresh-header-classics", version.ref = "refreshheaderclassics" }
 refreshfooterclassics = { group = "io.github.scwang90", name = "refresh-footer-classics", version.ref = "refreshfooterclassics" }
+zxinglite = { group = "com.github.jenly1314", name = "zxing-lite", version.ref = "zxinglite" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
