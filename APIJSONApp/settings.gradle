@@ -1,3 +1,4 @@
 include ':app', ':ZBLibrary', ':QRCodeLibrary'
 include ':UnitAuto-Apk'
 include ':UIAuto'
+include ':floatwindow'
