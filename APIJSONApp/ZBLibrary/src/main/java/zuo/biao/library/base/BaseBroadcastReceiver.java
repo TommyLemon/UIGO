@@ -23,6 +23,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.os.Build;
 import android.support.annotation.Nullable;
 
 /**基础广播接收器
@@ -122,7 +123,11 @@ public abstract class BaseBroadcastReceiver extends BroadcastReceiver {
 			return receiver;
 		}
 
-		context.registerReceiver(receiver, filter);
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+			context.registerReceiver(receiver, filter, Context.RECEIVER_NOT_EXPORTED);
+		} else {
+			context.registerReceiver(receiver, filter);
+		}
 
 		return receiver;
 	}
