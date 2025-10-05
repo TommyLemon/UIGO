@@ -1436,7 +1436,7 @@ public class UIAutoApp { // extends Application {
 
     isShowing = false;
 
-    isSeparatedStatus = RomUtil.checkIsMiuiRom() || RomUtil.checkIsVivoRom() || RomUtil.checkIsOppoRom();
+    isSeparatedStatus = Build.VERSION.SDK_INT >= Build.VERSION_CODES.P; // RomUtil.checkIsMiuiRom() || RomUtil.checkIsVivoRom() || RomUtil.checkIsOppoRom();
     statusHeight = DisplayUtil.getStatusBarHeight(getApp());
     if (statusHeight <= 0) {
       statusResourceId = getResources().getIdentifier("status_bar_height", "dimen", "android");
