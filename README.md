@@ -482,6 +482,10 @@ https://github.com/TommyLemon/UIGO/blob/master/APIJSONApp/app/src/main/java/apij
 见 APIJSON-Demo 后端上手 <br />
 https://github.com/APIJSON/APIJSON-Demo?tab=readme-ov-file#1%E5%90%8E%E7%AB%AF%E4%B8%8A%E6%89%8B
 
+#### 管理后台
+APIJSONBoot-MultiDataSource 内置静态网页中的 au(适合 UIGO、UIGOX) 或 ui(适合 UIGO) 目录： <br />
+https://github.com/APIJSON/APIJSON-Demo/tree/master/APIJSON-Java-Server/APIJSONBoot-MultiDataSource/src/main/resources/static
+
 <br />
 
 ### 录制、回放用例
