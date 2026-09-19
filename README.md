@@ -16,6 +16,8 @@
   <a href="https://github.com/TommyLemon/UIGO#%E5%BF%AB%E9%80%9F%E4%B8%8A%E6%89%8B">快速上手</a>
   <a href="http://apijson.cn/ui">在线工具</a>
   <a href="https://deepwiki.com/TommyLemon/UIGO">AI 问答</a>
+  <a href="https://github.com/TommyLemon/AutoUI">AndroidX 版</a>
+  <a href="https://github.com/TommyLemon/AutoUI">管理后台</a>
 </p>
 
 <p align="center" >
@@ -42,7 +44,7 @@
 **用户包含腾讯，应微信团队邀请分享了 零代码测试工具与实践(API•单元•UI)**
 
 ### AndroidX 版本
-https://github.com/TommyLemon/UIGOX
+https://github.com/TommyLemon/AutoUI
 
 ### 支持功能
 * **零代码 录制和回放 触屏、按键、键盘、数据 等**
